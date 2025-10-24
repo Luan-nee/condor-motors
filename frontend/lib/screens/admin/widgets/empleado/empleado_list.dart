@@ -1,27 +1,27 @@
 import 'package:condorsmotors/models/empleado.model.dart';
-import 'package:condorsmotors/providers/admin/index.admin.provider.dart';
 import 'package:condorsmotors/utils/empleados_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:provider/provider.dart';
 
 class EmpleadoListItem extends StatefulWidget {
   final Empleado empleado;
   final Map<String, String> nombresSucursales;
+  final String Function(Empleado) obtenerRolDeEmpleado;
   final Function(Empleado) onEdit;
   final Function(Empleado) onDelete;
   final Function(Empleado) onViewDetails;
-  final Function(Empleado) onEditCuenta;
+  final Function(Empleado)? onEditCuenta;
 
   const EmpleadoListItem({
     super.key,
     required this.empleado,
     required this.nombresSucursales,
+    required this.obtenerRolDeEmpleado,
     required this.onEdit,
     required this.onDelete,
     required this.onViewDetails,
-    required this.onEditCuenta,
+    this.onEditCuenta,
   });
 
   @override
@@ -38,7 +38,7 @@ class EmpleadoListItem extends StatefulWidget {
       ..add(ObjectFlagProperty<Function(Empleado p1)>.has('onDelete', onDelete))
       ..add(ObjectFlagProperty<Function(Empleado p1)>.has(
           'onViewDetails', onViewDetails))
-      ..add(ObjectFlagProperty<Function(Empleado p1)>.has(
+      ..add(ObjectFlagProperty<Function(Empleado p1)?>.has(
           'onEditCuenta', onEditCuenta));
   }
 }
@@ -59,12 +59,9 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
 
   @override
   Widget build(BuildContext context) {
-    // Obtener el provider para escuchar cambios
-    final empleadoProvider = Provider.of<EmpleadoProvider>(context);
-
-    // Obtener rol del empleado directamente desde el modelo
+    // Obtener rol del empleado usando la función proporcionada
     final String rol = widget.empleado.rol?.nombre ??
-        empleadoProvider.obtenerRolDeEmpleado(widget.empleado);
+        widget.obtenerRolDeEmpleado(widget.empleado);
 
     // Determinar si el empleado está activo o inactivo
     final bool esInactivo = !widget.empleado.activo;
@@ -72,7 +69,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      child: Container(
+      child: DecoratedBox(
         decoration: BoxDecoration(
           color: _isHovered
               ? const Color(0xFF2D2D2D)
@@ -391,7 +388,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                                 ? Colors.amber
                                 : const Color(0xFFB9FF3A)),
                       ),
-                      onPressed: () => widget.onEditCuenta(widget.empleado),
+                                              onPressed: () => widget.onEditCuenta?.call(widget.empleado),
                       tooltip: widget.empleado.cuentaEmpleadoUsuario != null
                           ? 'Editar cuenta de usuario'
                           : 'Crear cuenta de usuario',

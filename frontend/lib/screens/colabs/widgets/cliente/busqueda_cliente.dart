@@ -93,7 +93,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return ColoredBox(
       color: darkBackground,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -137,7 +137,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
             runSpacing: 8,
             children: <Widget>[
               // Botón de tipo de documento
-              Container(
+              DecoratedBox(
                 decoration: BoxDecoration(
                   color: _isTipoDocumentoExpanded
                       ? Colors.blue.withValues(alpha: 0.2)
@@ -182,7 +182,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
               ),
 
               // Botón de búsqueda
-              Container(
+              DecoratedBox(
                 decoration: BoxDecoration(
                   color: _isSearchExpanded
                       ? Colors.orange.withValues(alpha: 0.2)
@@ -221,7 +221,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
               ),
 
               // Botón de nuevo cliente
-              Container(
+              DecoratedBox(
                 decoration: BoxDecoration(
                   color: Colors.green.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
@@ -239,7 +239,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
 
               // Botón de limpiar filtros
               if (hayFiltrosActivos)
-                Container(
+                DecoratedBox(
                   decoration: BoxDecoration(
                     color: Colors.red.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),

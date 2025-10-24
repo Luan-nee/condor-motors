@@ -79,8 +79,7 @@ class DetalleProforma {
 
     // Mostrar información sobre promociones y descuentos
     if (descuento != null && descuento > 0) {
-      Logger.debug(
-          '🎯 Producto con descuento: ${json['nombre']} - $descuento%');
+      Logger.debug('Producto con descuento: ${json['nombre']} - $descuento%');
     }
 
     if (cantidadGratis != null && cantidadGratis > 0) {
@@ -158,15 +157,15 @@ class ProformaVentaApi {
       _cache
         ..invalidateByPattern('$_prefixListaProformas$sucursalId')
         ..invalidateByPattern('$_prefixProforma$sucursalId');
-      logCache('🔄 Caché de proformas invalidado para sucursal $sucursalId');
+      logCache('Caché de proformas invalidado para sucursal $sucursalId');
     } else {
       // Invalidar todas las proformas en caché
       _cache
         ..invalidateByPattern(_prefixListaProformas)
         ..invalidateByPattern(_prefixProforma);
-      logCache('🔄 Caché de proformas invalidado completamente');
+      logCache('Caché de proformas invalidado completamente');
     }
-    logCache('📊 Entradas en caché después de invalidación: ${_cache.size}');
+    logCache('Entradas en caché después de invalidación: ${_cache.size}');
   }
 
   /// Obtener lista de proformas de venta para una sucursal específica
@@ -225,14 +224,14 @@ class ProformaVentaApi {
 
       // Nuevo mensaje de debug para seguimiento detallado
       logCache(
-          '📝 [ProformaVentaApi] Solicitando proformas de sucursal $sucursalId (page: $page, pageSize: $pageSize, useCache: $useCache, forceRefresh: $forceRefresh)');
+          '[ProformaVentaApi] Solicitando proformas de sucursal $sucursalId (page: $page, pageSize: $pageSize, useCache: $useCache, forceRefresh: $forceRefresh)');
 
       // Intentar obtener del caché si corresponde
       if (useCache && !forceRefresh) {
         final Map<String, dynamic>? cachedData =
             _cache.get<Map<String, dynamic>>(cacheKey);
         if (cachedData != null && !_cache.isStale(cacheKey)) {
-          logCache('🔍 Usando proformas en caché para sucursal $sucursalId');
+          logCache('Usando proformas en caché para sucursal $sucursalId');
           return cachedData;
         }
       }
@@ -244,7 +243,7 @@ class ProformaVentaApi {
       };
 
       logCache(
-          '🔄 [ProformaVentaApi] Realizando petición API a /$sucursalId/proformasventa');
+          '[ProformaVentaApi] Realizando petición API a /$sucursalId/proformasventa');
 
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa',
@@ -254,11 +253,11 @@ class ProformaVentaApi {
 
       // Nuevo mensaje de debug con información de respuesta
       logCache(
-          '✅ [ProformaVentaApi] Respuesta recibida para proformas de sucursal $sucursalId');
+          '[ProformaVentaApi] Respuesta recibida para proformas de sucursal $sucursalId');
       if (response.containsKey('data')) {
         final int proformasCount =
             response['data'] is List ? (response['data'] as List).length : 0;
-        logCache('📊 [ProformaVentaApi] Proformas recibidas: $proformasCount');
+        logCache(' [ProformaVentaApi] Proformas recibidas: $proformasCount');
       }
 
       // Guardar en caché
@@ -269,7 +268,7 @@ class ProformaVentaApi {
 
       return response;
     } catch (e) {
-      logCache('❌ [ProformaVentaApi] ERROR al obtener proformas de venta: $e');
+      logCache(' [ProformaVentaApi] ERROR al obtener proformas de venta: $e');
       rethrow;
     }
   }
@@ -317,7 +316,7 @@ class ProformaVentaApi {
 
       // Nuevo mensaje de debug para seguimiento detallado
       logCache(
-          '📝 [ProformaVentaApi] Solicitando proforma #$proformaId de sucursal $sucursalId (useCache: $useCache, forceRefresh: $forceRefresh)');
+          ' [ProformaVentaApi] Solicitando proforma #$proformaId de sucursal $sucursalId (useCache: $useCache, forceRefresh: $forceRefresh)');
 
       // Intentar obtener del caché si corresponde
       if (useCache && !forceRefresh) {
@@ -325,13 +324,13 @@ class ProformaVentaApi {
             _cache.get<Map<String, dynamic>>(cacheKey);
         if (cachedData != null && !_cache.isStale(cacheKey)) {
           logCache(
-              '🔍 [ProformaVentaApi] Usando proforma en caché: $sucursalId/$proformaId');
+              ' [ProformaVentaApi] Usando proforma en caché: $sucursalId/$proformaId');
           return cachedData;
         }
       }
 
       logCache(
-          '🔄 [ProformaVentaApi] Realizando petición API a /$sucursalId/proformasventa/$proformaId');
+          ' [ProformaVentaApi] Realizando petición API a /$sucursalId/proformasventa/$proformaId');
 
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa/$proformaId',
@@ -340,9 +339,9 @@ class ProformaVentaApi {
 
       // Nuevo mensaje de debug con información de respuesta
       logCache(
-          '✅ [ProformaVentaApi] Respuesta recibida para proforma #$proformaId');
+          ' [ProformaVentaApi] Respuesta recibida para proforma #$proformaId');
       if (response.containsKey('status')) {
-        logCache('📊 [ProformaVentaApi] Status: ${response['status']}');
+        logCache(' [ProformaVentaApi] Status: ${response['status']}');
       }
 
       // Guardar en caché
@@ -355,7 +354,7 @@ class ProformaVentaApi {
       return response;
     } catch (e) {
       logCache(
-          '❌ [ProformaVentaApi] ERROR al obtener proforma #$proformaId: $e');
+          ' [ProformaVentaApi] ERROR al obtener proforma #$proformaId: $e');
       rethrow;
     }
   }
@@ -447,7 +446,7 @@ class ProformaVentaApi {
         throw Exception(
             'Token de facturación inválido. Por favor, vuelve a iniciar sesión o contacta a soporte.');
       }
-      Logger.error('❌ Error al crear proforma de venta: $e');
+      Logger.error('Error al crear proforma de venta: $e');
       rethrow;
     }
   }
@@ -469,15 +468,14 @@ class ProformaVentaApi {
     try {
       // Nuevo mensaje de debug para seguimiento
       logCache(
-          '📝 [ProformaVentaApi] Actualizando proforma #$proformaId en sucursal $sucursalId');
+          ' [ProformaVentaApi] Actualizando proforma #$proformaId en sucursal $sucursalId');
 
       // Si se especifica el estado, preparar los datos para actualizar
       if (estado != null) {
         data = data ?? <String, dynamic>{};
         data['estado'] = estado;
 
-        logCache(
-            '🔄 [ProformaVentaApi] Cambiando estado de proforma a: $estado');
+        logCache(' [ProformaVentaApi] Cambiando estado de proforma a: $estado');
       }
 
       if (data == null || data.isEmpty) {
@@ -486,7 +484,7 @@ class ProformaVentaApi {
       }
 
       logCache(
-          '🔄 [ProformaVentaApi] Realizando petición API PATCH a /$sucursalId/proformasventa/$proformaId');
+          ' [ProformaVentaApi] Realizando petición API PATCH a /$sucursalId/proformasventa/$proformaId');
 
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/$sucursalId/proformasventa/$proformaId',
@@ -496,9 +494,9 @@ class ProformaVentaApi {
 
       // Nuevo mensaje de debug con resultado
       logCache(
-          '✅ [ProformaVentaApi] Respuesta de actualización de proforma #$proformaId recibida');
+          ' [ProformaVentaApi] Respuesta de actualización de proforma #$proformaId recibida');
       if (response.containsKey('status')) {
-        logCache('📊 [ProformaVentaApi] Status: ${response['status']}');
+        logCache(' [ProformaVentaApi] Status: ${response['status']}');
       }
 
       // Invalidar caché para esta proforma
@@ -507,7 +505,7 @@ class ProformaVentaApi {
       return response;
     } catch (e) {
       logCache(
-          '❌ [ProformaVentaApi] ERROR al actualizar proforma #$proformaId: $e');
+          ' [ProformaVentaApi] ERROR al actualizar proforma #$proformaId: $e');
       rethrow;
     }
   }
@@ -528,7 +526,7 @@ class ProformaVentaApi {
     try {
       // Registrar la solicitud de eliminación
       logCache(
-          '🗑️ [ProformaVentaApi] Eliminando proforma #$proformaId de sucursal $sucursalId');
+          ' [ProformaVentaApi] Eliminando proforma #$proformaId de sucursal $sucursalId');
 
       // Intentar llamar al endpoint real
       final Map<String, dynamic> response = await _api.authenticatedRequest(
@@ -540,7 +538,7 @@ class ProformaVentaApi {
       invalidateCache(sucursalId);
 
       logCache(
-          '✅ [ProformaVentaApi] Proforma #$proformaId eliminada exitosamente');
+          ' [ProformaVentaApi] Proforma #$proformaId eliminada exitosamente');
       return response;
     } catch (e) {
       // Analizar el error
@@ -549,7 +547,7 @@ class ProformaVentaApi {
         // Si el servidor retorna notImplemented, intentar marcar como "eliminada"
         // mediante una actualización de estado
         logCache(
-            '⚠️ [ProformaVentaApi] Endpoint DELETE no implementado, intentando PATCH...');
+            ' [ProformaVentaApi] Endpoint DELETE no implementado, intentando PATCH...');
 
         try {
           // Intentar PATCH como alternativa
@@ -564,16 +562,16 @@ class ProformaVentaApi {
           invalidateCache(sucursalId);
 
           logCache(
-              '✅ [ProformaVentaApi] Proforma #$proformaId marcada como "eliminada" mediante PATCH');
+              ' [ProformaVentaApi] Proforma #$proformaId marcada como "eliminada" mediante PATCH');
           return patchResponse;
         } catch (patchError) {
           // Si falla la alternativa, registrar el error
           logCache(
-              '❌ [ProformaVentaApi] ERROR al marcar proforma como eliminada: $patchError');
+              ' [ProformaVentaApi] ERROR al marcar proforma como eliminada: $patchError');
 
           // Simular respuesta exitosa como último recurso
           logCache(
-              '⚠️ Simulando respuesta exitosa para propósitos de la aplicación');
+              ' Simulando respuesta exitosa para propósitos de la aplicación');
           return <String, dynamic>{
             'status': 'success',
             'data': <String, Object>{
@@ -587,7 +585,7 @@ class ProformaVentaApi {
       } else {
         // Para otros errores, registrar y relanzar
         logCache(
-            '❌ [ProformaVentaApi] ERROR al eliminar proforma #$proformaId: $e');
+            ' [ProformaVentaApi] ERROR al eliminar proforma #$proformaId: $e');
         rethrow;
       }
     }
@@ -613,7 +611,7 @@ class ProformaVentaApi {
         data['data'] is List) {
       proformasData = data['data'] as List;
     } else {
-      logCache('⚠️ Formato inesperado de respuesta de proformas: $data');
+      logCache(' Formato inesperado de respuesta de proformas: $data');
       return <proforma_model.Proforma>[];
     }
 
@@ -623,7 +621,7 @@ class ProformaVentaApi {
         try {
           return proforma_model.Proforma.fromJson(item);
         } catch (e) {
-          logCache('⚠️ Error al parsear proforma $item: $e');
+          logCache(' Error al parsear proforma $item: $e');
           // Crear un objeto con datos mínimos para evitar errores en cascada
           return proforma_model.Proforma(
             id: item['id'] ?? 0,
@@ -662,7 +660,7 @@ class ProformaVentaApi {
       try {
         return proforma_model.Proforma.fromJson(proformaData);
       } catch (e) {
-        logCache('⚠️ Error al procesar datos de proforma: $e');
+        logCache(' Error al procesar datos de proforma: $e');
         return null;
       }
     }

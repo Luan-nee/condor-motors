@@ -52,7 +52,6 @@ class _ProductoSelectionDialogState extends State<ProductoSelectionDialog> {
     });
 
     try {
-      // TODO: Cargar productos desde la API
       // _productos = await api.productos.getProductosPorSucursal(widget.sucursalId);
     } catch (e) {
       setState(() => _error = e.toString());

@@ -174,13 +174,11 @@ class EmpleadosUtils {
         color = const Color(0xFF4CAF50);
         icono = FontAwesomeIcons.userCheck;
         texto = 'Colaboradores Activos';
-        break;
       case 'inactivos':
         // Cambiamos el color de los inactivos a gris neutral en lugar de rojo
         color = Colors.grey;
         icono = FontAwesomeIcons.userXmark;
         texto = 'Colaboradores Inactivos';
-        break;
       default:
         color = Colors.grey;
         icono = FontAwesomeIcons.users;

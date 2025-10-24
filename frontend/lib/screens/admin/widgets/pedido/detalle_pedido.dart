@@ -1,8 +1,9 @@
+import 'package:condorsmotors/models/cliente.model.dart';
 import 'package:condorsmotors/models/pedido.model.dart';
-import 'package:condorsmotors/providers/admin/pedido.admin.provider.dart';
+import 'package:condorsmotors/repositories/cliente.repository.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 class DetallePedidoWidget extends StatefulWidget {
   final PedidoExclusivo pedido;
@@ -44,7 +45,7 @@ class _DetallePedidoWidgetState extends State<DetallePedidoWidget> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: AppTheme.cardColor,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 1100, maxHeight: 800),
         child: Column(
@@ -54,8 +55,9 @@ class _DetallePedidoWidgetState extends State<DetallePedidoWidget> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               decoration: const BoxDecoration(
-                color: Color(0xFF232323),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                color: AppTheme.backgroundColor,
+                borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(AppTheme.mediumRadius)),
               ),
               child: Row(
                 children: [
@@ -120,8 +122,9 @@ class _DetallePedidoWidgetState extends State<DetallePedidoWidget> {
 
   Widget _buildInfoGeneral(BuildContext context) {
     return Card(
-      color: const Color(0xFF232323),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      color: AppTheme.cardColor,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.mediumRadius)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -129,7 +132,7 @@ class _DetallePedidoWidgetState extends State<DetallePedidoWidget> {
           children: [
             const Row(
               children: [
-                Icon(Icons.info, color: Colors.red, size: 18),
+                Icon(Icons.info, color: AppTheme.primaryColor, size: 18),
                 SizedBox(width: 8),
                 Text('Información General',
                     style: TextStyle(
@@ -146,9 +149,7 @@ class _DetallePedidoWidgetState extends State<DetallePedidoWidget> {
                 Icons.attach_money),
             _infoRow('Fecha de Recojo', widget.pedido.fechaRecojo,
                 Icons.calendar_today),
-            _infoRow('ID Sucursal', widget.pedido.sucursalId.toString(),
-                Icons.store),
-            _infoRow('Nombre Sucursal', widget.pedido.nombre, Icons.storefront),
+            _infoRow('Sucursal', widget.pedido.nombre, Icons.storefront),
             _infoRow(
                 'Fecha de creación',
                 '${widget.pedido.fechaCreacion.day.toString().padLeft(2, '0')}/'
@@ -163,56 +164,79 @@ class _DetallePedidoWidgetState extends State<DetallePedidoWidget> {
   }
 
   Widget _buildDatosCliente(BuildContext context) {
-    final cliente = Provider.of<PedidoAdminProvider>(context, listen: false)
-        .getCliente(widget.pedido.clienteId);
-    return Card(
-      color: const Color(0xFF232323),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
+    return FutureBuilder<Cliente?>(
+      future: ClienteRepository.instance
+          .obtenerCliente(widget.pedido.clienteId.toString()),
+      builder: (context, snapshot) {
+        final cliente = snapshot.data;
+
+        return Card(
+          color: AppTheme.cardColor,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTheme.mediumRadius)),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.person, color: Colors.red, size: 18),
-                SizedBox(width: 8),
-                Text('Datos del Cliente',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16)),
+                const Row(
+                  children: [
+                    Icon(Icons.person, color: AppTheme.primaryColor, size: 18),
+                    SizedBox(width: 8),
+                    Text('Datos del Cliente',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (snapshot.connectionState == ConnectionState.waiting)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: CircularProgressIndicator(color: Colors.white),
+                    ),
+                  )
+                else if (snapshot.hasError)
+                  Text(
+                    'Error al cargar datos del cliente: ${snapshot.error}',
+                    style: const TextStyle(color: Colors.red),
+                  )
+                else ...[
+                  _infoRow(
+                      'Cliente',
+                      cliente?.denominacion ?? 'ID: ${widget.pedido.clienteId}',
+                      Icons.person),
+                  _infoRow('Documento', cliente?.numeroDocumento ?? '-',
+                      Icons.credit_card),
+                  if (cliente != null &&
+                      cliente.correo != null &&
+                      cliente.correo!.isNotEmpty)
+                    _infoRow('Correo', cliente.correo!, Icons.email),
+                  if (cliente != null &&
+                      cliente.telefono != null &&
+                      cliente.telefono!.isNotEmpty)
+                    _infoRow('Teléfono', cliente.telefono!, Icons.phone),
+                  if (cliente != null &&
+                      cliente.direccion != null &&
+                      cliente.direccion!.isNotEmpty)
+                    _infoRow(
+                        'Dirección', cliente.direccion!, Icons.location_on),
+                ],
               ],
             ),
-            const SizedBox(height: 12),
-            _infoRow(
-                'Cliente',
-                cliente?.denominacion ?? 'ID: ${widget.pedido.clienteId}',
-                Icons.person),
-            _infoRow('Documento', cliente?.numeroDocumento ?? '-',
-                Icons.credit_card),
-            if (cliente != null &&
-                cliente.correo != null &&
-                cliente.correo!.isNotEmpty)
-              _infoRow('Correo', cliente.correo!, Icons.email),
-            if (cliente != null &&
-                cliente.telefono != null &&
-                cliente.telefono!.isNotEmpty)
-              _infoRow('Teléfono', cliente.telefono!, Icons.phone),
-            if (cliente != null &&
-                cliente.direccion != null &&
-                cliente.direccion!.isNotEmpty)
-              _infoRow('Dirección', cliente.direccion!, Icons.location_on),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildDetallesReservaTable(BuildContext context) {
     return Card(
-      color: const Color(0xFF232323),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      color: AppTheme.cardColor,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.mediumRadius)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -220,7 +244,7 @@ class _DetallePedidoWidgetState extends State<DetallePedidoWidget> {
           children: [
             const Row(
               children: [
-                Icon(Icons.list, color: Colors.red, size: 18),
+                Icon(Icons.list, color: AppTheme.primaryColor, size: 18),
                 SizedBox(width: 8),
                 Text('Detalles de la Reserva',
                     style: TextStyle(
@@ -239,9 +263,17 @@ class _DetallePedidoWidgetState extends State<DetallePedidoWidget> {
                   controller: _tableScrollController,
                   child: DataTable(
                     headingRowColor:
-                        WidgetStateProperty.all(const Color(0xFF1A1A1A)),
-                    dataRowColor:
-                        WidgetStateProperty.all(const Color(0xFF232323)),
+                        WidgetStateProperty.all(AppTheme.backgroundColor),
+                    dataRowColor: WidgetStateProperty.all(AppTheme.cardColor),
+                    headingTextStyle: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    dataTextStyle: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                    ),
                     columnSpacing: 16,
                     columns: const [
                       DataColumn(

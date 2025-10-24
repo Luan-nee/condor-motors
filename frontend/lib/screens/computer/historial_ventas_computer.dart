@@ -141,16 +141,12 @@ class VentasListComputer extends StatelessWidget {
     switch (estado) {
       case EstadoVenta.pendiente:
         color = Colors.orange;
-        break;
       case EstadoVenta.completada:
         color = Colors.green;
-        break;
       case EstadoVenta.anulada:
         color = Colors.red;
-        break;
       case EstadoVenta.declarada:
         color = Colors.blue;
-        break;
     }
 
     return Container(

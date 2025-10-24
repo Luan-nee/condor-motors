@@ -137,17 +137,14 @@ class ProformaWidget extends StatelessWidget {
           text = 'Pendiente';
           icon = Icons.pending;
         }
-        break;
       case EstadoProforma.convertida:
         color = Colors.green;
         text = 'Convertida';
         icon = Icons.check_circle;
-        break;
       case EstadoProforma.cancelada:
         color = Colors.red;
         text = 'Cancelada';
         icon = Icons.cancel;
-        break;
       default:
         color = Colors.grey;
         text = 'Desconocido';
@@ -267,7 +264,7 @@ class ProformaWidget extends StatelessWidget {
   }
 
   Widget _buildProductList(BuildContext context) {
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(
         color: const Color(0xFF2D2D2D),
         borderRadius: BorderRadius.circular(8),

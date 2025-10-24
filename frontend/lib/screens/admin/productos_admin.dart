@@ -2,24 +2,22 @@ import 'dart:convert';
 // Importar dart:html solo en web
 import 'dart:io' as io;
 
+import 'package:condorsmotors/models/categoria.model.dart';
+import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
-import 'package:condorsmotors/providers/admin/producto.admin.provider.dart';
+import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:condorsmotors/screens/admin/widgets/producto/producto_agregar_dialog.dart';
 import 'package:condorsmotors/screens/admin/widgets/producto/producto_detalle_dialog.dart';
 import 'package:condorsmotors/screens/admin/widgets/producto/productos_form.dart';
 import 'package:condorsmotors/screens/admin/widgets/producto/productos_table.dart';
 import 'package:condorsmotors/screens/admin/widgets/slide_sucursal.dart';
-import 'package:condorsmotors/widgets/dialogs/confirm_dialog.dart';
 import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-// Importar dart:html solo en web
-// ignore: avoid_web_libraries_in_flutter
 
 class ProductosAdminScreen extends StatefulWidget {
   const ProductosAdminScreen({super.key});
@@ -33,17 +31,308 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   final ValueNotifier<String> _productosKey =
       ValueNotifier<String>('productos_inicial');
 
-  // Estado del drawer
-  final bool _drawerOpen = true;
+  // Repositorios
+  final ProductoRepository _productoRepository = ProductoRepository.instance;
+  final CategoriaRepository _categoriaRepository = CategoriaRepository.instance;
+  final SucursalRepository _sucursalRepository = SucursalRepository.instance;
+
+  // Estado local de sucursales (como en stocks_admin.dart)
+  List<Sucursal> _sucursales = [];
+  Sucursal? _selectedSucursal;
+  String _selectedSucursalId = '';
+  bool _isLoadingSucursales = true;
+
+  // Estado local de paginación
+  int _currentPage = 1;
+  int _pageSize = 10;
+  String _sortBy = 'nombre';
+  final String _order = 'asc';
+  Paginacion _paginacion = Paginacion.emptyPagination;
+
+  // Estado de productos
+  List<Producto> _productos = [];
+  List<Producto> _productosFiltrados = [];
+  bool _isLoadingProductos = false;
+  String _errorMessage = '';
+  String _searchQuery = '';
+
+  // Estado de filtros
+  List<Categoria> _categorias = [];
+  bool _isLoadingCategorias = false;
+  String? _selectedCategory;
+
+  // Getters para compatibilidad
+  List<Producto> get productosFiltrados => _productosFiltrados;
+  bool get isLoadingProductos => _isLoadingProductos;
+  String get errorMessage => _errorMessage;
+  int get currentPage => _currentPage;
+  String get sortBy => _sortBy;
+  String get order => _order;
+  Paginacion get paginacion => _paginacion;
+  bool get isLoadingCategorias => _isLoadingCategorias;
+  String? get selectedCategory => _selectedCategory;
+  List<String> get categoriasList => _categorias.map((c) => c.nombre).toList();
 
   @override
   void initState() {
     super.initState();
+    _inicializar();
+  }
 
-    // Inicializar el provider al montar el widget
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<ProductoProvider>(context, listen: false).inicializar();
+  /// Inicializa el provider
+  Future<void> _inicializar() async {
+    await _cargarSucursales();
+    await _cargarCategorias();
+    // Después de inicializar, seleccionar la primera sucursal
+    if (_sucursales.isNotEmpty && _selectedSucursalId.isEmpty) {
+      // Intentar encontrar la sucursal principal primero
+      final sucursalPrincipal = _sucursales.firstWhere(
+        (sucursal) => sucursal.nombre.toLowerCase().contains('principal'),
+        orElse: () => _sucursales.first,
+      );
+      await _seleccionarSucursal(sucursalPrincipal);
+    }
+  }
+
+  /// Cargar las sucursales disponibles
+  Future<void> _cargarSucursales() async {
+    setState(() {
+      _isLoadingSucursales = true;
     });
+
+    try {
+      final sucursales = await _sucursalRepository.getSucursales();
+      setState(() {
+        _sucursales = sucursales;
+        _isLoadingSucursales = false;
+      });
+    } catch (e) {
+      debugPrint('Error cargando sucursales: $e');
+      setState(() {
+        _isLoadingSucursales = false;
+      });
+    }
+  }
+
+  /// Selecciona una sucursal y carga sus productos
+  Future<void> _seleccionarSucursal(Sucursal sucursal) async {
+    if (_selectedSucursal?.id != sucursal.id) {
+      setState(() {
+        _selectedSucursal = sucursal;
+        _selectedSucursalId = sucursal.id.toString();
+      });
+      await _cargarProductos();
+    }
+  }
+
+  /// Carga las categorías
+  Future<void> _cargarCategorias() async {
+    setState(() {
+      _isLoadingCategorias = true;
+    });
+
+    try {
+      final categorias = await _categoriaRepository.getCategorias();
+      setState(() {
+        _categorias = categorias;
+        _isLoadingCategorias = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error al cargar categorías: $e';
+        _isLoadingCategorias = false;
+      });
+    }
+  }
+
+  /// Carga los productos para la sucursal seleccionada
+  Future<void> _cargarProductos() async {
+    if (_selectedSucursalId.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingProductos = true;
+    });
+
+    try {
+      final response = await _productoRepository.getProductos(
+        sucursalId: _selectedSucursalId,
+        page: _currentPage,
+        pageSize: _pageSize,
+        search: _searchQuery.isNotEmpty ? _searchQuery : null,
+        sortBy: _sortBy,
+        order: _order,
+      );
+
+      if (mounted) {
+        setState(() {
+          _productos = response.items;
+          _productosFiltrados = _aplicarFiltros(_productos);
+          _paginacion = Paginacion.fromParams(
+            totalItems: response.totalItems,
+            pageSize: _pageSize,
+            currentPage: response.currentPage,
+          );
+          _isLoadingProductos = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error al cargar productos: $e';
+          _isLoadingProductos = false;
+        });
+      }
+    }
+  }
+
+  /// Aplica filtros a los productos
+  List<Producto> _aplicarFiltros(List<Producto> productos) {
+    List<Producto> filtrados = List.from(productos);
+
+    // Filtro de búsqueda
+    if (_searchQuery.isNotEmpty) {
+      filtrados = filtrados
+          .where((producto) =>
+              producto.nombre
+                  .toLowerCase()
+                  .contains(_searchQuery.toLowerCase()) ||
+              producto.sku.toLowerCase().contains(_searchQuery.toLowerCase()))
+          .toList();
+    }
+
+    // Filtro de categoría
+    if (_selectedCategory != null) {
+      filtrados = filtrados
+          .where((producto) => producto.categoria == _selectedCategory)
+          .toList();
+    }
+
+    return filtrados;
+  }
+
+  /// Cambia la página
+  void _cambiarPagina(int pagina) {
+    setState(() {
+      _currentPage = pagina;
+    });
+    _cargarProductos();
+  }
+
+  /// Cambia el tamaño de página
+  void _cambiarTamanioPagina(int tamanio) {
+    setState(() {
+      _pageSize = tamanio;
+      _currentPage = 1;
+    });
+    _cargarProductos();
+  }
+
+  /// Ordena los productos
+  void _ordenarPor(String campo) {
+    setState(() {
+      _sortBy = campo;
+    });
+    _cargarProductos();
+  }
+
+  /// Actualiza la búsqueda
+  void _actualizarBusqueda(String query) {
+    setState(() {
+      _searchQuery = query;
+      _currentPage = 1;
+    });
+    _cargarProductos();
+  }
+
+  /// Actualiza la categoría seleccionada
+  void _actualizarCategoria(String? categoria) {
+    setState(() {
+      _selectedCategory = categoria;
+      _currentPage = 1;
+    });
+    _cargarProductos();
+  }
+
+  /// Recarga los datos
+  Future<void> _recargarDatos() async {
+    setState(() {
+      _errorMessage = '';
+    });
+    await _cargarProductos();
+  }
+
+  /// Habilita un producto (lo añade a la sucursal seleccionada)
+  Future<void> _habilitarProducto(
+      Producto producto, Map<String, dynamic> datos) async {
+    try {
+      if (_selectedSucursalId.isEmpty) {
+        throw Exception('No hay sucursal seleccionada');
+      }
+
+      debugPrint(
+          'Habilitando producto: ${producto.nombre} en sucursal $_selectedSucursalId con datos: $datos');
+
+      // Llamar al backend para añadir el producto a la sucursal
+      final productoHabilitado = await _productoRepository.addProducto(
+        sucursalId: _selectedSucursalId,
+        productoId: producto.id,
+        productoData: datos,
+      );
+
+      if (productoHabilitado == null) {
+        throw Exception('Error al habilitar el producto en la sucursal');
+      }
+
+      // Invalidar caché para forzar actualización
+      _productoRepository.invalidateCache(_selectedSucursalId);
+
+      debugPrint(
+          'Producto habilitado exitosamente: ${productoHabilitado.nombre}');
+    } catch (e) {
+      debugPrint('Error al habilitar producto: $e');
+      rethrow;
+    }
+  }
+
+  /// Genera la exportación de productos en formato CSV
+  Future<List<int>?> _generarExportacionProductos() async {
+    try {
+      if (_productosFiltrados.isEmpty) {
+        return null;
+      }
+
+      // Crear contenido CSV
+      final StringBuffer csvContent = StringBuffer()
+        // Encabezados
+        ..writeln(
+            'SKU,Nombre,Categoría,Marca,Precio Compra,Precio Venta,Stock,Stock Mínimo,Color,Descripción');
+
+      // Datos de productos
+      for (final Producto producto in _productosFiltrados) {
+        csvContent.writeln([
+          producto.sku,
+          producto.nombre,
+          producto.categoria,
+          producto.marca,
+          producto.precioCompra.toString(),
+          producto.precioVenta.toString(),
+          producto.stock.toString(),
+          producto.stockMinimo?.toString() ?? '',
+          producto.color ?? '',
+          (producto.descripcion ?? '')
+              .replaceAll(',', ';'), // Evitar conflictos con comas
+        ].join(','));
+      }
+
+      // Convertir a bytes (UTF-8)
+      final List<int> bytes = utf8.encode(csvContent.toString());
+      return bytes;
+    } catch (e) {
+      debugPrint('Error al generar exportación: $e');
+      return null;
+    }
   }
 
   @override
@@ -53,9 +342,6 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   }
 
   void _showProductDialog(Producto? producto) {
-    final ProductoProvider productoProvider =
-        Provider.of<ProductoProvider>(context, listen: false);
-
     if (!mounted) {
       return;
     }
@@ -64,14 +350,14 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
       context: context,
       builder: (BuildContext dialogContext) => ProductosFormDialogAdmin(
         producto: producto,
-        sucursales: productoProvider.sucursales,
-        sucursalSeleccionada: productoProvider.sucursalSeleccionada,
-        onSave: (Map<String, dynamic> productoData) async {
+        sucursales: _sucursales,
+        sucursalSeleccionada: _selectedSucursal,
+        onSave: (Map<String, dynamic> productoData) {
           // No llamamos a _guardarProducto aquí ya que el formulario ya lo hace internamente
           // Solo actualizamos la UI para reflejar los cambios
           setState(() {
             _productosKey.value =
-                'productos_${productoProvider.sucursalSeleccionada?.id}_refresh_${DateTime.now().millisecondsSinceEpoch}';
+                'productos_${_selectedSucursal?.id}_refresh_${DateTime.now().millisecondsSinceEpoch}';
           });
           return Future<void>.value();
         },
@@ -80,91 +366,46 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   }
 
   void _showProductoDetalleDialog(Producto producto) {
-    final ProductoProvider productoProvider =
-        Provider.of<ProductoProvider>(context, listen: false);
-
     ProductoDetalleDialog.show(
       context: context,
       producto: producto,
-      sucursales: productoProvider.sucursales,
+      sucursales: _sucursales,
       onSave: (Producto productoActualizado) {
         // Solo actualizamos la UI para reflejar los cambios
         // El formulario ya guardó los cambios internamente
         setState(() {
           _productosKey.value =
-              'productos_${productoProvider.sucursalSeleccionada?.id}_refresh_${DateTime.now().millisecondsSinceEpoch}';
+              'productos_${_selectedSucursal?.id}_refresh_${DateTime.now().millisecondsSinceEpoch}';
         });
         return Future<void>.value();
       },
     );
   }
 
-  Future<void> _eliminarProducto(Producto producto) async {
-    final ProductoProvider productoProvider =
-        Provider.of<ProductoProvider>(context, listen: false);
-
-    final bool? confirmed = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) => ConfirmDialog(
-        title: 'Eliminar Producto',
-        message:
-            '¿Está seguro que desea eliminar el producto "${producto.nombre}"?',
-        confirmText: 'Eliminar',
-        onConfirm: () => Navigator.of(context).pop(true),
-      ),
-    );
-
-    if (confirmed ?? false) {
-      final bool eliminado = await productoProvider.eliminarProducto(producto);
-
-      if (mounted) {
-        if (eliminado) {
-          // Forzar actualización de la vista después de eliminar el producto
-          setState(() {
-            _productosKey.value =
-                'productos_${productoProvider.sucursalSeleccionada?.id}_refresh_${DateTime.now().millisecondsSinceEpoch}';
-          });
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Producto eliminado exitosamente'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        } else if (productoProvider.errorMessage != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(productoProvider.errorMessage!),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    }
-  }
+  // NOTA: La funcionalidad de eliminación de productos no está implementada en el backend
+  // Los productos se pueden deshabilitar removiéndolos de la sucursal específica
+  // pero no se pueden eliminar completamente del sistema
 
   Future<void> _exportarProductos() async {
-    final ProductoProvider productoProvider =
-        Provider.of<ProductoProvider>(context, listen: false);
-
-    ScaffoldMessenger.of(context).showSnackBar(
+    final currentContext = context;
+    ScaffoldMessenger.of(currentContext).showSnackBar(
       const SnackBar(
         content: Text('Exportando productos...'),
         backgroundColor: Colors.blue,
       ),
     );
 
-    final List<int>? excelBytes = await productoProvider.exportarProductos();
+    // Generar exportación local de productos
+    final List<int>? excelBytes = await _generarExportacionProductos();
 
     if (mounted) {
       if (excelBytes != null && excelBytes.isNotEmpty) {
         // En web se puede descargar directamente
         if (kIsWeb) {
           // Para web, usamos la API html para descargar
-          // ignore: avoid_web_libraries_in_flutter
           base64Encode(excelBytes);
 
-          ScaffoldMessenger.of(context).showSnackBar(
+          ScaffoldMessenger.of(currentContext).showSnackBar(
             const SnackBar(
               content: Text('Reporte de productos descargado exitosamente'),
               backgroundColor: Colors.green,
@@ -188,40 +429,17 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
             }
 
             // Construir la ruta completa del archivo
-            final String filePath =
-                '$directorioGuardado/reporte_productos.xlsx';
-            final io.File file = io.File(filePath);
-            await file.writeAsBytes(excelBytes);
-
-            // Abrir el archivo con la aplicación predeterminada
-            // Para Windows se usa Process.run
             if (mounted) {
-              if (io.Platform.isWindows) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Reporte guardado en: $filePath'),
-                    backgroundColor: Colors.green,
-                    action: SnackBarAction(
-                      label: 'Abrir',
-                      textColor: Colors.white,
-                      onPressed: () async {
-                        await io.Process.run('explorer.exe', [filePath]);
-                      },
-                    ),
-                  ),
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Reporte guardado en: $filePath'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              }
+              ScaffoldMessenger.of(currentContext).showSnackBar(
+                const SnackBar(
+                  content: Text('Reporte de productos guardado exitosamente'),
+                  backgroundColor: Colors.green,
+                ),
+              );
             }
           } catch (e) {
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
+              ScaffoldMessenger.of(currentContext).showSnackBar(
                 SnackBar(
                   content: Text('Error al guardar archivo: $e'),
                   backgroundColor: Colors.red,
@@ -230,10 +448,10 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
             }
           }
         }
-      } else if (productoProvider.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
+      } else {
+        ScaffoldMessenger.of(currentContext).showSnackBar(
           SnackBar(
-            content: Text(productoProvider.errorMessage!),
+            content: Text(_errorMessage),
             backgroundColor: Colors.red,
           ),
         );
@@ -243,168 +461,162 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ProductoProvider>(
-      builder: (context, productoProvider, child) {
-        // Actualizar la clave de la tabla cuando los productos cambian
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            _productosKey.value =
-                'productos_${productoProvider.sucursalSeleccionada?.id}_page_${productoProvider.currentPage}_${DateTime.now().millisecondsSinceEpoch}';
-          }
-        });
+    // Actualizar la clave de la tabla cuando los productos cambian
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _productosKey.value =
+            'productos_${_selectedSucursal?.id}_page_${_currentPage}_${DateTime.now().millisecondsSinceEpoch}';
+      }
+    });
 
-        return Scaffold(
-          body: Row(
-            children: <Widget>[
-              // Panel principal (75% del ancho)
-              Expanded(
-                flex: 75,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    // Header con nombre y acciones
-                    _buildHeader(productoProvider),
-                    // Barra de búsqueda y filtros
-                    _buildSearchBar(productoProvider),
-                    // Tabla de productos
-                    Expanded(
-                      child: productoProvider.sucursalSeleccionada == null
-                          ? Center(
-                              child: Text(
-                                'Seleccione una sucursal para ver los productos',
+    return Scaffold(
+      body: Row(
+        children: <Widget>[
+          // Panel principal (75% del ancho)
+          Expanded(
+            flex: 75,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                // Header con nombre y acciones
+                _buildHeader(),
+                // Barra de búsqueda y filtros
+                _buildSearchBar(),
+                // Tabla de productos
+                Expanded(
+                  child: Column(
+                    children: <Widget>[
+                      if (_selectedSucursal == null && !_isLoadingSucursales)
+                        Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (_isLoadingSucursales)
+                                const CircularProgressIndicator(
+                                  color: Color(0xFFE31E24),
+                                )
+                              else
+                                const FaIcon(
+                                  FontAwesomeIcons.warehouse,
+                                  color: Colors.white54,
+                                  size: 48,
+                                ),
+                              const SizedBox(height: 16),
+                              Text(
+                                _isLoadingSucursales
+                                    ? 'Cargando sucursales...'
+                                    : 'Seleccione una sucursal para ver los productos',
                                 style: TextStyle(
                                   color: Colors.white.withValues(alpha: 0.7),
+                                  fontSize: 16,
                                 ),
                               ),
-                            )
-                          : Column(
-                              children: <Widget>[
-                                // Tabla de productos
-                                Expanded(
-                                  child: ValueListenableBuilder<String>(
-                                    valueListenable: _productosKey,
-                                    builder: (BuildContext context, String key,
-                                        Widget? child) {
-                                      return ProductosTable(
-                                        key: ValueKey<String>(key),
-                                        productos:
-                                            productoProvider.productosFiltrados,
-                                        sucursales: productoProvider.sucursales,
-                                        onEdit: _showProductDialog,
-                                        onDelete: _eliminarProducto,
-                                        onViewDetails:
-                                            _showProductoDetalleDialog,
-                                        onSort: productoProvider.ordenarPor,
-                                        sortBy: productoProvider.sortBy,
-                                        sortOrder: productoProvider.order,
-                                        isLoading:
-                                            productoProvider.isLoadingProductos,
-                                        onEnable: (producto) async {
-                                          await ProductoAgregarDialog.show(
-                                            context,
-                                            producto: producto,
-                                            onSave: (Map<String, dynamic>
-                                                productoData) async {
-                                              await productoProvider
-                                                  .habilitarProducto(
-                                                      producto, productoData);
-                                              // Limpiar caché de productos para la sucursal actual
-                                              final sucursalId =
-                                                  productoProvider
-                                                      .sucursalSeleccionada?.id
-                                                      .toString();
-                                              if (sucursalId != null) {
-                                                productoProvider
-                                                    .invalidateCacheSucursal(
-                                                        sucursalId);
-                                              }
-                                              if (!mounted) {
-                                                return;
-                                              }
-                                              setState(() {
-                                                _productosKey.value =
-                                                    'productos_${productoProvider.sucursalSeleccionada?.id}_refresh_${DateTime.now().millisecondsSinceEpoch}';
-                                              });
-                                              if (mounted) {
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text(
-                                                        'Producto habilitado exitosamente'),
-                                                    backgroundColor:
-                                                        Colors.green,
-                                                  ),
-                                                );
-                                              }
-                                            },
-                                          );
-                                        },
-                                      );
+                            ],
+                          ),
+                        )
+                      else ...[
+                        // Tabla de productos
+                        Expanded(
+                          child: ValueListenableBuilder<String>(
+                            valueListenable: _productosKey,
+                            builder: (BuildContext context, String key,
+                                Widget? child) {
+                              return ProductosTable(
+                                key: ValueKey<String>(key),
+                                productos: _productosFiltrados,
+                                sucursales: _sucursales,
+                                onEdit: _showProductDialog,
+                                onViewDetails: _showProductoDetalleDialog,
+                                onSort: _ordenarPor,
+                                sortBy: _sortBy,
+                                sortOrder: _order,
+                                isLoading: _isLoadingProductos,
+                                onEnable: (producto) async {
+                                  final currentContext = context;
+                                  await ProductoAgregarDialog.show(
+                                    currentContext,
+                                    producto: producto,
+                                    sucursalNombre: _selectedSucursal?.nombre,
+                                    onSave: (Map<String, dynamic>
+                                        productoData) async {
+                                      await _habilitarProducto(
+                                          producto, productoData);
+
+                                      // Recargar los datos de productos después de habilitar
+                                      if (_selectedSucursalId.isNotEmpty) {
+                                        await _cargarProductos();
+                                      }
+
+                                      if (!mounted) {
+                                        return;
+                                      }
+
+                                      // Actualizar la clave para forzar refresh de la UI
+                                      setState(() {
+                                        _productosKey.value =
+                                            'productos_${_selectedSucursal?.id}_refresh_${DateTime.now().millisecondsSinceEpoch}';
+                                      });
+
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(currentContext)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                                'Producto habilitado exitosamente'),
+                                            backgroundColor: Colors.green,
+                                          ),
+                                        );
+                                      }
                                     },
-                                  ),
-                                ),
-
-                                // Paginador
-                                if (productoProvider.paginacion.totalPages > 0)
-                                  Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Paginador(
-                                      paginacion: productoProvider.paginacion,
-                                      onPageChanged:
-                                          productoProvider.cambiarPagina,
-                                      onPageSizeChanged:
-                                          productoProvider.cambiarTamanioPagina,
-                                      backgroundColor: const Color(0xFF2D2D2D),
-                                      textColor: Colors.white,
-                                      accentColor: const Color(0xFFE31E24),
-                                    ),
-                                  ),
-                              ],
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                        // Paginador
+                        if (_paginacion.totalPages > 0)
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            child: Paginador(
+                              paginacion: _paginacion,
+                              onPageChanged: _cambiarPagina,
+                              onPageSizeChanged: _cambiarTamanioPagina,
                             ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Panel lateral de sucursales
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                width: _drawerOpen ? 350 : 0,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A1A),
-                  border: Border(
-                    left: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.1),
-                    ),
+                          ),
+                      ],
+                    ],
                   ),
-                  boxShadow: <BoxShadow>[
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
-                      blurRadius: 8,
-                      offset: const Offset(-2, 0),
-                    ),
-                  ],
                 ),
-                child: _drawerOpen
-                    ? SlideSucursal(
-                        sucursales: productoProvider.sucursales,
-                        sucursalSeleccionada:
-                            productoProvider.sucursalSeleccionada,
-                        onSucursalSelected:
-                            productoProvider.seleccionarSucursal,
-                        onRecargarSucursales: productoProvider.cargarSucursales,
-                        isLoading: productoProvider.isLoadingSucursales,
-                      )
-                    : null,
-              ),
-            ],
+              ],
+            ),
           ),
-        );
-      },
+
+          // Panel derecho: Selector de sucursales (25% del ancho)
+          Container(
+            width: 350,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A1A),
+              border: Border(
+                left: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.1),
+                ),
+              ),
+            ),
+            child: SlideSucursal(
+              sucursales: _sucursales,
+              sucursalSeleccionada: _selectedSucursal,
+              onSucursalSelected: _seleccionarSucursal,
+              onRecargarSucursales: _cargarSucursales,
+              isLoading: _isLoadingSucursales,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildHeader(ProductoProvider productoProvider) {
+  Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -435,7 +647,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                     color: Colors.white,
                   ),
                 ),
-                if (productoProvider.sucursalSeleccionada != null) ...<Widget>[
+                if (_selectedSucursal != null) ...<Widget>[
                   const Text(
                     ' / ',
                     style: TextStyle(
@@ -445,7 +657,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                   ),
                   Flexible(
                     child: Text(
-                      productoProvider.sucursalSeleccionada!.nombre,
+                      _selectedSucursal!.nombre,
                       style: TextStyle(
                         fontSize: 20,
                         color: Colors.white.withValues(alpha: 0.7),
@@ -459,9 +671,9 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
           ),
           Row(
             children: <Widget>[
-              if (productoProvider.sucursalSeleccionada != null) ...<Widget>[
+              if (_selectedSucursal != null) ...<Widget>[
                 ElevatedButton.icon(
-                  icon: productoProvider.isLoadingProductos
+                  icon: _isLoadingProductos
                       ? const SizedBox(
                           width: 16,
                           height: 16,
@@ -476,9 +688,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                           color: Colors.white,
                         ),
                   label: Text(
-                    productoProvider.isLoadingProductos
-                        ? 'Recargando...'
-                        : 'Recargar',
+                    _isLoadingProductos ? 'Recargando...' : 'Recargar',
                     style: const TextStyle(color: Colors.white),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -489,74 +699,56 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                       vertical: 12,
                     ),
                   ),
-                  onPressed: productoProvider.isLoadingProductos
+                  onPressed: _isLoadingProductos
                       ? null
                       : () async {
-                          await productoProvider.recargarDatos();
+                          await _recargarDatos();
                           if (mounted) {
                             setState(() {
                               _productosKey.value =
-                                  'productos_${productoProvider.sucursalSeleccionada?.id}_refresh_${DateTime.now().millisecondsSinceEpoch}';
+                                  'productos_${_selectedSucursal?.id}_refresh_${DateTime.now().millisecondsSinceEpoch}';
                             });
-
-                            // Mostrar mensaje de éxito o error
-                            if (productoProvider.errorMessage != null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(productoProvider.errorMessage!),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content:
-                                      Text('Datos recargados exitosamente'),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
-                            }
                           }
                         },
                 ),
                 const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  icon: const FaIcon(
-                    FontAwesomeIcons.fileExcel,
-                    size: 16,
-                    color: Color(0xFF217346), // Verde Excel
-                  ),
-                  label: const Text('Exportar'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2D2D2D),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                  ),
-                  onPressed: _exportarProductos,
-                ),
-                const SizedBox(width: 12),
               ],
               ElevatedButton.icon(
-                icon: const FaIcon(
-                  FontAwesomeIcons.plus,
-                  size: 16,
-                  color: Colors.white,
+                icon: const FaIcon(FontAwesomeIcons.fileExcel,
+                    size: 16, color: Colors.white),
+                label: const Text('Exportar'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2D2D2D),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                 ),
+                onPressed: _selectedSucursal == null
+                    ? null
+                    : () async {
+                        await _exportarProductos();
+                      },
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton.icon(
+                icon: const FaIcon(FontAwesomeIcons.plus,
+                    size: 16, color: Colors.white),
                 label: const Text('Nuevo Producto'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFE31E24),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
+                    horizontal: 24,
+                    vertical: 16,
                   ),
                 ),
-                onPressed: productoProvider.sucursalSeleccionada == null
+                onPressed: _selectedSucursal == null
                     ? null
-                    : () => _showProductDialog(null),
+                    : () {
+                        _showProductDialog(null);
+                      },
               ),
             ],
           ),
@@ -565,9 +757,9 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
     );
   }
 
-  Widget _buildSearchBar(ProductoProvider productoProvider) {
+  Widget _buildSearchBar() {
     return AnimatedOpacity(
-      opacity: productoProvider.sucursalSeleccionada == null ? 0.5 : 1.0,
+      opacity: _selectedSucursal == null ? 0.5 : 1.0,
       duration: const Duration(milliseconds: 300),
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -576,7 +768,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
           children: <Widget>[
             Expanded(
               child: TextField(
-                enabled: productoProvider.sucursalSeleccionada != null,
+                enabled: _selectedSucursal != null,
                 decoration: InputDecoration(
                   labelText: 'Buscar productos',
                   labelStyle:
@@ -592,15 +784,14 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                     borderSide:
                         BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFFE31E24)),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFFE31E24)),
                   ),
                   filled: true,
                   fillColor: const Color(0xFF2D2D2D),
                 ),
                 style: const TextStyle(color: Colors.white),
-                onChanged: productoProvider.actualizarBusqueda,
+                onChanged: _actualizarBusqueda,
               ),
             ),
             const SizedBox(width: 16),
@@ -613,7 +804,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                   color: Colors.white.withValues(alpha: 0.3),
                 ),
               ),
-              child: productoProvider.isLoadingCategorias
+              child: _isLoadingCategorias
                   ? const SizedBox(
                       width: 100,
                       child: Center(
@@ -629,9 +820,11 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                     )
                   : DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
-                        value: productoProvider.selectedCategory,
-                        items:
-                            productoProvider.categorias.map((String category) {
+                        value: _selectedCategory,
+                        items: _categorias
+                            .map((c) => c.nombre)
+                            .toList()
+                            .map((String category) {
                           return DropdownMenuItem(
                             value: category,
                             child: Text(
@@ -640,11 +833,11 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                             ),
                           );
                         }).toList(),
-                        onChanged: productoProvider.sucursalSeleccionada == null
+                        onChanged: _selectedSucursal == null
                             ? null
                             : (String? value) {
                                 if (value != null) {
-                                  productoProvider.actualizarCategoria(value);
+                                  _actualizarCategoria(value);
                                 }
                               },
                         dropdownColor: const Color(0xFF2D2D2D),

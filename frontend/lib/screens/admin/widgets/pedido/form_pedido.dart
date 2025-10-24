@@ -5,6 +5,7 @@ import 'package:condorsmotors/repositories/cliente.repository.dart';
 import 'package:condorsmotors/repositories/pedido.repository.dart';
 import 'package:condorsmotors/repositories/sucursal.repository.dart';
 import 'package:condorsmotors/screens/colabs/widgets/cliente/busqueda_cliente_form.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -246,7 +247,7 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
     final nuevoCliente = await showDialog<Cliente>(
       context: context,
       builder: (context) => Dialog(
-        backgroundColor: const Color(0xFF232323),
+        backgroundColor: AppTheme.cardColor,
         child: SizedBox(
           width: 500,
           child: BusquedaClienteForm(
@@ -270,7 +271,7 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
   Widget build(BuildContext context) {
     final isWide = MediaQuery.of(context).size.width > 700;
     return Dialog(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: AppTheme.cardColor,
       child: Container(
         constraints: const BoxConstraints(maxWidth: 900, maxHeight: 800),
         padding: EdgeInsets.zero,
@@ -284,8 +285,9 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                 decoration: const BoxDecoration(
-                  color: Color(0xFF232323),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                  color: AppTheme.backgroundColor,
+                  borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(AppTheme.mediumRadius)),
                 ),
                 child: Row(
                   children: [
@@ -310,9 +312,9 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
                 ),
               ),
               // TabBar
-              Container(
-                color: const Color(0xFF232323),
-                child: const TabBar(
+              const ColoredBox(
+                color: AppTheme.backgroundColor,
+                child: TabBar(
                   indicatorColor: Color(0xFFE31E24),
                   labelColor: Colors.white,
                   unselectedLabelColor: Colors.white54,
@@ -334,21 +336,24 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
                     child: TabBarView(
                       children: [
                         // Pestaña 1: Datos Generales
-                        if (isWide) Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(child: _buildInfoBasica(context)),
-                                  const SizedBox(width: 24),
-                                  Expanded(child: _buildFechasMonto(context)),
-                                ],
-                              ) else Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _buildInfoBasica(context),
-                                  const SizedBox(height: 24),
-                                  _buildFechasMonto(context),
-                                ],
-                              ),
+                        if (isWide)
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(child: _buildInfoBasica(context)),
+                              const SizedBox(width: 24),
+                              Expanded(child: _buildFechasMonto(context)),
+                            ],
+                          )
+                        else
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildInfoBasica(context),
+                              const SizedBox(height: 24),
+                              _buildFechasMonto(context),
+                            ],
+                          ),
                         // Pestaña 2: Detalles de la Reserva
                         _buildDetallesReservaSection(context),
                       ],
@@ -392,8 +397,9 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
 
   Widget _buildInfoBasica(BuildContext context) {
     return Card(
-      color: const Color(0xFF232323),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      color: AppTheme.cardColor,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.mediumRadius)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -402,7 +408,7 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
             const Row(
               children: [
                 FaIcon(FontAwesomeIcons.circleInfo,
-                    color: Colors.red, size: 18),
+                    color: AppTheme.primaryColor, size: 18),
                 SizedBox(width: 8),
                 Text('Información Básica',
                     style: TextStyle(
@@ -437,7 +443,7 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
                       ? const Center(child: CircularProgressIndicator())
                       : DropdownButtonFormField<String>(
                           isExpanded: true,
-                          value: _clienteIdController.text.isNotEmpty
+                          initialValue: _clienteIdController.text.isNotEmpty
                               ? _clienteIdController.text
                               : null,
                           items: _clientes.map((cliente) {
@@ -456,7 +462,7 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
                             });
                           },
                           decoration: _inputDecoration('Cliente', Icons.person),
-                          dropdownColor: const Color(0xFF232323),
+                          dropdownColor: AppTheme.cardColor,
                           style: const TextStyle(color: Colors.white),
                           validator: (value) => value == null || value.isEmpty
                               ? 'Seleccione un cliente'
@@ -476,29 +482,32 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
               ],
             ),
             const SizedBox(height: 16),
-            if (_cargandoSucursales) const Center(child: CircularProgressIndicator()) else DropdownButtonFormField<String>(
-                    value: _sucursalIdController.text.isNotEmpty
-                        ? _sucursalIdController.text
-                        : null,
-                    items: _sucursales.map((sucursal) {
-                      return DropdownMenuItem<String>(
-                        value: sucursal.id,
-                        child: Text(sucursal.nombre,
-                            style: const TextStyle(color: Colors.white)),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _sucursalIdController.text = value ?? '';
-                      });
-                    },
-                    decoration: _inputDecoration('Sucursal', Icons.store),
-                    dropdownColor: const Color(0xFF232323),
-                    style: const TextStyle(color: Colors.white),
-                    validator: (value) => value == null || value.isEmpty
-                        ? 'Seleccione una sucursal'
-                        : null,
-                  ),
+            if (_cargandoSucursales)
+              const Center(child: CircularProgressIndicator())
+            else
+              DropdownButtonFormField<String>(
+                initialValue: _sucursalIdController.text.isNotEmpty
+                    ? _sucursalIdController.text
+                    : null,
+                items: _sucursales.map((sucursal) {
+                  return DropdownMenuItem<String>(
+                    value: sucursal.id,
+                    child: Text(sucursal.nombre,
+                        style: const TextStyle(color: Colors.white)),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _sucursalIdController.text = value ?? '';
+                  });
+                },
+                decoration: _inputDecoration('Sucursal', Icons.store),
+                dropdownColor: AppTheme.cardColor,
+                style: const TextStyle(color: Colors.white),
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Seleccione una sucursal'
+                    : null,
+              ),
           ],
         ),
       ),
@@ -507,8 +516,9 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
 
   Widget _buildFechasMonto(BuildContext context) {
     return Card(
-      color: const Color(0xFF232323),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      color: AppTheme.cardColor,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.mediumRadius)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -517,7 +527,7 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
             const Row(
               children: [
                 FaIcon(FontAwesomeIcons.calendarDays,
-                    color: Colors.red, size: 18),
+                    color: AppTheme.primaryColor, size: 18),
                 SizedBox(width: 8),
                 Text('Fechas y Monto',
                     style: TextStyle(
@@ -593,8 +603,9 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
 
   Widget _buildDetallesReservaSection(BuildContext context) {
     return Card(
-      color: const Color(0xFF232323),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      color: AppTheme.cardColor,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.mediumRadius)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -602,7 +613,8 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
           children: [
             const Row(
               children: [
-                FaIcon(FontAwesomeIcons.list, color: Colors.red, size: 18),
+                FaIcon(FontAwesomeIcons.list,
+                    color: AppTheme.primaryColor, size: 18),
                 SizedBox(width: 8),
                 Text('Detalles de la Reserva',
                     style: TextStyle(
@@ -642,8 +654,8 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
         child: SingleChildScrollView(
           controller: _detallesReservaScrollController,
           child: DataTable(
-            headingRowColor: WidgetStateProperty.all(const Color(0xFF1A1A1A)),
-            dataRowColor: WidgetStateProperty.all(const Color(0xFF232323)),
+            headingRowColor: WidgetStateProperty.all(AppTheme.backgroundColor),
+            dataRowColor: WidgetStateProperty.all(AppTheme.cardColor),
             columnSpacing: 16,
             columns: const [
               DataColumn(
@@ -778,11 +790,11 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
         borderSide: BorderSide(color: Colors.white24),
       ),
       focusedBorder: const OutlineInputBorder(
-        borderSide: BorderSide(color: Color(0xFFE31E24), width: 2),
+        borderSide: BorderSide(color: AppTheme.primaryColor, width: 2),
       ),
       prefixIcon: Icon(icon, color: Colors.white54),
       filled: true,
-      fillColor: const Color(0xFF232323),
+      fillColor: AppTheme.cardColor,
     );
   }
 }

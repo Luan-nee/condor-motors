@@ -1,41 +1,32 @@
-import 'package:condorsmotors/providers/paginacion.provider.dart';
+import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 class Paginador extends StatelessWidget {
-  /// Provider opcional para paginación (si no se proporciona, se buscará en el árbol)
-  final PaginacionProvider? paginacionProvider;
+  /// Construye un paginador con opciones avanzadas
+  const Paginador({
+    super.key,
+    required this.paginacion,
+    this.onPageChange,
+    this.backgroundColor,
+    this.textColor,
+    this.accentColor,
+    this.radius = 4.0,
+    this.maxVisiblePages = 5,
+    this.forceCompactMode = false,
+    this.mostrarOrdenacion = false,
+    this.camposParaOrdenar,
+    this.onPageChanged,
+    this.onSortByChanged,
+    this.onOrderChanged,
+    this.onPageSizeChanged,
+  });
+
+  /// Opciones de tamaño de página disponibles
+  static const List<int> opcionesTamanoPagina = [10, 25, 50, 100, 200];
 
   /// Callback al cambiar de página
   final Function()? onPageChange;
-
-  /// Color de fondo del paginador
-  final Color? backgroundColor;
-
-  /// Color del texto
-  final Color? textColor;
-
-  /// Color de acento (selección)
-  final Color? accentColor;
-
-  /// Radio de bordes
-  final double radius;
-
-  /// Máximo de páginas visibles en el paginador
-  final int maxVisiblePages;
-
-  /// Forzar modo compacto (móvil)
-  final bool forceCompactMode;
-
-  /// Mostrar controles de ordenación
-  final bool mostrarOrdenacion;
-
-  /// Campos disponibles para ordenar (si no se proporciona, se tomarán de los metadatos)
-  final List<Map<String, String>>? camposParaOrdenar;
-
-  /// Objeto de paginación (alternativa a usar el provider)
-  final dynamic paginacion;
 
   /// Callback cuando cambia el número de página
   final Function(int)? onPageChanged;
@@ -49,38 +40,213 @@ class Paginador extends StatelessWidget {
   /// Callback cuando cambia el tamaño de página
   final Function(int)? onPageSizeChanged;
 
-  /// Construye un paginador con opciones avanzadas
-  const Paginador({
-    super.key,
-    this.paginacionProvider,
-    this.onPageChange,
-    this.backgroundColor,
-    this.textColor,
-    this.accentColor,
-    this.radius = 4.0,
-    this.maxVisiblePages = 5,
-    this.forceCompactMode = false,
-    this.mostrarOrdenacion = false,
-    this.camposParaOrdenar,
-    this.paginacion,
-    this.onPageChanged,
-    this.onSortByChanged,
-    this.onOrderChanged,
-    this.onPageSizeChanged,
-  });
+  /// Color de acento (selección)
+  final Color? accentColor;
+
+  /// Color de fondo del paginador
+  final Color? backgroundColor;
+
+  /// Campos disponibles para ordenar
+  final List<Map<String, String>>? camposParaOrdenar;
+
+  /// Forzar modo compacto (móvil)
+  final bool forceCompactMode;
+
+  /// Máximo de páginas visibles en el paginador
+  final int maxVisiblePages;
+
+  /// Mostrar controles de ordenación
+  final bool mostrarOrdenacion;
+
+  /// Objeto de paginación (requerido)
+  final Paginacion paginacion;
+
+  /// Radio de bordes
+  final double radius;
+
+  /// Color del texto
+  final Color? textColor;
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty<Paginacion>('paginacion', paginacion));
+  }
+
+  /// Construye los números de página visibles
+  List<Widget> _buildPageNumbers(
+      int visiblePages, Color txtColor, Color accent) {
+    final List<Widget> pageNumbers = [];
+    final int totalPages = paginacion.totalPages;
+    final int currentPage = paginacion.currentPage;
+
+    if (totalPages <= 1) {
+      return pageNumbers;
+    }
+
+    int startPage = 1;
+    int endPage = totalPages;
+
+    if (totalPages > visiblePages) {
+      final int halfVisible = visiblePages ~/ 2;
+      startPage =
+          (currentPage - halfVisible).clamp(1, totalPages - visiblePages + 1);
+      endPage = startPage + visiblePages - 1;
+    }
+
+    for (int i = startPage; i <= endPage; i++) {
+      final bool isCurrentPage = i == currentPage;
+      pageNumbers.add(
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 2),
+          child: InkWell(
+            onTap: () {
+              if (!isCurrentPage) {
+                onPageChanged?.call(i);
+                onPageChange?.call();
+              }
+            },
+            borderRadius: BorderRadius.circular(4),
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: isCurrentPage ? accent : Colors.transparent,
+                borderRadius: BorderRadius.circular(4),
+                border: isCurrentPage
+                    ? null
+                    : Border.all(
+                        color: Colors.white.withValues(alpha: 0.2),
+                      ),
+              ),
+              child: Center(
+                child: Text(
+                  '$i',
+                  style: TextStyle(
+                    color: isCurrentPage ? Colors.white : txtColor,
+                    fontWeight:
+                        isCurrentPage ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return pageNumbers;
+  }
+
+  /// Construye los controles de ordenación
+  List<Widget> _buildOrdenacionControls(Color txtColor, Color accent) {
+    final List<Widget> controls = [Container(
+        width: 1,
+        height: 20,
+        margin: const EdgeInsets.symmetric(horizontal: 8),
+        color: Colors.white.withValues(alpha: 0.2),
+      )]
+
+    // Separador
+    ;
+
+    // Selector de campo de ordenación
+    if (camposParaOrdenar != null && camposParaOrdenar!.isNotEmpty) {
+      controls.add(
+        Container(
+          height: 28,
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: camposParaOrdenar!.first['value'],
+              isDense: true,
+              style: TextStyle(
+                color: txtColor,
+                fontSize: 12,
+              ),
+              icon: Icon(
+                Icons.arrow_drop_down,
+                color: txtColor.withValues(alpha: 0.8),
+                size: 16,
+              ),
+              items: camposParaOrdenar!.map((Map<String, String> campo) {
+                return DropdownMenuItem<String>(
+                  value: campo['value'],
+                  child: Text(
+                    campo['label'] ?? campo['value']!,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                );
+              }).toList(),
+              onChanged: (String? value) {
+                if (value != null) {
+                  onSortByChanged?.call(value);
+                  onPageChange?.call();
+                }
+              },
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Botón de cambio de dirección de ordenación
+    controls.add(
+      Container(
+        margin: const EdgeInsets.only(left: 4),
+        child: IconButton(
+          icon: Icon(
+            Icons.swap_vert,
+            color: txtColor,
+            size: 18,
+          ),
+          onPressed: () {
+            // Cambiar entre asc/desc
+            onOrderChanged?.call('asc'); // Esto debería alternar
+            onPageChange?.call();
+          },
+          tooltip: 'Cambiar orden',
+          constraints: const BoxConstraints(
+            minWidth: 28,
+            minHeight: 28,
+          ),
+          padding: EdgeInsets.zero,
+        ),
+      ),
+    );
+
+    return controls;
+  }
+
+  /// Calcula el número de items por página basado en la paginación
+  int _calcularItemsPorPagina() {
+    if (paginacion.totalItems == 0) {
+      return 10;
+    }
+
+    final int calculated = paginacion.totalItems ~/ paginacion.totalPages;
+    // Encontrar la opción más cercana en opcionesTamanoPagina
+    int closest = opcionesTamanoPagina.first;
+    int minDifference = (calculated - closest).abs();
+
+    for (int option in opcionesTamanoPagina) {
+      final difference = (calculated - option).abs();
+      if (difference < minDifference) {
+        minDifference = difference;
+        closest = option;
+      }
+    }
+
+    return closest;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final PaginacionProvider tempProvider = paginacion != null
-        ? PaginacionProvider.fromPaginacion(paginacion)
-        : PaginacionProvider();
-
-    final provider =
-        paginacionProvider ?? Provider.of<PaginacionProvider>(context);
-
-    final paginacionData =
-        paginacion != null ? tempProvider.paginacion : provider.paginacion;
-
     final Color bgColor = backgroundColor ?? const Color(0xFF2D2D2D);
     final Color txtColor = textColor ?? Colors.white;
     final Color accent = accentColor ?? const Color(0xFFE31E24);
@@ -117,7 +283,7 @@ class Paginador extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<int>(
-                        value: provider.itemsPerPage,
+                        value: _calcularItemsPorPagina(),
                         isDense: true,
                         style: TextStyle(
                           color: txtColor,
@@ -128,8 +294,7 @@ class Paginador extends StatelessWidget {
                           color: txtColor.withValues(alpha: 0.8),
                           size: 16,
                         ),
-                        items: PaginacionProvider.opcionesTamanoPagina
-                            .map((int value) {
+                        items: opcionesTamanoPagina.map((int value) {
                           return DropdownMenuItem<int>(
                             value: value,
                             child: Text('$value / pág'),
@@ -137,7 +302,6 @@ class Paginador extends StatelessWidget {
                         }).toList(),
                         onChanged: (int? value) {
                           if (value != null) {
-                            provider.cambiarItemsPorPagina(value);
                             onPageSizeChanged?.call(value);
                             onPageChange?.call();
                           }
@@ -158,202 +322,88 @@ class Paginador extends StatelessWidget {
                       icon: Icon(Icons.more_vert, color: txtColor, size: 18),
                       tooltip: 'Tamaño de página',
                       onSelected: (int value) {
-                        provider.cambiarItemsPorPagina(value);
                         onPageSizeChanged?.call(value);
                         onPageChange?.call();
                       },
-                      itemBuilder: (context) =>
-                          PaginacionProvider.opcionesTamanoPagina
-                              .map((int value) => PopupMenuItem<int>(
-                                    value: value,
-                                    child: Text('$value / pág'),
-                                  ))
-                              .toList(),
+                      itemBuilder: (context) => opcionesTamanoPagina
+                          .map((int value) => PopupMenuItem<int>(
+                                value: value,
+                                child: Text('$value / pág'),
+                              ))
+                          .toList(),
                     ),
                   ),
 
-                if (!forceCompactMode) const SizedBox(width: 8),
+                // Separador
+                if (!forceCompactMode)
+                  Container(
+                    width: 1,
+                    height: 20,
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    color: Colors.white.withValues(alpha: 0.2),
+                  ),
 
-                // Controles de paginación
-                _buildPageButton(
-                  icon: Icons.first_page,
-                  onPressed:
-                      paginacionData.hasPrev && paginacionData.currentPage > 1
-                          ? () => _cambiarPagina(provider, 1)
-                          : null,
-                  bgColor: bgColor,
-                  txtColor: txtColor,
-                  accentColor: accent,
-                ),
-                _buildPageButton(
-                  icon: Icons.chevron_left,
-                  onPressed: paginacionData.hasPrev
-                      ? () => _cambiarPagina(
-                          provider, paginacionData.currentPage - 1)
-                      : null,
-                  bgColor: bgColor,
-                  txtColor: txtColor,
-                  accentColor: accent,
-                ),
+                // Información de paginación
+                if (showTotal && !forceCompactMode)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(
+                      '${paginacion.totalItems} elementos',
+                      style: TextStyle(
+                        color: txtColor.withValues(alpha: 0.7),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+
+                // Botones de navegación
+                if (paginacion.hasPrev)
+                  IconButton(
+                    icon: Icon(Icons.chevron_left, color: txtColor),
+                    onPressed: () {
+                      final prevPage = paginacion.currentPage - 1;
+                      if (prevPage >= 1) {
+                        onPageChanged?.call(prevPage);
+                        onPageChange?.call();
+                      }
+                    },
+                    tooltip: 'Página anterior',
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                    padding: EdgeInsets.zero,
+                  ),
 
                 // Números de página
-                ...paginacionData
-                    .getVisiblePages(maxVisiblePages: visiblePages)
-                    .map(
-                      (pageNum) => _buildNumberButton(
-                        pageNum: pageNum,
-                        isSelected: pageNum == paginacionData.currentPage,
-                        onPressed: () => _cambiarPagina(provider, pageNum),
-                        bgColor: bgColor,
-                        txtColor: txtColor,
-                        accentColor: accent,
-                      ),
-                    ),
+                ..._buildPageNumbers(visiblePages, txtColor, accent),
 
-                _buildPageButton(
-                  icon: Icons.chevron_right,
-                  onPressed: paginacionData.hasNext
-                      ? () => _cambiarPagina(
-                          provider, paginacionData.currentPage + 1)
-                      : null,
-                  bgColor: bgColor,
-                  txtColor: txtColor,
-                  accentColor: accent,
-                ),
-                _buildPageButton(
-                  icon: Icons.last_page,
-                  onPressed: paginacionData.hasNext &&
-                          paginacionData.currentPage < paginacionData.totalPages
-                      ? () =>
-                          _cambiarPagina(provider, paginacionData.totalPages)
-                      : null,
-                  bgColor: bgColor,
-                  txtColor: txtColor,
-                  accentColor: accent,
-                ),
-
-                if (!forceCompactMode && showTotal) ...[
-                  const SizedBox(width: 8),
-                  // Total de elementos
-                  Container(
-                    height: 28,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(4),
+                if (paginacion.hasNext)
+                  IconButton(
+                    icon: Icon(Icons.chevron_right, color: txtColor),
+                    onPressed: () {
+                      final nextPage = paginacion.currentPage + 1;
+                      if (nextPage <= paginacion.totalPages) {
+                        onPageChanged?.call(nextPage);
+                        onPageChange?.call();
+                      }
+                    },
+                    tooltip: 'Página siguiente',
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
                     ),
-                    child: Center(
-                      child: Text(
-                        '${paginacionData.totalItems} elementos',
-                        style: TextStyle(
-                          color: txtColor.withValues(alpha: 0.8),
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
+                    padding: EdgeInsets.zero,
                   ),
-                ],
+
+                // Controles de ordenación
+                if (mostrarOrdenacion && camposParaOrdenar != null)
+                  ..._buildOrdenacionControls(txtColor, accent),
               ],
             ),
           ),
         );
       },
     );
-  }
-
-  void _cambiarPagina(PaginacionProvider provider, int pagina) {
-    provider.cambiarPagina(pagina);
-
-    onPageChange?.call();
-    onPageChanged?.call(pagina);
-  }
-
-  Widget _buildPageButton({
-    required IconData icon,
-    required VoidCallback? onPressed,
-    required Color bgColor,
-    required Color txtColor,
-    required Color accentColor,
-  }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 1),
-      child: IconButton(
-        icon: Icon(
-          icon,
-          size: 18,
-          color: onPressed == null ? txtColor.withValues(alpha: 0.3) : txtColor,
-        ),
-        onPressed: onPressed,
-        splashRadius: 18,
-        visualDensity: VisualDensity.compact,
-        padding: const EdgeInsets.all(4),
-        constraints: const BoxConstraints(
-          minWidth: 28,
-          minHeight: 28,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNumberButton({
-    required int pageNum,
-    required bool isSelected,
-    required VoidCallback onPressed,
-    required Color bgColor,
-    required Color txtColor,
-    required Color accentColor,
-  }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 1),
-      child: Material(
-        color: isSelected ? accentColor : bgColor,
-        borderRadius: BorderRadius.circular(4),
-        child: InkWell(
-          onTap: isSelected ? null : onPressed,
-          borderRadius: BorderRadius.circular(4),
-          child: Container(
-            width: 28,
-            height: 28,
-            alignment: Alignment.center,
-            child: Text(
-              pageNum.toString(),
-              style: TextStyle(
-                color: isSelected ? Colors.white : txtColor,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                fontSize: 14,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
-    properties
-      ..add(DiagnosticsProperty<PaginacionProvider?>(
-          'paginacionProvider', paginacionProvider))
-      ..add(ObjectFlagProperty<Function()?>.has('onPageChange', onPageChange))
-      ..add(ColorProperty('backgroundColor', backgroundColor))
-      ..add(ColorProperty('textColor', textColor))
-      ..add(ColorProperty('accentColor', accentColor))
-      ..add(DoubleProperty('radius', radius))
-      ..add(IntProperty('maxVisiblePages', maxVisiblePages))
-      ..add(DiagnosticsProperty<bool>('forceCompactMode', forceCompactMode))
-      ..add(DiagnosticsProperty<bool>('mostrarOrdenacion', mostrarOrdenacion))
-      ..add(IterableProperty<Map<String, String>>(
-          'camposParaOrdenar', camposParaOrdenar))
-      ..add(DiagnosticsProperty<dynamic>('paginacion', paginacion))
-      ..add(ObjectFlagProperty<Function(int)?>.has(
-          'onPageChanged', onPageChanged))
-      ..add(ObjectFlagProperty<Function(String?)?>.has(
-          'onSortByChanged', onSortByChanged))
-      ..add(ObjectFlagProperty<Function(String)?>.has(
-          'onOrderChanged', onOrderChanged))
-      ..add(ObjectFlagProperty<Function(int)?>.has(
-          'onPageSizeChanged', onPageSizeChanged));
   }
 }

@@ -606,7 +606,7 @@ class _VentasComputerScreenState extends State<VentasComputerScreen> {
             return ValueListenableBuilder<bool>(
               valueListenable: isLoadingFullData,
               builder: (dialogContextLoading, isLoading, _) {
-                debugPrint('⚠️ Abriendo diálogo de detalle con MISMO PROVIDER');
+                debugPrint('Abriendo diálogo de detalle con MISMO PROVIDER');
                 return VentaDetalleComputer(
                   venta: currentVenta,
                   isLoadingFullData: isLoading,

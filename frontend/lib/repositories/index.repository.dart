@@ -26,8 +26,6 @@ abstract class BaseRepository {
   Future<String?> getCurrentSucursalId();
 }
 
-// TODO: Repositorios pendientes a implementar (prioridad alta)
 // export 'cliente.repository.dart';
 
-// TODO: Repositorios pendientes a implementar (prioridad baja)
 // export 'documento.repository.dart';

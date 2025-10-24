@@ -561,7 +561,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
           final int cantidadGratis =
               _foundProduct!.cantidadGratisDescuento ?? 0;
           mensajePromocion =
-              'Lleva $cantidadMinima y paga ${(cantidadMinima) - (cantidadGratis)}';
+              'Lleva $cantidadMinima y paga ${cantidadMinima - cantidadGratis}';
           colorPromocion = const Color(0xFF4CAF50);
           iconoPromocion = Icons.card_giftcard;
         } else if (tieneDescuentoPorcentual) {
@@ -1108,9 +1108,9 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
             ),
           ),
           if (_isLoading || widget.isLoading)
-            Container(
+            const ColoredBox(
               color: Colors.black54,
-              child: const Center(
+              child: Center(
                 child: CircularProgressIndicator(),
               ),
             ),

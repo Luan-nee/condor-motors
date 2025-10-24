@@ -52,7 +52,7 @@ class DashboardComputerProvider extends ChangeNotifier {
   Future<void> inicializar() async {
     try {
       _setLoading(true);
-      debugPrint('🔄 Inicializando DashboardComputerProvider...');
+      debugPrint('Inicializando DashboardComputerProvider...');
 
       // Obtener datos del usuario autenticado
       final userData = await _empleadoRepository.getUserData();
@@ -87,7 +87,7 @@ class DashboardComputerProvider extends ChangeNotifier {
             await _sucursalRepository.getSucursalData(_sucursalId.toString());
         _nombreSucursal = sucursalData.nombre;
       } catch (e) {
-        debugPrint('⚠️ No se pudo obtener el nombre de la sucursal: $e');
+        debugPrint('No se pudo obtener el nombre de la sucursal: $e');
         _nombreSucursal = 'Sucursal $_sucursalId';
       }
 
@@ -97,7 +97,7 @@ class DashboardComputerProvider extends ChangeNotifier {
       // Cargar datos iniciales
       await cargarDatos();
     } catch (e) {
-      debugPrint('❌ Error en inicialización: $e');
+      debugPrint('Error en inicialización: $e');
       _errorMessage = 'Error al inicializar: $e';
       notifyListeners();
     } finally {
@@ -141,19 +141,18 @@ class DashboardComputerProvider extends ChangeNotifier {
           stockBajo: true,
         );
 
-        _productosStockBajo = productosResponse.items
-            .map(_productoToMap)
-            .toList();
+        _productosStockBajo =
+            productosResponse.items.map(_productoToMap).toList();
         debugPrint(
-            '✅ Productos con stock bajo cargados: ${_productosStockBajo.length}');
+            'Productos con stock bajo cargados: ${_productosStockBajo.length}');
       } catch (e) {
-        debugPrint('❌ Error al cargar productos con stock bajo: $e');
+        debugPrint('Error al cargar productos con stock bajo: $e');
         _productosStockBajo = [];
       }
 
       notifyListeners();
     } catch (e) {
-      debugPrint('❌ Error al cargar datos: $e');
+      debugPrint('Error al cargar datos: $e');
       _errorMessage = e.toString();
       notifyListeners();
     } finally {

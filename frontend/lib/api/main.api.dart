@@ -315,7 +315,7 @@ class ApiClient {
             return handler.next(error);
           }
           Logger.info(
-              '🔄 🔄 🔄 ACTIVANDO REFRESH TOKEN AUTOMÁTICO PARA ERROR $status EN $path 🔄 🔄 🔄');
+              'ACTIVANDO REFRESH TOKEN AUTOMÁTICO PARA ERROR $status EN $path');
 
           try {
             final refreshResult =
@@ -324,12 +324,11 @@ class ApiClient {
               // Si el refresh falla, limpiar tokens y forzar logout
               await RefreshTokenManager.clearAccessToken();
               await RefreshTokenManager.clearRefreshToken();
-              // TODO: Forzar logout desde aquí si tienes acceso al contexto
-              Logger.error('❌ REFRESH TOKEN FALLÓ. Se eliminaron los tokens.');
+              Logger.error('REFRESH TOKEN FALLÓ. Se eliminaron los tokens.');
               return handler.next(error);
             }
             Logger.info(
-                '✅ REFRESH TOKEN EXITOSO - Reintentando solicitud original a $path');
+                'REFRESH TOKEN EXITOSO - Reintentando solicitud original a $path');
 
             // Si el refresh fue exitoso, reintenta la petición original
             final newResponse = await _retryRequest(error.requestOptions);
@@ -338,19 +337,17 @@ class ApiClient {
                 newResponse.statusCode == 403) {
               await RefreshTokenManager.clearAccessToken();
               await RefreshTokenManager.clearRefreshToken();
-              // TODO: Forzar logout desde aquí si tienes acceso al contexto
               Logger.error(
-                  '❌ BACKEND RESPONDIÓ 401/403 TRAS REFRESH. Se eliminaron los tokens.');
+                  'BACKEND RESPONDIÓ 401/403 TRAS REFRESH. Se eliminaron los tokens.');
               return handler.next(error);
             }
             return handler.resolve(newResponse);
           } catch (e) {
             // Si el refresh falla, el provider hará logout y la UI reaccionará
             Logger.error(
-                '❌ ERROR EN REFRESH TOKEN: ${e.toString()}. Se procederá con logout.');
+                'ERROR EN REFRESH TOKEN: ${e.toString()}. Se procederá con logout.');
             await RefreshTokenManager.clearAccessToken();
             await RefreshTokenManager.clearRefreshToken();
-            // TODO: Forzar logout desde aquí si tienes acceso al contexto
             return handler.next(error);
           }
         } else {
@@ -522,7 +519,7 @@ class ApiClient {
     Object? body,
     Map<String, String>? queryParams,
     Map<String, String>? headers,
-  }) async {
+  }) {
     return request(
       endpoint: endpoint,
       method: method,
@@ -635,12 +632,11 @@ class ApiClient {
 
   /// Refresca el token de acceso usando la clase centralizada.
   /// Retorna true si el refresh fue exitoso, false si falló (por ejemplo, refresh token inválido).
-  Future<bool> refreshToken() async {
-    return await RefreshTokenManager.refreshToken(baseUrl: baseUrl);
+  Future<bool> refreshToken() {
+    return RefreshTokenManager.refreshToken(baseUrl: baseUrl);
   }
 }
 
-// FIX: Métodos de acceso al access token centralizados aquí para compatibilidad con main.api.dart
 class RefreshTokenManager {
   static const String _refreshTokenKey = 'refresh_token';
   static const String _accessTokenKey = 'access_token';
@@ -648,8 +644,8 @@ class RefreshTokenManager {
   static Completer<bool>? _refreshCompleter;
 
   /// Lee el refresh token desde almacenamiento seguro
-  static Future<String?> getRefreshToken() async {
-    return await SecureStorageUtils.read(_refreshTokenKey);
+  static Future<String?> getRefreshToken() {
+    return SecureStorageUtils.read(_refreshTokenKey);
   }
 
   /// Guarda o actualiza el refresh token en almacenamiento seguro

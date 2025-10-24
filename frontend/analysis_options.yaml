@@ -8,7 +8,8 @@ analyzer:
     unused_import: warning
     unused_local_variable: warning
     dead_code: warning
-    unintended_html_in_doc_comment: ignore
+    prefer_const_constructors_in_immutables: warning
+    strict_top_level_inference: ignore
 
 linter:
   rules:
@@ -29,11 +30,13 @@ linter:
     - avoid_positional_boolean_parameters
     - avoid_print
     - avoid_redundant_argument_values
-    - avoid_relative_lib_imports
     - avoid_returning_null_for_void
     - avoid_setters_without_getters
     - avoid_types_as_parameter_names
     - avoid_unnecessary_containers
+    - unnecessary_breaks
+    - unnecessary_raw_strings
+    - use_enums
     - avoid_unused_constructor_parameters
     - camel_case_types
     - cancel_subscriptions
@@ -45,7 +48,6 @@ linter:
     - curly_braces_in_flow_control_structures
     - depend_on_referenced_packages
     - deprecated_consistency
-    - diagnostic_describe_all_properties
     - directives_ordering
     - empty_catches
     - empty_constructor_bodies
@@ -54,7 +56,6 @@ linter:
     - no_duplicate_case_values
     - prefer_collection_literals
     - prefer_conditional_assignment
-    - prefer_const_constructors_in_immutables
     - prefer_const_literals_to_create_immutables
     - prefer_const_constructors
     - prefer_null_aware_method_calls
@@ -74,8 +75,22 @@ linter:
     - avoid_void_async
     - prefer_for_elements_to_map_fromIterable
     - no_runtimeType_toString
-    - prefer_const_declarations
-    - non_constant_identifier_names
-    - unnecessary_new
-    - void_checks
+    - avoid_multiple_declarations_per_line
+    - unnecessary_async
+    - unnecessary_ignore
+    - unnecessary_overrides
+    - unnecessary_underscores
+    - unnecessary_parenthesis
     - hash_and_equals
+    - prefer_if_null_operators
+    - unnecessary_null_in_if_null_operators
+    - use_function_type_syntax_for_parameters
+    - unnecessary_library_name
+    - unnecessary_new
+    - use_key_in_widget_constructors
+    - unnecessary_to_list_in_spreads
+    - unnecessary_await_in_return
+    # widgets redundantes
+    - use_colored_box
+    - use_decorated_box
+    - sized_box_shrink_expand

@@ -323,25 +323,25 @@ class PrintProvider extends ChangeNotifier {
   /// Carga la lista de impresoras disponibles
   Future<void> cargarImpresoras() async {
     try {
-      debugPrint('🔍 Buscando impresoras disponibles...');
+      debugPrint('Buscando impresoras disponibles...');
 
       // Intentar obtener las impresoras disponibles
       _impresorasDisponibles = await Printing.listPrinters();
-      debugPrint('📝 Impresoras encontradas: ${_impresorasDisponibles.length}');
+      debugPrint('Impresoras encontradas: ${_impresorasDisponibles.length}');
 
       // Si no se encontraron impresoras, intentar de nuevo después de un breve retraso
       if (_impresorasDisponibles.isEmpty) {
-        debugPrint('⚠️ No se encontraron impresoras, intentando de nuevo...');
+        debugPrint('No se encontraron impresoras, intentando de nuevo...');
         await Future.delayed(const Duration(milliseconds: 500));
         _impresorasDisponibles = await Printing.listPrinters();
         debugPrint(
-            '📝 Segundo intento - Impresoras encontradas: ${_impresorasDisponibles.length}');
+            'Segundo intento - Impresoras encontradas: ${_impresorasDisponibles.length}');
       }
 
       // Si aún no hay impresoras disponibles, no continuar
       if (_impresorasDisponibles.isEmpty) {
         debugPrint(
-            '❌ No se encontraron impresoras disponibles después de varios intentos');
+            'No se encontraron impresoras disponibles después de varios intentos');
         mostrarMensaje(
           mensaje: 'No se encontraron impresoras disponibles',
           backgroundColor: Colors.orange,
@@ -352,7 +352,7 @@ class PrintProvider extends ChangeNotifier {
       // Imprimir información sobre las impresoras encontradas para depuración
       for (var printer in _impresorasDisponibles) {
         debugPrint(
-            '🖨️ Impresora: ${printer.name} | Predeterminada: ${printer.isDefault} | Disponible: ${printer.isAvailable}');
+            'Impresora: ${printer.name} | Predeterminada: ${printer.isDefault} | Disponible: ${printer.isAvailable}');
       }
 
       // Verificar si la impresora seleccionada actual sigue disponible
@@ -362,7 +362,7 @@ class PrintProvider extends ChangeNotifier {
 
       // Si la impresora seleccionada ya no está disponible o no se ha seleccionado ninguna
       if (!impresoraSeleccionadaDisponible) {
-        debugPrint('⚠️ Seleccionando nueva impresora predeterminada...');
+        debugPrint('Seleccionando nueva impresora predeterminada...');
 
         // 1. Primero, intentar encontrar la impresora marcada como predeterminada del sistema
         Printer? defaultPrinter;
@@ -371,10 +371,10 @@ class PrintProvider extends ChangeNotifier {
             (p) => p.isDefault && p.isAvailable,
           );
           debugPrint(
-              '✅ Impresora predeterminada encontrada: ${defaultPrinter.name}');
+              'Impresora predeterminada encontrada: ${defaultPrinter.name}');
         } catch (e) {
           debugPrint(
-              '⚠️ No se encontró impresora predeterminada, buscando cualquier disponible');
+              'No se encontró impresora predeterminada, buscando cualquier disponible');
 
           // 2. Si no hay una impresora predeterminada, elegir cualquier impresora disponible
           try {
@@ -382,13 +382,13 @@ class PrintProvider extends ChangeNotifier {
               (p) => p.isAvailable,
             );
             debugPrint(
-                '✅ Impresora disponible encontrada: ${defaultPrinter.name}');
+                'Impresora disponible encontrada: ${defaultPrinter.name}');
           } catch (e) {
             // 3. Si no hay impresoras disponibles, simplemente tomar la primera de la lista
             if (_impresorasDisponibles.isNotEmpty) {
               defaultPrinter = _impresorasDisponibles.first;
               debugPrint(
-                  '⚠️ Usando primera impresora de la lista: ${defaultPrinter.name}');
+                  'Usando primera impresora de la lista: ${defaultPrinter.name}');
             }
           }
         }
@@ -398,19 +398,19 @@ class PrintProvider extends ChangeNotifier {
           _impresoraSeleccionada = defaultPrinter.name;
           await guardarConfiguracion(
               impresoraSeleccionada: defaultPrinter.name);
-          debugPrint('✅ Nueva impresora seleccionada: ${defaultPrinter.name}');
+          debugPrint('Nueva impresora seleccionada: ${defaultPrinter.name}');
         } else {
-          debugPrint('❌ No se pudo seleccionar ninguna impresora');
+          debugPrint('No se pudo seleccionar ninguna impresora');
           _impresoraSeleccionada = null;
         }
       } else {
         debugPrint(
-            '✅ Impresora seleccionada ($_impresoraSeleccionada) sigue disponible');
+            'Impresora seleccionada ($_impresoraSeleccionada) sigue disponible');
       }
 
       notifyListeners();
     } catch (e) {
-      debugPrint('❌ Error al cargar impresoras: $e');
+      debugPrint('Error al cargar impresoras: $e');
       _impresorasDisponibles = [];
       // No cambiar la impresora seleccionada en caso de error temporal
     }
@@ -420,7 +420,7 @@ class PrintProvider extends ChangeNotifier {
   Printer? obtenerImpresoraSeleccionada() {
     // Si no hay impresoras disponibles o no se ha seleccionado ninguna, no se puede continuar
     if (_impresorasDisponibles.isEmpty) {
-      debugPrint('❌ No hay impresoras disponibles para seleccionar');
+      debugPrint('No hay impresoras disponibles para seleccionar');
       return null;
     }
 
@@ -433,11 +433,11 @@ class PrintProvider extends ChangeNotifier {
         if (printerExists) {
           final printer = _impresorasDisponibles
               .firstWhere((p) => p.name == _impresoraSeleccionada);
-          debugPrint('✅ Usando impresora seleccionada: ${printer.name}');
+          debugPrint('Usando impresora seleccionada: ${printer.name}');
           return printer;
         } else {
           debugPrint(
-              '⚠️ La impresora seleccionada ya no está disponible, buscando alternativa');
+              'La impresora seleccionada ya no está disponible, buscando alternativa');
         }
       }
 
@@ -446,7 +446,7 @@ class PrintProvider extends ChangeNotifier {
       try {
         final defaultPrinter = _impresorasDisponibles
             .firstWhere((p) => p.isDefault && p.isAvailable);
-        debugPrint('✅ Usando impresora predeterminada: ${defaultPrinter.name}');
+        debugPrint('Usando impresora predeterminada: ${defaultPrinter.name}');
         // Actualizar la selección para futuros usos
         if (_impresoraSeleccionada != defaultPrinter.name) {
           _impresoraSeleccionada = defaultPrinter.name;
@@ -455,7 +455,7 @@ class PrintProvider extends ChangeNotifier {
         return defaultPrinter;
       } catch (e) {
         debugPrint(
-            '⚠️ No se encontró impresora predeterminada, buscando cualquier disponible');
+            'No se encontró impresora predeterminada, buscando cualquier disponible');
       }
 
       // Caso 3: Buscar cualquier impresora disponible
@@ -463,7 +463,7 @@ class PrintProvider extends ChangeNotifier {
         final availablePrinter =
             _impresorasDisponibles.firstWhere((p) => p.isAvailable);
         debugPrint(
-            '✅ Usando primera impresora disponible: ${availablePrinter.name}');
+            'Usando primera impresora disponible: ${availablePrinter.name}');
         // Actualizar la selección para futuros usos
         if (_impresoraSeleccionada != availablePrinter.name) {
           _impresoraSeleccionada = availablePrinter.name;
@@ -472,14 +472,14 @@ class PrintProvider extends ChangeNotifier {
         return availablePrinter;
       } catch (e) {
         debugPrint(
-            '⚠️ No se encontró ninguna impresora disponible, usando la primera de la lista');
+            'No se encontró ninguna impresora disponible, usando la primera de la lista');
       }
 
       // Caso 4: Último recurso, usar la primera impresora de la lista
       if (_impresorasDisponibles.isNotEmpty) {
         final anyPrinter = _impresorasDisponibles.first;
         debugPrint(
-            '⚠️ Usando la primera impresora de la lista: ${anyPrinter.name}');
+            'Usando la primera impresora de la lista: ${anyPrinter.name}');
         // Actualizar la selección para futuros usos
         if (_impresoraSeleccionada != anyPrinter.name) {
           _impresoraSeleccionada = anyPrinter.name;
@@ -489,10 +489,10 @@ class PrintProvider extends ChangeNotifier {
       }
 
       // Si llegamos aquí, no se encontró ninguna impresora
-      debugPrint('❌ No se pudo encontrar ninguna impresora');
+      debugPrint('No se pudo encontrar ninguna impresora');
       return null;
     } catch (e) {
-      debugPrint('❌ Error al obtener impresora seleccionada: $e');
+      debugPrint('Error al obtener impresora seleccionada: $e');
       return null;
     }
   }
@@ -541,7 +541,7 @@ class PrintProvider extends ChangeNotifier {
     try {
       // Condensamos los logs en un solo mensaje de depuración
       debugPrint('''
-🖨️ Procesando impresión:
+Procesando impresión:
 - Documento: $nombreDocumento
 - Formato: ${_imprimirFormatoTicket ? 'Ticket' : 'A4'} 
 - Impresión directa: ${_impresionDirecta ? 'Sí' : 'No'}
@@ -632,7 +632,7 @@ class PrintProvider extends ChangeNotifier {
           throw Exception('No hay impresora disponible');
         }
 
-        debugPrint('🖨️ Imprimiendo en: ${printer.name}');
+        debugPrint('Imprimiendo en: ${printer.name}');
 
         // Imprimir directamente sin diálogo
         result = await Printing.directPrintPdf(
@@ -653,7 +653,7 @@ class PrintProvider extends ChangeNotifier {
         );
       }
 
-      debugPrint('🖨️ Resultado: ${result ? 'Exitoso' : 'Fallido'}');
+      debugPrint('Resultado: ${result ? 'Exitoso' : 'Fallido'}');
 
       if (result) {
         if (context != null && context.mounted) {
@@ -697,7 +697,7 @@ class PrintProvider extends ChangeNotifier {
       }
     } catch (e) {
       // Manejar errores
-      debugPrint('❌ Error al imprimir documento: $e');
+      debugPrint('Error al imprimir documento: $e');
 
       // Intentar abrir el PDF en el navegador como alternativa
       await abrirPdf(url);

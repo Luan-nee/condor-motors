@@ -199,17 +199,14 @@ class DetalleVenta extends Equatable {
         totalBaseTax = subtotal;
         totalTax = montoIgv;
         total = subtotal + montoIgv;
-        break;
       case 20: // Exonerado
         totalBaseTax = subtotal;
         totalTax = 0.0;
         total = subtotal;
-        break;
       case 30: // Inafecto
         totalBaseTax = 0.0;
         totalTax = 0.0;
         total = subtotal;
-        break;
       default: // Por defecto tratar como gravado
         totalBaseTax = subtotal;
         totalTax = montoIgv;

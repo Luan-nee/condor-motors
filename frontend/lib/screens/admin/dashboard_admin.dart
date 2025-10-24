@@ -100,7 +100,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                     color: Color(0xFFE31E24),
                   ),
                 )
-              : Container(
+              : ColoredBox(
                   color: const Color(0xFF111111),
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(16.0),

@@ -273,10 +273,10 @@ class StocksApi {
   /// Obtiene productos con stock bajo de una sucursal
   ///
   /// Este método es una versión simplificada de getStockBySucursal específica para stock bajo
-  Future<List<dynamic>> getProductosStockBajo(String sucursalId) async {
+  Future<List<dynamic>> getProductosStockBajo(String sucursalId) {
     Logger.debug(
         'Obteniendo productos con stock bajo para sucursal $sucursalId');
-    return await getStockBySucursal(
+    return getStockBySucursal(
       sucursalId: sucursalId,
       stockBajo: true,
     );

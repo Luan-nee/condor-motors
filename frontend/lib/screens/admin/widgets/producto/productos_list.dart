@@ -1,12 +1,8 @@
-import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
-import 'package:condorsmotors/providers/admin/producto.admin.provider.dart';
-import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:condorsmotors/utils/sucursal_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:provider/provider.dart';
 
 class ProductosList extends StatelessWidget {
   final List<Sucursal> sucursales;
@@ -24,284 +20,208 @@ class ProductosList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ProductoProvider>(
-      builder: (BuildContext context, ProductoProvider productoProvider,
-          Widget? child) {
-        // Obtener el primer producto para mostrar la imagen
-        final productos = productoProvider.productosFiltrados;
-        Producto? productoConImagen = productos.isNotEmpty
-            ? productos.firstWhere(
-                (p) =>
-                    ProductoRepository.getProductoImageUrl(p) != null &&
-                    ProductoRepository.getProductoImageUrl(p)!.isNotEmpty,
-                orElse: () => productos.first,
-              )
-            : null;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            // Header del panel
-            Container(
-              padding: const EdgeInsets.all(16),
-              color: const Color(0xFF222222),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        // Header del panel
+        Container(
+          padding: const EdgeInsets.all(16),
+          color: const Color(0xFF222222),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: <Widget>[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  const Row(
                     children: <Widget>[
-                      const Row(
-                        children: <Widget>[
-                          FaIcon(
-                            FontAwesomeIcons.buildingUser,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'SUCURSALES',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
+                      FaIcon(
+                        FontAwesomeIcons.buildingUser,
+                        color: Colors.white,
+                        size: 16,
                       ),
-                      Row(
-                        children: <Widget>[
-                          Tooltip(
-                            message: '${sucursales.length} sucursales',
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF2D2D2D),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                sucursales.length.toString(),
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
+                      SizedBox(width: 8),
+                      Text(
+                        'SUCURSALES',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: <Widget>[
+                      Tooltip(
+                        message: '${sucursales.length} sucursales',
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
                           ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            icon: const FaIcon(
-                              FontAwesomeIcons.arrowsRotate,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2D2D2D),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            sucursales.length.toString(),
+                            style: const TextStyle(
+                              fontSize: 12,
                               color: Colors.white,
-                              size: 16,
+                              fontWeight: FontWeight.bold,
                             ),
-                            onPressed: onRecargarSucursales,
-                            tooltip: 'Recargar sucursales',
                           ),
-                        ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const FaIcon(
+                          FontAwesomeIcons.arrowsRotate,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                        onPressed: onRecargarSucursales,
+                        tooltip: 'Recargar sucursales',
+                        style: IconButton.styleFrom(
+                          backgroundColor: const Color(0xFF2D2D2D),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.all(8),
+                        ),
                       ),
                     ],
                   ),
                 ],
               ),
-            ),
+              const SizedBox(height: 16),
+              Text(
+                'Seleccione una sucursal para gestionar sus productos',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.white.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+          ),
+        ),
 
-            // Lista de sucursales
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                itemCount: sucursales.length,
-                itemBuilder: (BuildContext context, int index) {
-                  final Sucursal sucursal = sucursales[index];
-                  final bool isSelected =
-                      sucursalSeleccionada?.id == sucursal.id;
-                  final IconData icon =
-                      SucursalUtils.getIconForSucursal(sucursal);
-                  final Color iconColor =
-                      SucursalUtils.getColorForSucursal(sucursal);
-                  final Color iconBgColor =
-                      SucursalUtils.getIconBackgroundColor(sucursal);
+        // Lista de sucursales
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: sucursales.length,
+            itemBuilder: (BuildContext context, int index) {
+              final sucursal = sucursales[index];
+              final bool isSelected = sucursalSeleccionada?.id == sucursal.id;
 
-                  return Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () => onSucursalSelected(sucursal),
-                        borderRadius: BorderRadius.circular(8),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? const Color(0xFFE31E24).withValues(alpha: 0.2)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? const Color(0xFFE31E24).withValues(alpha: 0.1)
+                      : const Color(0xFF2D2D2D),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSelected
+                        ? const Color(0xFFE31E24).withValues(alpha: 0.3)
+                        : Colors.white.withValues(alpha: 0.1),
+                    width: isSelected ? 2 : 1,
+                  ),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => onSucursalSelected(sucursal),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: <Widget>[
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
                               color: isSelected
                                   ? const Color(0xFFE31E24)
-                                  : Colors.white.withValues(alpha: 0.1),
-                              width: isSelected ? 2 : 1,
+                                      .withValues(alpha: 0.2)
+                                  : const Color(0xFF3D3D3D),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              sucursal.sucursalCentral
+                                  ? Icons.star
+                                  : Icons.store,
+                              color: sucursal.sucursalCentral
+                                  ? Colors.amber
+                                  : Colors.white54,
+                              size: 24,
                             ),
                           ),
-                          child: Row(
-                            children: <Widget>[
-                              // Miniatura de imagen de producto
-                              if (productoConImagen != null &&
-                                  ProductoRepository.getProductoImageUrl(
-                                          productoConImagen) !=
-                                      null &&
-                                  ProductoRepository.getProductoImageUrl(
-                                          productoConImagen)!
-                                      .isNotEmpty)
-                                Container(
-                                  width: 32,
-                                  height: 32,
-                                  margin: const EdgeInsets.only(right: 10),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(6),
-                                    color: Colors.black26,
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Text(
+                                  sucursal.nombre,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : Colors.white.withValues(alpha: 0.9),
                                   ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(6),
-                                    child: Image.network(
-                                      ProductoRepository.getProductoImageUrl(
-                                          productoConImagen)!,
-                                      fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) =>
-                                              const Icon(Icons.image,
-                                                  color: Colors.white24,
-                                                  size: 18),
-                                    ),
-                                  ),
-                                )
-                              else
-                                Container(
-                                  width: 32,
-                                  height: 32,
-                                  margin: const EdgeInsets.only(right: 10),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(6),
-                                    color: Colors.black26,
-                                  ),
-                                  child: const Icon(Icons.image,
-                                      color: Colors.white24, size: 18),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
-                              // Icono con animación de carga
-                              Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  AnimatedScale(
-                                    scale: isSelected ? 1.2 : 1.0,
-                                    duration: const Duration(milliseconds: 200),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: isSelected
-                                            ? const Color(0xFFE31E24)
-                                            : iconBgColor,
-                                        borderRadius: BorderRadius.circular(8),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    if (sucursal.codigoEstablecimiento != null)
+                                      SucursalUtils.buildCodigoEstablecimiento(
+                                        sucursal.codigoEstablecimiento,
                                       ),
-                                      child: FaIcon(
-                                        icon,
-                                        color: isSelected
-                                            ? Colors.white
-                                            : iconColor,
-                                        size: 16,
-                                      ),
-                                    ),
-                                  ),
-                                  if (isSelected &&
-                                      productoProvider.isLoadingProductos)
-                                    SizedBox(
-                                      width: 36,
-                                      height: 36,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                          const Color(0xFFE31E24)
-                                              .withValues(alpha: 0.5),
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: <Widget>[
-                                    Text(
-                                      sucursal.nombre,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: isSelected
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                        color: isSelected
-                                            ? Colors.white
-                                            : Colors.white
-                                                .withValues(alpha: 0.8),
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      children: [
-                                        if (sucursal.codigoEstablecimiento !=
-                                            null)
-                                          SucursalUtils
-                                              .buildCodigoEstablecimiento(
-                                            sucursal.codigoEstablecimiento,
-                                          ),
-                                        if (sucursal.sucursalCentral) ...[
-                                          const SizedBox(width: 8),
-                                          SucursalUtils.buildTipoSucursalBadge(
-                                              sucursal),
-                                        ],
-                                      ],
-                                    ),
-                                    if (sucursal.direccion != null) ...[
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        sucursal.direccion!,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.white
-                                              .withValues(alpha: 0.5),
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                        maxLines: 2,
-                                      ),
+                                    if (sucursal.sucursalCentral) ...[
+                                      const SizedBox(width: 8),
+                                      SucursalUtils.buildTipoSucursalBadge(
+                                          sucursal),
                                     ],
                                   ],
                                 ),
-                              ),
-                              if (isSelected)
-                                const FaIcon(
-                                  FontAwesomeIcons.circleCheck,
-                                  color: Color(0xFFE31E24),
-                                  size: 18,
-                                ),
-                            ],
+                                if (sucursal.direccion != null) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    sucursal.direccion!,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color:
+                                          Colors.white.withValues(alpha: 0.6),
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 2,
+                                  ),
+                                ],
+                              ],
+                            ),
                           ),
-                        ),
+                          if (isSelected)
+                            const FaIcon(
+                              FontAwesomeIcons.circleCheck,
+                              color: Color(0xFFE31E24),
+                              size: 20,
+                            ),
+                        ],
                       ),
                     ),
-                  );
-                },
-              ),
-            ),
-          ],
-        );
-      },
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 

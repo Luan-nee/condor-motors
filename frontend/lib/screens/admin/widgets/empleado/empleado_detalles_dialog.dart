@@ -1,12 +1,10 @@
 import 'package:condorsmotors/models/empleado.model.dart';
-import 'package:condorsmotors/providers/admin/empleado.admin.provider.dart';
-import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_cuenta_dialog.dart';
+import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_horario_dialog.dart';
 import 'package:condorsmotors/utils/empleados_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:provider/provider.dart';
 
 /// Widget para mostrar los detalles de un empleado
 ///
@@ -50,12 +48,13 @@ class EmpleadoDetallesViewer extends StatefulWidget {
 
 class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
   String? _usuarioEmpleado;
-  bool _cuentaNoEncontrada = false;
   bool _isHoveringPhoto = false;
+  late final EmpleadoRepository _empleadoRepository;
 
   @override
   void initState() {
     super.initState();
+    _empleadoRepository = EmpleadoRepository.instance;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _cargarInformacionCuenta();
     });
@@ -166,61 +165,26 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
   }
 
   Future<void> _cargarInformacionCuenta() async {
-    setState(() {
-      _cuentaNoEncontrada = false;
-    });
+    if (!mounted) {
+      return;
+    }
 
     try {
-      // Usar el provider para cargar la información de la cuenta
-      final empleadoProvider =
-          Provider.of<EmpleadoProvider>(context, listen: false);
       final Map<String, dynamic> resultado =
-          await empleadoProvider.obtenerInfoCuentaEmpleado(widget.empleado);
+          await _empleadoRepository.obtenerInfoCuentaEmpleado(widget.empleado);
 
       if (mounted) {
         setState(() {
           _usuarioEmpleado = resultado['usuarioActual'] as String?;
-          _cuentaNoEncontrada = resultado['cuentaNoEncontrada'] as bool;
         });
-
-        // Agregar mensaje de depuración si no se encontró cuenta
-        if (_cuentaNoEncontrada) {
-          debugPrint(
-              'EmpleadoDetallesViewer: Empleado ${widget.empleado.id} no tiene cuenta asociada (detectado en resultado)');
-        }
       }
     } catch (e) {
-      // Si hay un error, verificar si es por ausencia de cuenta
-      if (e.toString().contains('404') ||
-          e.toString().contains('not found') ||
-          e.toString().contains('no se encontró') ||
-          e.toString().contains('no existe') ||
-          e.toString().contains('no tiene cuenta') ||
-          e.toString().contains('cuentasempleados/empleado')) {
-        // Este es un caso esperado cuando el empleado no tiene cuenta
-        if (mounted) {
-          setState(() {
-            _cuentaNoEncontrada = true;
-            _usuarioEmpleado = null;
-          });
-        }
-        debugPrint(
-            'EmpleadoDetallesViewer: El empleado no tiene cuenta asociada (error capturado)');
+      debugPrint('Error al cargar información de cuenta: $e');
+      if (mounted) {
+        setState(() {
+          _usuarioEmpleado = null;
+        });
       }
-      // Manejar específicamente errores de autenticación genuinos (sesión expirada)
-      else if (e.toString().contains('401') &&
-          (e.toString().contains('Sesión expirada') ||
-              e.toString().contains('No autorizado') ||
-              e.toString().contains('token'))) {
-        debugPrint(
-            'Error de autenticación al cargar información de cuenta: $e');
-        // No mostrar error en la UI para este componente
-      } else {
-        // Otros errores inesperados
-        debugPrint('Error al cargar información de cuenta: $e');
-      }
-    } finally {
-      if (mounted) {}
     }
   }
 
@@ -722,62 +686,41 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
       await EmpleadosUtils.mostrarDialogoCarga(context,
           mensaje: 'Cargando información de cuenta...');
 
-      // Verificar si el contexto sigue montado después del diálogo de carga
       if (!context.mounted) {
         return;
       }
 
-      // Obtener el provider
-      final empleadoProvider =
-          Provider.of<EmpleadoProvider>(context, listen: false);
+      // Obtener datos para gestionar la cuenta usando el repository
+      await EmpleadoRepository.instance.getRolesCuentas();
 
-      // Obtener datos para gestionar la cuenta
-      final Map<String, dynamic> datosCuenta =
-          await empleadoProvider.prepararDatosGestionCuenta(empleado);
-
-      // Verificar si el widget y el contexto siguen montados después de la operación asíncrona
-      if (!mounted) {
-        return;
+      // Verificar si el empleado ya tiene cuenta
+      bool esNuevaCuenta = true;
+      try {
+        await EmpleadoRepository.instance.getCuentaByEmpleadoId(empleado.id);
+        esNuevaCuenta = false;
+      } catch (e) {
+        // Si hay error, asumimos que no tiene cuenta
+        esNuevaCuenta = true;
       }
+
       if (!context.mounted) {
         return;
       }
 
-      // Cerrar diálogo de carga (si sigue abierto)
+      // Cerrar diálogo de carga
       if (Navigator.of(context).canPop()) {
         Navigator.pop(context);
       }
 
-      // Mostrar diálogo de gestión de cuenta
-      final bool cuentaActualizada = await showDialog<bool>(
-            context: context,
-            builder: (BuildContext dialogContext) => Dialog(
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 600),
-                child: EmpleadoCuentaDialog(
-                  empleado: widget.empleado,
-                  roles: datosCuenta['roles'],
-                  esNuevaCuenta: datosCuenta['esNuevaCuenta'],
-                ),
-              ),
-            ),
-          ) ??
-          false;
-
-      // Si se realizó algún cambio, actualizar la información
-      if (cuentaActualizada) {
-        EmpleadosUtils.mostrarMensaje(context,
-            mensaje: 'Cuenta actualizada correctamente', esError: false);
-
-        setState(() {
-          // Forzar reconstrucción para actualizar los datos
-        });
-      }
+      // Mostrar mensaje informativo
+      EmpleadosUtils.mostrarMensaje(
+        context,
+        mensaje: esNuevaCuenta
+            ? 'El empleado no tiene cuenta. Use el formulario de empleado para crear una.'
+            : 'El empleado ya tiene cuenta. Use el formulario de empleado para gestionarla.',
+        esError: false,
+      );
     } catch (e) {
-      // Verificar si el widget y el contexto siguen montados después de la operación asíncrona
-      if (!mounted) {
-        return;
-      }
       if (!context.mounted) {
         return;
       }
@@ -787,19 +730,9 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
         Navigator.of(context).pop();
       }
 
-      // Determinar el tipo de error para mostrar un mensaje apropiado
-      final bool esErrorAutenticacion = e.toString().contains('401') &&
-          (e.toString().contains('No autorizado') ||
-              e.toString().contains('Sesión expirada') ||
-              e.toString().contains('token inválido'));
-
-      final String errorMessage = esErrorAutenticacion
-          ? 'Sesión expirada. Por favor, inicie sesión nuevamente.'
-          : 'Error al gestionar cuenta: $e';
-
       EmpleadosUtils.mostrarMensaje(
         context,
-        mensaje: errorMessage,
+        mensaje: 'Error al gestionar cuenta: $e',
         esError: true,
       );
     }

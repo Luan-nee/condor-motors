@@ -141,7 +141,7 @@ class VentasComputerProvider extends ChangeNotifier {
   ///
   /// [url] URL del documento PDF
   /// [context] Contexto para mostrar mensajes de error (opcional)
-  Future<bool> abrirPdf(String url, [BuildContext? context]) async {
+  Future<bool> abrirPdf(String url, [BuildContext? context]) {
     return _printProvider.abrirPdf(url, context);
   }
 
@@ -151,7 +151,7 @@ class VentasComputerProvider extends ChangeNotifier {
   /// [nombreDocumento] Nombre para el trabajo de impresión
   /// [context] Contexto para mostrar mensajes (opcional)
   Future<bool> imprimirDocumentoPdf(String url, String nombreDocumento,
-      [BuildContext? context]) async {
+      [BuildContext? context]) {
     return _printProvider.imprimirDocumentoPdf(url, nombreDocumento, context);
   }
 
@@ -323,7 +323,7 @@ class VentasComputerProvider extends ChangeNotifier {
   /// Inicializa el provider cargando los datos necesarios
   Future<void> inicializar({GlobalKey<ScaffoldMessengerState>? key}) async {
     try {
-      debugPrint('🔄 Inicializando VentasComputerProvider...');
+      debugPrint('Inicializando VentasComputerProvider...');
 
       if (key != null) {
         messengerKey = key;
@@ -353,7 +353,7 @@ class VentasComputerProvider extends ChangeNotifier {
       // Cargar ventas iniciales
       await cargarVentas();
     } catch (e) {
-      debugPrint('❌ Error en inicialización: $e');
+      debugPrint('Error en inicialización: $e');
       _errorMessage = 'Error al inicializar: $e';
       notifyListeners();
     }
@@ -422,12 +422,12 @@ class VentasComputerProvider extends ChangeNotifier {
   Future<bool> establecerSucursalPorId(sucursalId) async {
     try {
       if (sucursalId == null) {
-        debugPrint('⚠️ ID de sucursal no proporcionado');
+        debugPrint('ID de sucursal no proporcionado');
         return false;
       }
 
       String sucursalIdStr = sucursalId.toString();
-      debugPrint('🔍 Estableciendo sucursal por ID: $sucursalIdStr');
+      debugPrint('Estableciendo sucursal por ID: $sucursalIdStr');
 
       // Intentar obtener datos completos de la sucursal usando el repositorio
       try {
@@ -437,7 +437,7 @@ class VentasComputerProvider extends ChangeNotifier {
           forceRefresh: true,
         );
 
-        debugPrint('✅ Datos de sucursal obtenidos: ${sucursalCompleta.nombre}');
+        debugPrint('Datos de sucursal obtenidos: ${sucursalCompleta.nombre}');
         _sucursalSeleccionada = sucursalCompleta;
 
         // Agregar a la lista si no está ya
@@ -448,7 +448,7 @@ class VentasComputerProvider extends ChangeNotifier {
         notifyListeners();
         return true;
       } catch (e) {
-        debugPrint('⚠️ No se pudieron obtener datos completos de sucursal: $e');
+        debugPrint('No se pudieron obtener datos completos de sucursal: $e');
 
         // Crear una sucursal provisional con datos mínimos utilizando el repositorio
         final sucursalProvisional =
@@ -461,7 +461,7 @@ class VentasComputerProvider extends ChangeNotifier {
         return true;
       }
     } catch (e) {
-      debugPrint('❌ Error al establecer sucursal por ID: $e');
+      debugPrint('Error al establecer sucursal por ID: $e');
       return false;
     }
   }
@@ -841,6 +841,6 @@ class VentasComputerProvider extends ChangeNotifier {
       return _sucursalSeleccionada!.id.toString();
     }
 
-    return await _ventaRepository.getCurrentSucursalId();
+    return _ventaRepository.getCurrentSucursalId();
   }
 }

@@ -857,7 +857,7 @@ class ProformaUtils {
       numeroDocumento = cliente['numeroDocumento']?.toString();
     } else {
       try {
-        numeroDocumento = (cliente.numeroDocumento as String?);
+        numeroDocumento = cliente.numeroDocumento as String?;
       } catch (_) {
         numeroDocumento = null;
       }

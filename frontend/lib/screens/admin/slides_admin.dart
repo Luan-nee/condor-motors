@@ -1,4 +1,5 @@
-import 'package:condorsmotors/providers/admin/index.admin.provider.dart';
+// Providers Admin individuales
+
 import 'package:condorsmotors/providers/auth.provider.dart';
 import 'package:condorsmotors/screens/admin/categorias_admin.dart';
 import 'package:condorsmotors/screens/admin/dashboard_admin.dart';
@@ -44,10 +45,7 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
       case 0:
         return const DashboardAdminScreen();
       case 1:
-        return ChangeNotifierProvider(
-          create: (_) => VentasProvider(),
-          child: const VentasAdminScreen(),
-        );
+        return const VentasAdminScreen();
       case 2:
         return _buildInventarioSubContent();
       case 3:
@@ -266,7 +264,7 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
                       ),
                       const SizedBox(width: 12),
                       const Text(
-                        'Condor Motors',
+                        'TiendaPeru',
                         style: TextStyle(
                           color: Color(0xFFE31E24),
                           fontSize: 20,

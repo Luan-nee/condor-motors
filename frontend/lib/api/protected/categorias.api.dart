@@ -144,7 +144,7 @@ class CategoriasApi {
       int totalProductosGlobal = 0;
       for (final cat in categorias) {
         if (cat is Map && cat.containsKey('totalProductos')) {
-          totalProductosGlobal += (cat['totalProductos'] as int? ?? 0);
+          totalProductosGlobal += cat['totalProductos'] as int? ?? 0;
         }
       }
       Logger.debug(

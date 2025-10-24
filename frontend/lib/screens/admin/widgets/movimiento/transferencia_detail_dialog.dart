@@ -57,7 +57,7 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
         widget.transferencia.id.toString(),
       );
     } catch (e) {
-      debugPrint('❌ [TransferenciaDetailDialog] Error al cargar detalles: $e');
+      debugPrint('[TransferenciaDetailDialog] Error al cargar detalles: $e');
     }
   }
 
@@ -134,8 +134,7 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
         }
       }
     } catch (e) {
-      debugPrint(
-          '❌ [TransferenciaDetailDialog] Error al cargar comparación: $e');
+      debugPrint('[TransferenciaDetailDialog] Error al cargar comparación: $e');
 
       if (!mounted) {
         return;
@@ -669,7 +668,7 @@ class _TransferenciaDetailDialogState extends State<TransferenciaDetailDialog> {
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<sucursal_model.Sucursal>(
-            value: _sucursalSeleccionada,
+            initialValue: _sucursalSeleccionada,
             decoration: InputDecoration(
               filled: true,
               fillColor: const Color(0xFF2D2D2D),

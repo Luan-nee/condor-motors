@@ -88,7 +88,7 @@ class StockRepository implements BaseRepository {
         stockBajo: true,
       );
     } catch (e) {
-      debugPrint('❌ [StockRepository] Error en getProductosConStockBajo: $e');
+      debugPrint('[StockRepository] Error en getProductosConStockBajo: $e');
       rethrow;
     }
   }
@@ -120,7 +120,7 @@ class StockRepository implements BaseRepository {
         stock: {'value': 0, 'filterType': 'eq'}, // stock igual a 0
       );
     } catch (e) {
-      debugPrint('❌ [StockRepository] Error en getProductosAgotados: $e');
+      debugPrint('[StockRepository] Error en getProductosAgotados: $e');
       rethrow;
     }
   }
@@ -152,7 +152,7 @@ class StockRepository implements BaseRepository {
         stock: {'value': 1, 'filterType': 'gte'}, // stock mayor o igual a 1
       );
     } catch (e) {
-      debugPrint('❌ [StockRepository] Error en getProductosDisponibles: $e');
+      debugPrint('[StockRepository] Error en getProductosDisponibles: $e');
       rethrow;
     }
   }
@@ -196,7 +196,7 @@ class StockRepository implements BaseRepository {
         forceRefresh: forceRefresh,
       );
     } catch (e) {
-      debugPrint('❌ [StockRepository] Error en getProductos: $e');
+      debugPrint('[StockRepository] Error en getProductos: $e');
       rethrow;
     }
   }
@@ -426,7 +426,7 @@ class StockRepository implements BaseRepository {
         useCache: useCache,
       );
     } catch (e) {
-      debugPrint('❌ [StockRepository] Error en getProductosPorStock: $e');
+      debugPrint('[StockRepository] Error en getProductosPorStock: $e');
       rethrow;
     }
   }

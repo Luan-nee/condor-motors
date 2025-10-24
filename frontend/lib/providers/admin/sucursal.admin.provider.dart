@@ -447,7 +447,7 @@ class SucursalProvider extends ChangeNotifier {
         grupos['Centrales']!.add(sucursal);
         // Registrar inconsistencia para depuración
         debugPrint(
-            '⚠️ Sucursal con nombre de central pero no marcada como central: ${sucursal.nombre}');
+            'Sucursal con nombre de central pero no marcada como central: ${sucursal.nombre}');
       } else {
         grupos['Sucursales']!.add(sucursal);
       }

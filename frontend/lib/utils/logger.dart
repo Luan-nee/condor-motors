@@ -40,12 +40,12 @@ class ConsoleColor {
   static const String bgCyan = '\x1B[46m';
   static const String bgWhite = '\x1B[47m';
 
-  // Colores para métodos HTTP
-  static const String get = brightGreen;
-  static const String post = brightBlue;
-  static const String put = brightYellow;
-  static const String patch = brightMagenta;
-  static const String delete = brightRed;
+  // Colores para métodos HTTP (estilo Postman)
+  static const String get = brightGreen; // GET: Verde
+  static const String post = brightYellow; // POST: Amarillo
+  static const String put = brightBlue; // PUT: Azul
+  static const String patch = brightMagenta; // PATCH: Magenta
+  static const String delete = brightRed; // DELETE: Rojo
 
   // Colores para funcionalidades específicas
   static const String cache = '$dim$brightBlack'; // Gris con opacidad 50%

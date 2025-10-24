@@ -1114,10 +1114,10 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
 
                     // Logs solo una vez al inicio del proceso
                     debugPrint('''
-🖨️ Iniciando proceso de impresión...
-📑 Documento: $localNombreCompleto
-📄 PDF disponible: $localTienePdf, Formato Ticket: $localTienePdfTicket
-🔗 URL: $localPdfLink
+Iniciando proceso de impresión...
+Documento: $localNombreCompleto
+PDF disponible: $localTienePdf, Formato Ticket: $localTienePdfTicket
+URL: $localPdfLink
 ''');
 
                     // Cargar la configuración más reciente
@@ -1144,7 +1144,7 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
                     debugPrint(
                         '📋 Resultado impresión: ${result ? "Exitoso" : "Fallido"}');
                   } catch (e) {
-                    debugPrint('❌ Error durante impresión: $e');
+                    debugPrint('Error durante impresión: $e');
 
                     // Mostrar error al usuario solo si el widget sigue montado
                     if (!mounted) {
@@ -1155,7 +1155,7 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
                     _mostrarErrorSnackBar(e.toString());
                   }
                 } else {
-                  debugPrint('❌ Error: URL de PDF no disponible');
+                  debugPrint('Error: URL de PDF no disponible');
                 }
               },
             ),

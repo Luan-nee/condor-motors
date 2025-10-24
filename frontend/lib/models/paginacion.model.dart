@@ -125,7 +125,6 @@ class Paginacion extends Equatable {
   }
 
   /// Obtiene la información de resumen para mostrar en UI
-  /// Ejemplo: "Mostrando 1-10 de 100 elementos"
   String getResumen(int pageSize) {
     if (totalItems == 0) {
       return "No hay elementos para mostrar";

@@ -575,7 +575,7 @@ class VentasApi {
           if (e.toString().contains('is not a subtype of type')) {
             final errorMsg = e.toString();
             final match =
-                RegExp(r"'(.+?)' is not a subtype").firstMatch(errorMsg);
+                RegExp("'(.+?)' is not a subtype").firstMatch(errorMsg);
             if (match != null) {
               Logger.error('Tipo problemático: ${match.group(1)}');
             }

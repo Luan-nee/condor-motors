@@ -1,7 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 
-// FIX: Para modelos complejos, considera usar el paquete `freezed`.
 // `freezed` genera automáticamente `copyWith`, `fromJson`, `toJson`, `toString`
 // y la igualdad de objetos, lo que reduce drásticamente el código repetitivo
 // y previene errores comunes al añadir nuevos campos.

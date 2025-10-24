@@ -181,7 +181,7 @@ class CondorMotorsApi {
 
   /// Devuelve la baseUrl sin el sufijo /api para construir URLs absolutas de imágenes
   String getBaseUrlSinApi() {
-    return _apiClient.baseUrl.replaceFirst(RegExp(r'/api/?'), '');
+    return _apiClient.baseUrl.replaceFirst(RegExp('/api/?'), '');
   }
 }
 
@@ -195,8 +195,8 @@ class RefreshTokenManager {
   static String? _accessTokenInMemory;
 
   /// Lee el refresh token desde almacenamiento seguro
-  static Future<String?> getRefreshToken() async {
-    return await SecureStorageUtils.read(_refreshTokenKey);
+  static Future<String?> getRefreshToken() {
+    return SecureStorageUtils.read(_refreshTokenKey);
   }
 
   /// Guarda o actualiza el refresh token en almacenamiento seguro

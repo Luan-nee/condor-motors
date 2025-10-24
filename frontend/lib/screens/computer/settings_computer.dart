@@ -402,7 +402,7 @@ class _SettingsComputerScreenState extends State<SettingsComputerScreen> {
           onChanged: (v) => setState(() {
             printProvider.guardarConfiguracion(rotacionAutomatica: v);
           }),
-          activeColor: const Color(0xFFE31E24),
+          activeThumbColor: const Color(0xFFE31E24),
         ),
         SwitchListTile(
           title: const Text('Ajuste automático',
@@ -411,7 +411,7 @@ class _SettingsComputerScreenState extends State<SettingsComputerScreen> {
           onChanged: (v) => setState(() {
             printProvider.guardarConfiguracion(ajusteAutomatico: v);
           }),
-          activeColor: const Color(0xFFE31E24),
+          activeThumbColor: const Color(0xFFE31E24),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),

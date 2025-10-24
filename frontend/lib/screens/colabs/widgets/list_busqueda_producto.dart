@@ -113,8 +113,7 @@ class ListBusquedaProducto extends StatelessWidget {
 
   Widget _buildEmptyState() {
     // Depuración: Mostrar el filtro de categoría actual en la consola
-    debugPrint(
-        '🔍 No hay productos para mostrar con filtro: "$filtroCategoria"');
+    debugPrint('No hay productos para mostrar con filtro: "$filtroCategoria"');
 
     return Center(
       child: Column(

@@ -76,7 +76,6 @@ class BackgroundPainter extends CustomPainter {
       double y = size.height * position.dy + offsetY;
       final double radius = baseSize * scale;
 
-      // --- Implementar Wrapping --- // FIX: Mejorar wrapping si es necesario para efectos más complejos.
       // Asegurar que las partículas se envuelvan al salir de la pantalla
       if (x > size.width + radius) {
         x -= size.width + 2 * radius;

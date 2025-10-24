@@ -309,9 +309,9 @@ class ProformaConversionManager {
         // Si no tenemos clienteId directo, intentar extraerlo del objeto cliente
         else if (clienteInfo != null &&
             clienteInfo is Map &&
-            (clienteInfo).containsKey('id')) {
+            clienteInfo.containsKey('id')) {
           clienteIdNumerico =
-              int.tryParse((clienteInfo)['id'].toString());
+              int.tryParse(clienteInfo['id'].toString());
         }
 
         // Solo sobrescribir clienteId si tenemos un valor numérico válido

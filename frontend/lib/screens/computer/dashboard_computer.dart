@@ -34,9 +34,7 @@ class Venta {
       subtotal: (json['subtotal'] ?? 0.0).toDouble(),
       igv: (json['igv'] ?? 0.0).toDouble(),
       total: (json['total'] ?? 0.0).toDouble(),
-      descuentoTotal: json['descuento_total'] != null
-          ? (json['descuento_total']).toDouble()
-          : null,
+      descuentoTotal: json['descuento_total']?.toDouble(),
     );
   }
 }

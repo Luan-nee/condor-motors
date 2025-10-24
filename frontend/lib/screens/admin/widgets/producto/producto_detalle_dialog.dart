@@ -1,13 +1,13 @@
 import 'package:condorsmotors/models/color.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
-import 'package:condorsmotors/providers/admin/producto.admin.provider.dart';
+
+import 'package:condorsmotors/repositories/color.repository.dart';
 import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:condorsmotors/utils/productos_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:provider/provider.dart';
 
 class ProductoDetalleDialog extends StatefulWidget {
   final Producto producto;
@@ -26,7 +26,7 @@ class ProductoDetalleDialog extends StatefulWidget {
     required Producto producto,
     required List<Sucursal> sucursales,
     required Future<void> Function(Producto) onSave,
-  }) async {
+  }) {
     return showDialog<void>(
       context: context,
       builder: (BuildContext dialogContext) => ProductoDetalleDialog(
@@ -56,7 +56,8 @@ class ProductoDetalleDialog extends StatefulWidget {
 class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     with TickerProviderStateMixin {
   bool _isLoading = true;
-  List<ProductoEnSucursal> _sucursalesCompartidas = <ProductoEnSucursal>[];
+  final List<ProductoEnSucursal> _sucursalesCompartidas =
+      <ProductoEnSucursal>[];
   ColorApp? _colorProducto;
   String _error = '';
   bool _isHoveringPhoto = false;
@@ -87,27 +88,24 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     });
 
     try {
-      final ProductoProvider productoProvider =
-          Provider.of<ProductoProvider>(context, listen: false);
-
-      // Usar el método del provider y obtener el resultado
-      final List<ProductoEnSucursal> sucursales =
-          await productoProvider.obtenerProductoEnSucursales(
+      // Cargar información del producto en todas las sucursales
+      final List<ProductoEnSucursal> sucursalesCompartidas =
+          await ProductosUtils.obtenerProductoEnSucursales(
         productoId: widget.producto.id,
         sucursales: widget.sucursales,
       );
 
-      // Verificar si hay un error en el provider después de la operación
-      if (productoProvider.errorMessage != null) {
-        throw Exception(productoProvider.errorMessage);
-      }
-
       if (mounted) {
         setState(() {
-          _sucursalesCompartidas = sucursales;
+          _sucursalesCompartidas
+            ..clear()
+            ..addAll(sucursalesCompartidas);
           _isLoading = false;
         });
       }
+
+      debugPrint(
+          'ProductoDetalleDialog: Cargados ${sucursalesCompartidas.length} sucursales para el producto ${widget.producto.id}');
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -122,18 +120,17 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
 
   Future<void> _cargarColores() async {
     try {
-      final ProductoProvider productoProvider =
-          Provider.of<ProductoProvider>(context, listen: false);
+      if (widget.producto.color != null && widget.producto.color!.isNotEmpty) {
+        // Buscar el color real en el endpoint
+        final colorRepository = ColorRepository.instance;
+        final colorEncontrado =
+            await colorRepository.getColorPorNombre(widget.producto.color!);
 
-      if (mounted) {
-        setState(() {
-          // Si el producto tiene color, buscar la coincidencia usando el provider
-          if (widget.producto.color != null &&
-              widget.producto.color!.isNotEmpty) {
-            _colorProducto =
-                productoProvider.obtenerColorPorNombre(widget.producto.color!);
-          }
-        });
+        if (mounted) {
+          setState(() {
+            _colorProducto = colorEncontrado;
+          });
+        }
       }
     } catch (e) {
       debugPrint('Error al cargar colores: $e');
@@ -263,7 +260,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
           maxWidth: 1000,
           maxHeight: MediaQuery.of(context).size.height * 0.85,
         ),
-        child: Container(
+        child: DecoratedBox(
           decoration: BoxDecoration(
             color: const Color(0xFF2D2D2D),
             borderRadius: BorderRadius.circular(12),
@@ -643,9 +640,6 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
 
   // Nueva pestaña de estadísticas
   Widget _buildEstadisticasTab(bool isPantallaReducida) {
-    // Obtener el provider una sola vez para todas las operaciones
-    Provider.of<ProductoProvider>(context, listen: false);
-
     return SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.all(isPantallaReducida ? 12.0 : 16.0),

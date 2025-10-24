@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/transferencias.model.dart';
-import 'package:condorsmotors/providers/paginacion.provider.dart';
+
 import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:flutter/foundation.dart';
@@ -54,16 +54,19 @@ class _TransferenciaFormListColabState
   String _ordenarPor = 'nombre';
   String _orden = 'asc';
 
-  final PaginacionProvider _paginacionProvider = PaginacionProvider();
+  // Estado local de paginación
+  int _currentPage = 1;
+  int _pageSize = 10;
+  int _totalItems = 0;
+  int _totalPages = 0;
 
   @override
   void initState() {
     super.initState();
     _selectedProducts.addAll(widget.productosSeleccionados);
-    _paginacionProvider
-      ..cambiarItemsPorPagina(10)
-      ..cambiarOrdenarPor(_ordenarPor)
-      ..cambiarOrden(_orden);
+    _pageSize = 10;
+    _ordenarPor = _ordenarPor;
+    _orden = _orden;
     _loadProductos();
     _searchController.addListener(() {
       if (_debounce?.isActive ?? false) {
@@ -293,12 +296,24 @@ class _TransferenciaFormListColabState
                           Padding(
                             padding: const EdgeInsets.all(16),
                             child: Paginador(
-                              paginacionProvider: _paginacionProvider,
-                              onPageChange: _loadProductos,
+                              paginacion: Paginacion(
+                                currentPage: _currentPage,
+                                totalPages: _totalPages,
+                                totalItems: _totalItems,
+                                hasNext: _currentPage < _totalPages,
+                                hasPrev: _currentPage > 1,
+                              ),
+                              onPageChanged: (page) {
+                                setState(() => _currentPage = page);
+                                _loadProductos();
+                              },
+                              onPageSizeChanged: (size) {
+                                setState(() => _pageSize = size);
+                                _loadProductos();
+                              },
                               backgroundColor: const Color(0xFF2D2D2D),
                               textColor: Colors.white,
                               accentColor: const Color(0xFFE31E24),
-                              forceCompactMode: true,
                             ),
                           ),
                       ],
@@ -354,7 +369,7 @@ class _TransferenciaFormListColabState
     required bool hasValue,
     required VoidCallback onPressed,
   }) {
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(
         color:
             isExpanded ? color.withValues(alpha: 0.2) : const Color(0xFF1A1A1A),
@@ -837,8 +852,8 @@ class _TransferenciaFormListColabState
       final responseNormales = await _productoRepository.getProductosPorFiltros(
         sucursalId: widget.sucursalId,
         categoria: _filtroCategoria != 'Todos' ? _filtroCategoria : null,
-        page: _paginacionProvider.paginacion.currentPage,
-        pageSize: _paginacionProvider.itemsPerPage,
+        page: _currentPage,
+        pageSize: _pageSize,
         stockPositivo: true,
         useCache: false,
       );
@@ -867,13 +882,10 @@ class _TransferenciaFormListColabState
           switch (_ordenarPor) {
             case 'nombre':
               resultado = a.nombre.compareTo(b.nombre);
-              break;
             case 'stock':
               resultado = a.stock.compareTo(b.stock);
-              break;
             case 'sku':
-              resultado = (a.sku).compareTo(b.sku);
-              break;
+              resultado = a.sku.compareTo(b.sku);
           }
           return _orden == 'asc' ? resultado : -resultado;
         }
@@ -884,15 +896,11 @@ class _TransferenciaFormListColabState
 
       setState(() {
         // Actualizar paginación con los datos de productos normales
-        _paginacionProvider.actualizarPaginacion(
-          Paginacion(
-            currentPage: responseNormales.paginacion.currentPage,
-            totalPages: responseNormales.paginacion.totalPages,
-            totalItems: responseNormales.paginacion.totalItems,
-            hasNext: responseNormales.paginacion.hasNext,
-            hasPrev: responseNormales.paginacion.hasPrev,
-          ),
-        );
+        setState(() {
+          _currentPage = responseNormales.paginacion.currentPage;
+          _totalPages = responseNormales.paginacion.totalPages;
+          _totalItems = responseNormales.paginacion.totalItems;
+        });
       });
 
       debugPrint('📦 Productos cargados:');

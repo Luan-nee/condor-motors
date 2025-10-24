@@ -1,9 +1,8 @@
 import 'package:condorsmotors/models/producto.model.dart';
-import 'package:condorsmotors/providers/admin/stock.admin.provider.dart';
+import 'package:condorsmotors/utils/stock_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:provider/provider.dart';
 
 // Export InventarioResumen from stock_table.dart
 export 'stock_table.dart' show TableProducts, InventarioResumen;
@@ -39,16 +38,13 @@ class _InventarioResumenState extends State<InventarioResumen> {
 
   @override
   Widget build(BuildContext context) {
-    final StockProvider stockProvider =
-        Provider.of<StockProvider>(context, listen: false);
-
     if (widget.productos.isEmpty) {
       return const SizedBox.shrink();
     }
 
     // Usar el método optimizado para agrupar productos
     final Map<StockStatus, List<Producto>> agrupados =
-        stockProvider.agruparProductosPorEstadoStock(widget.productos);
+        StockUtils.agruparProductosPorEstadoStock(widget.productos);
 
     // Obtener contadores
     final int disponiblesCount = agrupados[StockStatus.disponible]!.length;
@@ -148,9 +144,11 @@ class _InventarioResumenState extends State<InventarioResumen> {
     return Container(
       padding: const EdgeInsets.all(7),
       decoration: BoxDecoration(
-        color: highlight ? color.withValues(alpha: 0.15) : const Color(0xFF333333),
+        color:
+            highlight ? color.withValues(alpha: 0.15) : const Color(0xFF333333),
         borderRadius: BorderRadius.circular(8),
-        border: highlight ? Border.all(color: color.withValues(alpha: 0.3)) : null,
+        border:
+            highlight ? Border.all(color: color.withValues(alpha: 0.3)) : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

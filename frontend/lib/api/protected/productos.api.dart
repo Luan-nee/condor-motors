@@ -137,7 +137,7 @@ class ProductosApi {
     int? pageSize,
     String? sortBy,
     bool useCache = true,
-  }) async {
+  }) {
     return getProductos(
       sucursalId: sucursalId,
       page: page ?? 1,
@@ -162,7 +162,7 @@ class ProductosApi {
     int? pageSize,
     String? sortBy,
     bool useCache = true,
-  }) async {
+  }) {
     return getProductos(
       sucursalId: sucursalId,
       page: page ?? 1,
@@ -187,7 +187,7 @@ class ProductosApi {
     int? pageSize,
     String? sortBy,
     bool useCache = true,
-  }) async {
+  }) {
     return getProductos(
       sucursalId: sucursalId,
       page: page ?? 1,
@@ -214,7 +214,7 @@ class ProductosApi {
     int? pageSize,
     String? sortBy,
     bool useCache = true,
-  }) async {
+  }) {
     return getProductos(
       sucursalId: sucursalId,
       page: page ?? 1,
@@ -241,7 +241,7 @@ class ProductosApi {
     int? page,
     int? pageSize,
     bool useCache = true,
-  }) async {
+  }) {
     if (nombre.isEmpty) {
       throw ApiException(
         statusCode: 400,
@@ -338,13 +338,10 @@ class ProductosApi {
           case 'jpg':
           case 'jpeg':
             mimeType = 'jpeg';
-            break;
           case 'png':
             mimeType = 'png';
-            break;
           case 'webp':
             mimeType = 'webp';
-            break;
           default:
             mimeType = 'jpeg';
         }
@@ -461,13 +458,10 @@ class ProductosApi {
           case 'jpg':
           case 'jpeg':
             mimeType = 'jpeg';
-            break;
           case 'png':
             mimeType = 'png';
-            break;
           case 'webp':
             mimeType = 'webp';
-            break;
           default:
             mimeType = 'jpeg';
         }
@@ -678,7 +672,7 @@ class ProductosApi {
     int? pageSize,
     String? sortBy,
     bool useCache = true,
-  }) async {
+  }) {
     return getProductos(
       sucursalId: sucursalId,
       page: page ?? 1,
@@ -902,7 +896,6 @@ class ProductosApi {
     // Determinar filtro y valor
     String? filter;
     String? filterValue;
-    // FIX: El backend solo permite un filtro a la vez, priorizamos categoría sobre marca
     if (categoria != null && categoria.isNotEmpty) {
       filter = 'categoria';
       filterValue = categoria;
@@ -1038,7 +1031,6 @@ class ProductosApi {
                 p.cantidadGratisDescuento != null &&
                 p.cantidadGratisDescuento! > 0)
             .toList();
-        break;
       case 'porcentaje':
         productosFiltrados = resultados.items
             .where((Producto p) =>
@@ -1047,7 +1039,6 @@ class ProductosApi {
                 p.cantidadMinimaDescuento! > 0 &&
                 p.porcentajeDescuento! > 0)
             .toList();
-        break;
       case 'cualquiera':
       default:
         productosFiltrados = resultados.items
@@ -1061,7 +1052,6 @@ class ProductosApi {
                         p.porcentajeDescuento! > 0) // Descuento por cantidad
                 )
             .toList();
-        break;
     }
 
     // Paginar los resultados manualmente

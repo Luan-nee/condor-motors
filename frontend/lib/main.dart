@@ -2,12 +2,16 @@ import 'dart:io';
 
 import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/components/proforma_notification.dart';
-import 'package:condorsmotors/providers/admin/index.admin.provider.dart';
+import 'package:condorsmotors/providers/admin/dashboard.admin.provider.dart';
+
+import 'package:condorsmotors/providers/admin/sucursal.admin.provider.dart';
+import 'package:condorsmotors/providers/admin/transferencias.admin.provider.dart';
 import 'package:condorsmotors/providers/auth.provider.dart';
-import 'package:condorsmotors/providers/colabs/index.colab.provider.dart';
-import 'package:condorsmotors/providers/computer/index.computer.provider.dart';
+import 'package:condorsmotors/providers/colabs/transferencias.colab.provider.dart';
+import 'package:condorsmotors/providers/computer/proforma.computer.provider.dart';
+import 'package:condorsmotors/providers/computer/ventas.computer.provider.dart';
 import 'package:condorsmotors/providers/login.provider.dart';
-import 'package:condorsmotors/providers/paginacion.provider.dart';
+import 'package:condorsmotors/providers/session.provider.dart';
 import 'package:condorsmotors/repositories/auth.repository.dart';
 import 'package:condorsmotors/routes/routes.dart' as routes;
 import 'package:condorsmotors/screens/login.dart';
@@ -38,9 +42,7 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
 // Instancia global para acceso desde interceptores (ej: main.api.dart)
 late AuthProvider globalAuthProvider;
 
-// FIX: Considerar usar un localizador de servicios (como get_it) para evitar
 // variables globales. Esto mejora la predictibilidad y el testing.
-// Ejemplo: `locator.registerSingleton<AuthProvider>(AuthProvider(AuthRepository.instance));`
 // y luego `final authProvider = locator<AuthProvider>();` donde se necesite.
 
 void main() async {
@@ -79,35 +81,21 @@ void main() async {
     ChangeNotifierProvider<AuthProvider>.value(
       value: globalAuthProvider,
     ),
-    ChangeNotifierProvider(create: (_) => PaginacionProvider()),
+
+    ChangeNotifierProvider(create: (_) => SessionProvider()),
     // Puedes agregar aquí un Provider para sharedPrefs si lo necesitas globalmente
     Provider<SharedPreferences>.value(value: sharedPrefs),
   ];
 
   final List<SingleChildWidget> adminProviders = [
-    ChangeNotifierProvider<CategoriasProvider>(
-      create: (_) => CategoriasProvider(),
-    ),
-    ChangeNotifierProvider<MarcasProvider>(
-      create: (_) => MarcasProvider(),
-    ),
-    ChangeNotifierProvider<EmpleadoProvider>(
-      create: (_) => EmpleadoProvider(),
-    ),
+    // ChangeNotifierProvider<EmpleadoProvider>( // ELIMINADO: Provider innecesario
+    //   create: (_) => EmpleadoProvider(),
+    // ),
     ChangeNotifierProvider<TransferenciasProvider>(
       create: (_) => TransferenciasProvider(),
     ),
-    ChangeNotifierProvider<ProductoProvider>(
-      create: (_) => ProductoProvider(),
-    ),
-    ChangeNotifierProvider<StockProvider>(
-      create: (_) => StockProvider(),
-    ),
     ChangeNotifierProvider<SucursalProvider>(
       create: (_) => SucursalProvider(),
-    ),
-    ChangeNotifierProvider<PedidoAdminProvider>(
-      create: (_) => PedidoAdminProvider(),
     ),
     ChangeNotifierProvider<DashboardProvider>(
       create: (_) => DashboardProvider(),
@@ -118,10 +106,8 @@ void main() async {
     ChangeNotifierProvider<VentasComputerProvider>(
       create: (_) => VentasComputerProvider(),
     ),
-    // FIX: Para dependencias entre providers, `ChangeNotifierProxyProvider` es una
     // opción más robusta que `Provider.of` en el `create` callback.
     // Permite que el provider dependiente se actualice si su dependencia cambia.
-    // Ejemplo:
     // ChangeNotifierProxyProvider<VentasComputerProvider, ProformaComputerProvider>(
     //   create: (context) => ProformaComputerProvider(context.read<VentasComputerProvider>()),
     //   update: (context, ventas, proforma) => proforma!..update(ventas),
@@ -251,7 +237,7 @@ class CondorMotorsApp extends StatelessWidget {
       navigatorKey: navigatorKey,
       scaffoldMessengerKey: scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
-      title: 'Condor Motors',
+      title: 'TiendaPeru',
       theme: AppTheme.theme,
       themeMode: ThemeMode.dark,
       darkTheme: AppTheme.theme,

@@ -1,6 +1,7 @@
 import 'package:condorsmotors/providers/auth.provider.dart';
 import 'package:condorsmotors/providers/computer/dash.computer.provider.dart';
-import 'package:condorsmotors/providers/computer/index.computer.provider.dart';
+import 'package:condorsmotors/providers/computer/proforma.computer.provider.dart';
+import 'package:condorsmotors/providers/computer/ventas.computer.provider.dart';
 import 'package:condorsmotors/repositories/auth.repository.dart';
 import 'package:condorsmotors/screens/computer/dashboard_computer.dart';
 import 'package:condorsmotors/screens/computer/proforma_computer.dart';
@@ -40,7 +41,7 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
       <String, dynamic>{
         'title': 'Aprobar Ventas',
         'icon': FontAwesomeIcons.cashRegister,
-        'screen': const ProformaComputerScreen(),
+        'screen': const ProformaComputerScreen(sucursalId: 0),
         'description': 'Procesar ventas pendientes',
       },
       <String, dynamic>{
@@ -155,8 +156,7 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
         <String, dynamic>{
           'title': 'Aprobar Ventas',
           'icon': FontAwesomeIcons.cashRegister,
-          'screen': ProformaComputerScreen(
-              sucursalId: _sucursalId, nombreSucursal: _nombreSucursal),
+          'screen': ProformaComputerScreen(sucursalId: _sucursalId ?? 0),
           'description': 'Procesar ventas pendientes',
         },
         <String, dynamic>{
@@ -238,7 +238,7 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
                             ),
                             const SizedBox(width: 12),
                             const Text(
-                              'Condor Motors',
+                              'TiendaPeru',
                               style: TextStyle(
                                 color: Color(0xFFE31E24),
                                 fontSize: 20,

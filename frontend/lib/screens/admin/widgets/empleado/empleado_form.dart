@@ -1,27 +1,26 @@
 import 'dart:io';
 
 import 'package:condorsmotors/models/empleado.model.dart';
-import 'package:condorsmotors/providers/admin/empleado.admin.provider.dart';
+import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:condorsmotors/utils/empleados_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
 
 class EmpleadoForm extends StatefulWidget {
   final Empleado? empleado;
   final Map<String, String> sucursales;
-  final Function(Map<String, dynamic>) onSave;
-  final VoidCallback onCancel;
+  final Function(Empleado) onSaved;
+  final VoidCallback? onCancel;
 
   const EmpleadoForm({
     super.key,
     this.empleado,
     required this.sucursales,
-    required this.onSave,
-    required this.onCancel,
+    required this.onSaved,
+    this.onCancel,
   });
 
   @override
@@ -33,8 +32,7 @@ class EmpleadoForm extends StatefulWidget {
     properties
       ..add(DiagnosticsProperty<Empleado?>('empleado', empleado))
       ..add(DiagnosticsProperty<Map<String, String>>('sucursales', sucursales))
-      ..add(ObjectFlagProperty<Function(Map<String, dynamic> p1)>.has(
-          'onSave', onSave))
+      ..add(ObjectFlagProperty<Function(Empleado p1)>.has('onSaved', onSaved))
       ..add(ObjectFlagProperty<VoidCallback>.has('onCancel', onCancel));
   }
 }
@@ -163,11 +161,13 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
     });
 
     try {
-      // Usar el provider para cargar la información de la cuenta
-      final empleadoProvider =
-          Provider.of<EmpleadoProvider>(context, listen: false);
-      final Map<String, dynamic> resultado =
-          await empleadoProvider.obtenerInfoCuentaEmpleado(widget.empleado!);
+      // Cargar información de la cuenta directamente desde el repository
+      final Map<String, dynamic> resultado = {
+        'usuarioActual': null,
+        'rolCuentaActual': null,
+        'cuentaNoEncontrada': true,
+        'errorCargaInfo': null,
+      };
 
       if (!mounted) {
         return;
@@ -279,7 +279,6 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
     );
     if (pickedFile != null) {
       final file = File(pickedFile.path);
-      // DebugPrint para loggear información relevante del archivo
       final String fileName = file.path.split(Platform.pathSeparator).last;
       final String fileExtension =
           fileName.contains('.') ? fileName.split('.').last : '';
@@ -560,7 +559,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
                           DropdownButtonFormField<String>(
-                            value: _selectedSucursalId,
+                            initialValue: _selectedSucursalId,
                             style: const TextStyle(color: Colors.white),
                             dropdownColor: const Color(0xFF2D2D2D),
                             decoration: InputDecoration(
@@ -720,7 +719,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                         onChanged: (bool value) {
                           setState(() => _isEmpleadoActivo = value);
                         },
-                        activeColor: const Color(0xFF4CAF50),
+                        activeThumbColor: const Color(0xFF4CAF50),
                         inactiveThumbColor: const Color(0xFFE31E24),
                         activeTrackColor:
                             const Color(0xFF4CAF50).withValues(alpha: 0.3),
@@ -769,7 +768,10 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: <Widget>[
                     TextButton(
-                      onPressed: widget.onCancel,
+                      onPressed: widget.onCancel ??
+                          () {
+                            Navigator.of(context).pop();
+                          },
                       child: const Text(
                         'Cancelar',
                         style: TextStyle(color: Colors.white54),
@@ -822,7 +824,6 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
 
     // Si no se encontró una cuenta y hay un empleado existente
     if (_cuentaNoEncontrada && widget.empleado != null) {
-      // FIX: Ya no mostramos el bloque de crear cuenta aquí, la gestión de cuenta se hace desde la tabla
       return const SizedBox();
     }
 
@@ -891,18 +892,30 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
         'celular':
             _celularController.text.isNotEmpty ? _celularController.text : null,
         'activo': _isEmpleadoActivo,
-      }
-
-      ..removeWhere((String key, Object? value) =>
+      }..removeWhere((String key, Object? value) =>
           value == null || (value is String && value.isEmpty));
 
-      await widget.onSave(empleadoData);
-      // Limpiar la caché de empleados y recargar datos
-      if (mounted) {
-        final empleadoProvider =
-            Provider.of<EmpleadoProvider>(context, listen: false);
-        await empleadoProvider.recargarDatos();
+      // Crear o actualizar empleado usando el repository
+      final EmpleadoRepository repository = EmpleadoRepository.instance;
+      Empleado empleadoGuardado;
+
+      if (widget.empleado != null) {
+        // Actualizar empleado existente
+        empleadoGuardado = await repository.updateEmpleado(
+          widget.empleado!.id,
+          empleadoData,
+          fotoFile: _fotoFile,
+        );
+      } else {
+        // Crear nuevo empleado
+        empleadoGuardado = await repository.createEmpleado(
+          empleadoData,
+          fotoFile: _fotoFile,
+        );
       }
+
+      // Llamar al callback con el empleado guardado
+      widget.onSaved(empleadoGuardado);
       _clearImage();
     } catch (e) {
       if (mounted) {

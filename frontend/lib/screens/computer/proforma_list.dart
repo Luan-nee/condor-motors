@@ -586,19 +586,15 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
       case EstadoProforma.pendiente:
         icon = Icons.pending;
         color = Colors.blue;
-        break;
       case EstadoProforma.convertida:
         icon = Icons.check_circle;
         color = Colors.green;
-        break;
       case EstadoProforma.cancelada:
         icon = Icons.cancel;
         color = Colors.red;
-        break;
       case EstadoProforma.expirada:
         icon = Icons.timer_off;
         color = Colors.orange;
-        break;
     }
 
     return Container(

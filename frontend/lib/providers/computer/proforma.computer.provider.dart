@@ -45,7 +45,7 @@ class ProformaComputerProvider extends ChangeNotifier {
     // Asegurar que la configuración de impresión esté cargada
     _ventasProvider.cargarConfiguracionImpresion().then((_) {
       Logger.debug(
-          '⚙️ Configuración de impresión cargada en ProformaComputerProvider');
+          'Configuración de impresión cargada en ProformaComputerProvider');
       Logger.debug('- Formato A4: ${_ventasProvider.imprimirFormatoA4}');
       Logger.debug(
           '- Formato Ticket: ${_ventasProvider.imprimirFormatoTicket}');
@@ -372,7 +372,7 @@ class ProformaComputerProvider extends ChangeNotifier {
         Logger.debug('🎫 Usando formato ticket para impresión');
       } else {
         pdfUrl = ventaCompleta.documentoFacturacion!.linkPdfA4;
-        Logger.debug('📄 Usando formato A4 para impresión');
+        Logger.debug('Usando formato A4 para impresión');
       }
 
       if (pdfUrl == null) {
@@ -380,7 +380,7 @@ class ProformaComputerProvider extends ChangeNotifier {
         return;
       }
 
-      Logger.debug('⚙️ Configuración de impresión:');
+      Logger.debug('Configuración de impresión:');
       Logger.debug('- Formato A4: ${_ventasProvider.imprimirFormatoA4}');
       Logger.debug(
           '- Formato Ticket: ${_ventasProvider.imprimirFormatoTicket}');
@@ -394,7 +394,7 @@ class ProformaComputerProvider extends ChangeNotifier {
         '${ventaCompleta.serieDocumento}-${ventaCompleta.numeroDocumento}_${_ventasProvider.imprimirFormatoTicket ? "TICKET" : "A4"}',
       );
 
-      Logger.debug('🖨️ Documento enviado a imprimir automáticamente');
+      Logger.debug('Documento enviado a imprimir automáticamente');
     } catch (e) {
       Logger.error('Error al imprimir venta declarada: $e');
     }
@@ -501,7 +501,7 @@ class ProformaComputerProvider extends ChangeNotifier {
 
     notifyListeners();
     Logger.info(
-        '⏱️ Intervalo de actualización cambiado a $_intervaloActualizacion segundos');
+        'Intervalo de actualización cambiado a $_intervaloActualizacion segundos');
   }
 
   /// Inicia un stream para actualización de proformas en tiempo real
@@ -531,7 +531,7 @@ class ProformaComputerProvider extends ChangeNotifier {
     });
 
     Logger.info(
-        '🔄 Stream de proformas iniciado (cada $_intervaloActualizacion segundos)');
+        'Stream de proformas iniciado (cada $_intervaloActualizacion segundos)');
   }
 
   /// Cierra el stream y las suscripciones actuales
@@ -543,19 +543,19 @@ class ProformaComputerProvider extends ChangeNotifier {
     _proformasStreamController?.close();
     _proformasStreamController = null;
     _proformasStream = null;
-    Logger.info('🔄 Stream de proformas cerrado completamente');
+    Logger.info('Stream de proformas cerrado completamente');
   }
 
   /// Pausa las actualizaciones en tiempo real
   void pausarActualizacionesEnTiempoReal() {
     _cerrarStream();
-    Logger.info('🔄 Actualizaciones en tiempo real pausadas completamente');
+    Logger.info('Actualizaciones en tiempo real pausadas completamente');
   }
 
   /// Reanuda las actualizaciones en tiempo real
   void reanudarActualizacionesEnTiempoReal(int? sucursalId) {
     _iniciarStreamProformas(sucursalId);
-    Logger.info('🔄 Actualizaciones en tiempo real reanudadas');
+    Logger.info('Actualizaciones en tiempo real reanudadas');
     // Cargar proformas inmediatamente
     loadProformas(sucursalId: sucursalId);
   }
@@ -582,7 +582,7 @@ class ProformaComputerProvider extends ChangeNotifier {
       }
       return [];
     } catch (e) {
-      Logger.error('❌ Error al obtener proformas en tiempo real: $e');
+      Logger.error('Error al obtener proformas en tiempo real: $e');
       return [];
     }
   }
@@ -637,7 +637,7 @@ class ProformaComputerProvider extends ChangeNotifier {
             '🔔 Notificación enviada para nueva proforma #${proforma.id}');
       }
     } catch (e) {
-      Logger.error('❌ Error al enviar notificación: $e');
+      Logger.error('Error al enviar notificación: $e');
     }
   }
 
@@ -648,7 +648,7 @@ class ProformaComputerProvider extends ChangeNotifier {
       return sucursalIdParam.toString();
     } else {
       // Obtener el ID de sucursal del usuario a través del repositorio
-      return await _proformaRepository.getCurrentSucursalId();
+      return _proformaRepository.getCurrentSucursalId();
     }
   }
 }

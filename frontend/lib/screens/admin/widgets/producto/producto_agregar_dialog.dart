@@ -6,23 +6,27 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 class ProductoAgregarDialog extends StatefulWidget {
   final Producto producto;
   final void Function(Map<String, dynamic> productoData) onSave;
+  final String? sucursalNombre;
 
   const ProductoAgregarDialog({
     super.key,
     required this.producto,
     required this.onSave,
+    this.sucursalNombre,
   });
 
   static Future<void> show(
     BuildContext context, {
     required Producto producto,
     required void Function(Map<String, dynamic> productoData) onSave,
+    String? sucursalNombre,
   }) async {
     await showDialog(
       context: context,
       builder: (context) => ProductoAgregarDialog(
         producto: producto,
         onSave: onSave,
+        sucursalNombre: sucursalNombre,
       ),
     );
   }
@@ -51,9 +55,20 @@ class _ProductoAgregarDialogState extends State<ProductoAgregarDialog> {
 
   bool _liquidacion = false;
 
+  // Variables para controlar la aparición de botones rápidos
+  int _contadorClicsAumentar = 0;
+  bool _mostrarBotonesRapidos = false;
+
   int get stockActual => widget.producto.stock;
   int get cantidadAgregar => int.tryParse(_cantidadController.text) ?? 0;
   int get stockNuevo => stockActual + cantidadAgregar;
+
+  // Calcular ganancia y porcentaje
+  double get precioCompra => double.tryParse(_precioCompraController.text) ?? 0;
+  double get precioVenta => double.tryParse(_precioVentaController.text) ?? 0;
+  double get ganancia => precioVenta - precioCompra;
+  double get porcentajeGanancia =>
+      precioCompra > 0 ? (ganancia / precioCompra) * 100 : 0;
 
   @override
   void initState() {
@@ -85,6 +100,14 @@ class _ProductoAgregarDialogState extends State<ProductoAgregarDialog> {
       int val = cantidadAgregar;
       val++;
       _cantidadController.text = val.toString();
+
+      // Incrementar contador de clics para mostrar botones rápidos
+      _contadorClicsAumentar++;
+
+      // Después de 4 clics, mostrar botones rápidos
+      if (_contadorClicsAumentar >= 5 && !_mostrarBotonesRapidos) {
+        _mostrarBotonesRapidos = true;
+      }
     });
   }
 
@@ -95,6 +118,10 @@ class _ProductoAgregarDialogState extends State<ProductoAgregarDialog> {
         val--;
       }
       _cantidadController.text = val.toString();
+
+      // Reiniciar contador de clics cuando reducimos
+      _contadorClicsAumentar = 0;
+      _mostrarBotonesRapidos = false;
     });
   }
 
@@ -146,38 +173,38 @@ class _ProductoAgregarDialogState extends State<ProductoAgregarDialog> {
                 ],
               ),
               const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
+
+              // Información de la sucursal
+              if (widget.sucursalNombre != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2D2D2D),
+                    borderRadius: BorderRadius.circular(8),
+                    border:
+                        Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                  ),
+                  child: Row(
                     children: [
-                      const Text('Actual',
-                          style: TextStyle(color: Colors.white70)),
-                      const SizedBox(height: 4),
-                      Text('$stockActual',
+                      const FaIcon(FontAwesomeIcons.store,
+                          color: Colors.blue, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Sucursal: ${widget.sucursalNombre}',
                           style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 22)),
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
-                  const FaIcon(FontAwesomeIcons.arrowRight,
-                      color: Colors.white54, size: 18),
-                  Column(
-                    children: [
-                      const Text('Nuevo',
-                          style: TextStyle(color: Colors.white70)),
-                      const SizedBox(height: 4),
-                      Text('$stockNuevo',
-                          style: const TextStyle(
-                              color: Colors.green,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 22)),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
+                ),
+                const SizedBox(height: 16),
+              ],
+
               TextFormField(
                 controller: _cantidadController,
                 keyboardType: TextInputType.number,
@@ -211,19 +238,91 @@ class _ProductoAgregarDialogState extends State<ProductoAgregarDialog> {
                 },
               ),
               const SizedBox(height: 12),
+
+              // Controles para ajustar
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+                children: <Widget>[
+                  // Botón para reducir la cantidad a agregar
                   IconButton(
-                    icon: const Icon(Icons.remove, color: Colors.white70),
+                    icon: const FaIcon(FontAwesomeIcons.circleMinus,
+                        color: Colors.white),
                     onPressed: _decrementar,
+                    tooltip: 'Reducir cantidad a agregar',
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 16),
+                  // Botón para aumentar la cantidad a agregar
                   IconButton(
-                    icon: const Icon(Icons.add, color: Colors.white70),
+                    icon: const FaIcon(FontAwesomeIcons.circlePlus,
+                        color: Colors.white),
                     onPressed: _incrementar,
+                    tooltip: 'Aumentar cantidad',
                   ),
                 ],
+              ),
+
+              // Botones de incremento rápido (aparecen después de 4 clics)
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                height: _mostrarBotonesRapidos ? 50 : 0,
+                curve: Curves.easeInOut,
+                child: AnimatedOpacity(
+                  opacity: _mostrarBotonesRapidos ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 300),
+                  child: _mostrarBotonesRapidos
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: <Widget>[
+                              // Botón +5
+                              ElevatedButton.icon(
+                                icon: const FaIcon(
+                                  FontAwesomeIcons.plus,
+                                  size: 12,
+                                ),
+                                label: const Text('+5'),
+                                onPressed: () {
+                                  setState(() {
+                                    int val = cantidadAgregar;
+                                    val += 5;
+                                    _cantidadController.text = val.toString();
+                                  });
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF3E3E3E),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 8),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              // Botón +10
+                              ElevatedButton.icon(
+                                icon: const FaIcon(
+                                  FontAwesomeIcons.plus,
+                                  size: 12,
+                                ),
+                                label: const Text('+10'),
+                                onPressed: () {
+                                  setState(() {
+                                    int val = cantidadAgregar;
+                                    val += 10;
+                                    _cantidadController.text = val.toString();
+                                  });
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF3E3E3E),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -296,12 +395,64 @@ class _ProductoAgregarDialogState extends State<ProductoAgregarDialog> {
                 },
               ),
               const SizedBox(height: 16),
+
+              // Información de ganancia
+              ValueListenableBuilder(
+                valueListenable: _precioVentaController,
+                builder: (BuildContext context,
+                    TextEditingValue precioVentaText, _) {
+                  return ValueListenableBuilder(
+                    valueListenable: _precioCompraController,
+                    builder: (BuildContext context,
+                        TextEditingValue precioCompraText, _) {
+                      final double venta =
+                          double.tryParse(precioVentaText.text) ?? 0;
+                      final double compra =
+                          double.tryParse(precioCompraText.text) ?? 0;
+                      final double ganancia = venta - compra;
+                      final num porcentaje =
+                          compra > 0 ? (ganancia / compra) * 100 : 0;
+
+                      return Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2D2D2D),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.1),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: <Widget>[
+                            const Text(
+                              'Ganancia:',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            Text(
+                              'S/ ${ganancia.toStringAsFixed(2)} (${porcentaje.toStringAsFixed(1)}%)',
+                              style: TextStyle(
+                                color: ganancia > 0
+                                    ? Colors.green[400]
+                                    : const Color(0xFFE31E24),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+
+              const SizedBox(height: 16),
               Row(
                 children: [
                   Switch(
                     value: _liquidacion,
                     onChanged: (v) => setState(() => _liquidacion = v),
-                    activeColor: Colors.amber,
+                    activeThumbColor: Colors.amber,
                   ),
                   const SizedBox(width: 8),
                   const Text('¿Está en liquidación?',

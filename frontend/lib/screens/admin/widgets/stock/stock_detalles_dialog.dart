@@ -1,11 +1,10 @@
 // Importamos el API global
 import 'package:condorsmotors/models/producto.model.dart';
-import 'package:condorsmotors/providers/admin/stock.admin.provider.dart';
 import 'package:condorsmotors/repositories/producto.repository.dart';
+import 'package:condorsmotors/utils/stock_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:provider/provider.dart';
 
 /// Diálogo para mostrar los detalles de stock de un producto
 class StockDetallesDialog extends StatefulWidget {
@@ -41,7 +40,6 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
   late int _stockNuevo;
   late TextEditingController _stockController;
   bool _mostrarAdvertencia = false;
-  late StockProvider _stockProvider;
 
   // Instancias de repositorios
   final ProductoRepository _productoRepository = ProductoRepository.instance;
@@ -70,12 +68,6 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
         widget.producto.precioVenta * 0.9; // Por defecto 10% descuento
     _precioLiquidacionController =
         TextEditingController(text: _precioLiquidacion.toStringAsFixed(2));
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _stockProvider = Provider.of<StockProvider>(context, listen: false);
   }
 
   @override
@@ -607,7 +599,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                                   _enLiquidacion = value;
                                 });
                               },
-                              activeColor: Colors.orange,
+                              activeThumbColor: Colors.orange,
                             ),
                           ],
                         ),
@@ -1140,10 +1132,10 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
     );
   }
 
-  // Métodos auxiliares que usan el provider
+  // Métodos auxiliares que usan StockUtils
   Color _getStockStatusColor(int stockActual, int stockMinimo) {
     final StockStatus status =
-        _stockProvider.getStockStatus(stockActual, stockMinimo);
+        StockUtils.getStockStatus(stockActual, stockMinimo);
     switch (status) {
       case StockStatus.agotado:
         return Colors.red.shade800;
@@ -1156,7 +1148,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
 
   IconData _getStockStatusIcon(int stockActual, int stockMinimo) {
     final StockStatus status =
-        _stockProvider.getStockStatus(stockActual, stockMinimo);
+        StockUtils.getStockStatus(stockActual, stockMinimo);
     switch (status) {
       case StockStatus.agotado:
         return FontAwesomeIcons.ban;
@@ -1169,7 +1161,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
 
   String _getStockStatusText(int stockActual, int stockMinimo) {
     final StockStatus status =
-        _stockProvider.getStockStatus(stockActual, stockMinimo);
+        StockUtils.getStockStatus(stockActual, stockMinimo);
     switch (status) {
       case StockStatus.agotado:
         return 'Agotado';

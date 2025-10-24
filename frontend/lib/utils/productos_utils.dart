@@ -96,7 +96,7 @@ class ProductosUtils {
         categoryLower.isEmpty;
 
     if (debugMode) {
-      debugPrint('🔍 ProductosUtils.filtrarProductos:');
+      debugPrint('ProductosUtils.filtrarProductos:');
       debugPrint('   - Productos totales: ${productos.length}');
       debugPrint('   - Query: "$query"');
       debugPrint(
@@ -125,7 +125,7 @@ class ProductosUtils {
             (categoriaProducto.contains(categoryLower) ||
                 categoryLower.contains(categoriaProducto))) {
           debugPrint(
-              '⚠️ Posible coincidencia parcial: "$categoriaProducto" vs "$categoryLower"');
+              'Posible coincidencia parcial: "$categoriaProducto" vs "$categoryLower"');
         }
       }
 
@@ -155,7 +155,7 @@ class ProductosUtils {
 
       if (!mostrarTodos && resultados.isEmpty) {
         debugPrint(
-            '❌ No se encontraron coincidencias para la categoría "$selectedCategory"');
+            'No se encontraron coincidencias para la categoría "$selectedCategory"');
       }
     }
 

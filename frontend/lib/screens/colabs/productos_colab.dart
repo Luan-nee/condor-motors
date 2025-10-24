@@ -4,6 +4,7 @@ import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:condorsmotors/screens/colabs/selector_colab.dart';
 import 'package:condorsmotors/utils/busqueda_producto_utils.dart';
 import 'package:condorsmotors/utils/stock_utils.dart';
+import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -22,10 +23,10 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
   bool _isLoading = true;
   String? _error;
 
-  // Lista de productos
+  // Sistema de paginación optimizado
+  final Map<int, List<Producto>> _productosCache = <int, List<Producto>>{};
+  final Map<int, Paginacion> _paginacionCache = <int, Paginacion>{};
   List<Producto> _productos = <Producto>[];
-
-  // Información de paginación
   late Paginacion _paginacion;
 
   // Categorías disponibles (se cargarán desde la API)
@@ -43,10 +44,14 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
   ];
 
   // Tamaño de página para la paginación
-  static const int _pageSize = 20;
+  int _pageSize = 20;
 
   // Repositorio de productos
   final ProductoRepository _productoRepository = ProductoRepository.instance;
+
+  // Variables para ordenación (orden predeterminado por nombre)
+  final String _sortBy = 'nombre';
+  final String _order = 'asc';
 
   // Estados para filtros desplegables
   bool _isCategoriaExpanded = false;
@@ -60,9 +65,54 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
     _cargarDatos();
   }
 
+  /// Verifica si necesita recargar la página (filtros o parámetros cambiaron)
+  bool _necesitaRecargar(int page, int pageSize, String sortBy, String order) {
+    // Si cambió el tamaño de página, ordenación o filtros, recargar
+    return _pageSize != pageSize ||
+        _sortBy != sortBy ||
+        _order != order ||
+        _searchQuery.isNotEmpty ||
+        _selectedCategory != 'Todos' ||
+        _selectedBrand != 'Todas' ||
+        _selectedPromotion != 'Todas';
+  }
+
+  /// Carga datos desde el caché
+  void _cargarDesdeCache(int page) {
+    if (_productosCache.containsKey(page) &&
+        _paginacionCache.containsKey(page)) {
+      setState(() {
+        _productos = _productosCache[page]!;
+        _paginacion = _paginacionCache[page]!;
+        _isLoading = false;
+      });
+    }
+  }
+
+  /// Limpia el caché cuando cambian los filtros
+  void _limpiarCache() {
+    _productosCache.clear();
+    _paginacionCache.clear();
+  }
+
   /// Carga los datos iniciales (productos y categorías)
-  Future<void> _cargarDatos() async {
+  Future<void> _cargarDatos(
+      {int? page, int? pageSize, String? sortBy, String? order}) async {
     if (!mounted) {
+      return;
+    }
+
+    final int targetPage = page ?? 1;
+    final int targetPageSize = pageSize ?? _pageSize;
+    final String targetSortBy = sortBy ?? _sortBy;
+    final String targetOrder = order ?? _order;
+
+    // Verificar si ya tenemos la página en caché
+    if (_productosCache.containsKey(targetPage) &&
+        _paginacionCache.containsKey(targetPage) &&
+        !_necesitaRecargar(
+            targetPage, targetPageSize, targetSortBy, targetOrder)) {
+      _cargarDesdeCache(targetPage);
       return;
     }
 
@@ -86,9 +136,10 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
         search: _searchQuery.isNotEmpty ? _searchQuery : null,
         filter: _selectedCategory != 'Todos' ? 'categoria' : null,
         filterValue: _selectedCategory != 'Todos' ? _selectedCategory : null,
-        pageSize: _pageSize,
-        sortBy: 'nombre',
-        order: 'asc',
+        page: page ?? 1,
+        pageSize: pageSize ?? _pageSize,
+        sortBy: sortBy ?? _sortBy,
+        order: order ?? _order,
       );
 
       // Extraer categorías únicas y normalizadas usando BusquedaProductoUtils
@@ -102,7 +153,7 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
           BusquedaProductoUtils.extraerCategorias(productosMap);
       // Extraer marcas únicas y normalizadas
       final Set<String> marcasSet = response.items
-          .map((p) => (p.marca).trim())
+          .map((p) => p.marca.trim())
           .where((m) => m.isNotEmpty)
           .toSet();
       final List<String> marcasProcesadas = <String>[
@@ -113,6 +164,10 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
       if (!mounted) {
         return;
       }
+
+      // Guardar en caché
+      _productosCache[targetPage] = response.items;
+      _paginacionCache[targetPage] = response.paginacion;
 
       setState(() {
         _productos = response.items;
@@ -155,76 +210,14 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
     }
   }
 
-  /// Carga la siguiente página de productos
-  Future<void> _cargarMasProductos() async {
-    if (!_paginacion.hasNext) {
-      return;
-    }
-
-    try {
-      final String? sucursalId =
-          await _productoRepository.getCurrentSucursalId();
-
-      if (sucursalId == null || sucursalId.isEmpty) {
-        throw Exception('No se pudo determinar la sucursal del usuario');
-      }
-
-      final response = await _productoRepository.getProductos(
-        sucursalId: sucursalId,
-        search: _searchQuery.isNotEmpty ? _searchQuery : null,
-        filter: _selectedCategory != 'Todos' ? 'categoria' : null,
-        filterValue: _selectedCategory != 'Todos' ? _selectedCategory : null,
-        page: _paginacion.currentPage + 1,
-        pageSize: _pageSize,
-        sortBy: 'nombre',
-        order: 'asc',
-      );
-
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _productos.addAll(response.items);
-        _paginacion = response.paginacion;
-      });
-    } catch (e) {
-      if (!mounted) {
-        return;
-      }
-
-      final String errorStr = e.toString().toLowerCase();
-      final bool isAuthError =
-          errorStr.contains('401') || errorStr.contains('authorization');
-      final bool isRefreshFailed = errorStr.contains('refresh failed') ||
-          errorStr.contains('invalid_grant') ||
-          errorStr.contains('refresh_token');
-
-      // Solo mostrar el mensaje si el refresh también falló
-      if (isAuthError && !isRefreshFailed) {
-        // No mostrar nada, el refresh token se encargará
-        return;
-      }
-
-      // Si el refresh también falló, mostrar el mensaje
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:
-              Text('Error de autorización. Por favor, inicia sesión de nuevo.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
   // NUEVO: Filtrado avanzado combinando todos los filtros
   List<Producto> _getProductosFiltrados() {
     return _productos.where((producto) {
       final bool coincideCategoria = _selectedCategory == 'Todos' ||
-          (producto.categoria).trim().toLowerCase() ==
+          producto.categoria.trim().toLowerCase() ==
               _selectedCategory.toLowerCase();
       final bool coincideMarca = _selectedBrand == 'Todas' ||
-          (producto.marca).trim().toLowerCase() == _selectedBrand.toLowerCase();
+          producto.marca.trim().toLowerCase() == _selectedBrand.toLowerCase();
       final bool coincideTexto = _searchQuery.isEmpty ||
           producto.nombre.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           producto.sku.toLowerCase().contains(_searchQuery.toLowerCase());
@@ -323,6 +316,7 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
       _isPromocionExpanded = false;
       _isSearchExpanded = false;
     });
+    _limpiarCache(); // Limpiar caché antes de recargar
     _cargarDatos();
   }
 
@@ -471,7 +465,7 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
     double? iconSize,
     double? chipFontSize,
   }) {
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(
         color: active ? color.withValues(alpha: 0.2) : Colors.transparent,
         borderRadius: BorderRadius.circular(8),
@@ -521,7 +515,7 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                 ? _productos.length
                 : _productos
                     .where((p) =>
-                        (p.categoria).trim().toLowerCase() ==
+                        p.categoria.trim().toLowerCase() ==
                         categoria.toLowerCase())
                     .length;
             return DropdownMenuItem<String>(
@@ -581,7 +575,7 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                 ? _productos.length
                 : _productos
                     .where((p) =>
-                        (p.marca).trim().toLowerCase() == marca.toLowerCase())
+                        p.marca.trim().toLowerCase() == marca.toLowerCase())
                     .length;
             return DropdownMenuItem<String>(
               value: marca,
@@ -790,7 +784,7 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
     }
     return GestureDetector(
       onTap: () {
-        // TODO: Mostrar imagen ampliada en un dialog
+        _mostrarImagenAmpliada(context, producto);
       },
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
@@ -869,365 +863,536 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: _buildCompactFilterBar(),
-          ),
-          if (_isLoading)
-            const Expanded(
-              child: Center(
-                child: CircularProgressIndicator(),
+      body: Column(children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: _buildCompactFilterBar(),
+        ),
+        if (_isLoading)
+          const Expanded(
+            child: Center(
+              child: CircularProgressIndicator(),
+            ),
+          )
+        else if (_error != null)
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  const Icon(
+                    Icons.error_outline,
+                    color: Colors.red,
+                    size: 48,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error al cargar los productos:\n$_error',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _cargarDatos,
+                    child: const Text('Reintentar'),
+                  ),
+                ],
               ),
-            )
-          else if (_error != null)
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    const Icon(
-                      Icons.error_outline,
-                      color: Colors.red,
-                      size: 48,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Error al cargar los productos:\n$_error',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _cargarDatos,
-                      child: const Text('Reintentar'),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            Expanded(
-              child: NotificationListener<ScrollNotification>(
-                onNotification: (ScrollNotification scrollInfo) {
-                  if (scrollInfo.metrics.pixels ==
-                      scrollInfo.metrics.maxScrollExtent) {
-                    _cargarMasProductos();
-                  }
-                  return true;
-                },
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: productosFiltrados.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    final Producto producto = productosFiltrados[index];
-                    final StockStatus estado = StockUtils.getStockStatus(
-                      producto.stock,
-                      producto.stockMinimo ?? 0,
-                    );
-                    final String stockFaltante =
-                        _getStockFaltanteText(producto);
-                    return RepaintBoundary(
-                      key: ValueKey('producto_colab_${producto.id}'),
-                      child: Card(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        child: ExpansionTile(
-                          title: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: <Widget>[
-                                  _buildProductoImagen(producto, size: 48),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    producto.sku,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      producto.nombre,
-                                      style: producto.liquidacion
-                                          ? const TextStyle(
-                                              color: Colors.amber,
-                                              fontWeight: FontWeight.bold)
-                                          : null,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              // Barra de progreso central
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 4),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    LinearProgressIndicator(
-                                      value: _getStockProgress(producto),
-                                      backgroundColor: Colors.grey[300],
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                          _getStockProgressColor(producto)),
-                                      minHeight: 12,
-                                    ),
-                                    const SizedBox(height: 2),
+            ),
+          )
+        else
+          Expanded(
+            child: Column(
+              children: [
+                // Lista de productos
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: productosFiltrados.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      final Producto producto = productosFiltrados[index];
+                      final StockStatus estado = StockUtils.getStockStatus(
+                        producto.stock,
+                        producto.stockMinimo ?? 0,
+                      );
+                      final String stockFaltante =
+                          _getStockFaltanteText(producto);
+                      return RepaintBoundary(
+                        key: ValueKey('producto_colab_${producto.id}'),
+                        child: Card(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: ExpansionTile(
+                            title: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: <Widget>[
+                                    _buildProductoImagen(producto, size: 48),
+                                    const SizedBox(width: 12),
                                     Text(
-                                      'Stock: ${producto.stock} / ${producto.stockMinimo ?? "-"}',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: _getStockProgressColor(producto),
-                                        fontWeight: FontWeight.w500,
+                                      producto.sku,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        producto.nombre,
+                                        style: producto.liquidacion
+                                            ? const TextStyle(
+                                                color: Colors.amber,
+                                                fontWeight: FontWeight.bold)
+                                            : null,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                            ],
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              Row(
-                                children: <Widget>[
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context)
-                                          .primaryColor
-                                          .withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      producto.categoria,
-                                      style: TextStyle(
-                                        color: Theme.of(context).primaryColor,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Flexible(
-                                    child: Text(
-                                      producto.marca,
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontSize: 12,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              if (stockFaltante.isNotEmpty)
+                                const SizedBox(height: 4),
+                                // Barra de progreso central
                                 Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Text(
-                                    stockFaltante,
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 4),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      LinearProgressIndicator(
+                                        value: _getStockProgress(producto),
+                                        backgroundColor: Colors.grey[300],
+                                        valueColor: AlwaysStoppedAnimation<
+                                                Color>(
+                                            _getStockProgressColor(producto)),
+                                        minHeight: 12,
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Stock: ${producto.stock} / ${producto.stockMinimo ?? "-"}',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color:
+                                              _getStockProgressColor(producto),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Row(
+                                  children: <Widget>[
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context)
+                                            .primaryColor
+                                            .withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        producto.categoria,
+                                        style: TextStyle(
+                                          color: Theme.of(context).primaryColor,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        producto.marca,
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontSize: 12,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (stockFaltante.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Text(
+                                      stockFaltante,
+                                      style: const TextStyle(
+                                        color: Colors.red,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            trailing: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: <Widget>[
+                                if (producto.liquidacion &&
+                                    producto.precioOferta != null)
+                                  Text(
+                                    'S/ ${producto.precioVenta.toStringAsFixed(2)}',
                                     style: const TextStyle(
-                                      color: Colors.red,
-                                      fontWeight: FontWeight.bold,
+                                      decoration: TextDecoration.lineThrough,
+                                      color: Colors.grey,
                                       fontSize: 12,
                                     ),
                                   ),
-                                ),
-                            ],
-                          ),
-                          trailing: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: <Widget>[
-                              if (producto.liquidacion &&
-                                  producto.precioOferta != null)
                                 Text(
-                                  'S/ ${producto.precioVenta.toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    decoration: TextDecoration.lineThrough,
-                                    color: Colors.grey,
+                                  'S/ ${(producto.liquidacion && producto.precioOferta != null ? producto.precioOferta! : producto.precioVenta).toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: producto.liquidacion
+                                        ? Colors.amber
+                                        : null,
+                                  ),
+                                ),
+                                Text(
+                                  'Stock: ${producto.stock}',
+                                  style: TextStyle(
+                                    color: _getEstadoColor(estado),
                                     fontSize: 12,
                                   ),
                                 ),
-                              Text(
-                                'S/ ${(producto.liquidacion && producto.precioOferta != null ? producto.precioOferta! : producto.precioVenta).toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: producto.liquidacion
-                                      ? Colors.amber
-                                      : null,
-                                ),
-                              ),
-                              Text(
-                                'Stock: ${producto.stock}',
-                                style: TextStyle(
-                                  color: _getEstadoColor(estado),
-                                  fontSize: 12,
+                              ],
+                            ),
+                            children: <Widget>[
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                child: SingleChildScrollView(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: <Widget>[
+                                      const Text(
+                                        'Detalles del Producto',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(producto.descripcion ??
+                                          'Sin descripción'),
+                                      const SizedBox(height: 16),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: <Widget>[
+                                          Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: <Widget>[
+                                              if (producto.liquidacion &&
+                                                  producto.precioOferta !=
+                                                      null) ...<Widget>[
+                                                Text(
+                                                  'Precio Normal: S/ ${producto.precioVenta.toStringAsFixed(2)}',
+                                                  style: const TextStyle(
+                                                    decoration: TextDecoration
+                                                        .lineThrough,
+                                                    color: Colors.grey,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  'Precio Liquidación: S/ ${producto.precioOferta!.toStringAsFixed(2)}',
+                                                  style: const TextStyle(
+                                                    color: Colors.amber,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ] else
+                                                Text(
+                                                  'Precio Normal: S/ ${producto.precioVenta.toStringAsFixed(2)}',
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              Text(
+                                                'Precio Compra: S/ ${producto.precioCompra.toStringAsFixed(2)}',
+                                                style: TextStyle(
+                                                  color: Colors.grey[600],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.end,
+                                            children: <Widget>[
+                                              Text(
+                                                'Stock Actual: ${producto.stock}',
+                                                style: TextStyle(
+                                                  color:
+                                                      _getEstadoColor(estado),
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              Text(
+                                                'Stock Mínimo: ${producto.stockMinimo ?? 0}',
+                                                style: TextStyle(
+                                                  color: Colors.grey[600],
+                                                ),
+                                              ),
+                                              Text(
+                                                'Estado: ${_getEstadoText(estado)}',
+                                                style: TextStyle(
+                                                  color:
+                                                      _getEstadoColor(estado),
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              if (stockFaltante.isNotEmpty)
+                                                Text(
+                                                  stockFaltante,
+                                                  style: const TextStyle(
+                                                    color: Colors.red,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                      if (producto.cantidadGratisDescuento !=
+                                              null ||
+                                          producto.porcentajeDescuento != null)
+                                        Container(
+                                          margin:
+                                              const EdgeInsets.only(top: 16),
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: Colors.blue
+                                                .withValues(alpha: 0.1),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: Colors.blue
+                                                  .withValues(alpha: 0.3),
+                                            ),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: <Widget>[
+                                              const Text(
+                                                'Promociones Activas:',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.blue,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 8),
+                                              if (producto
+                                                      .cantidadGratisDescuento !=
+                                                  null)
+                                                Text(
+                                                  '• Lleva ${producto.cantidadMinimaDescuento}, paga ${producto.cantidadMinimaDescuento! - producto.cantidadGratisDescuento!}',
+                                                  style: const TextStyle(
+                                                      color: Colors.blue),
+                                                ),
+                                              if (producto
+                                                      .porcentajeDescuento !=
+                                                  null)
+                                                Text(
+                                                  '• ${producto.porcentajeDescuento}% de descuento por ${producto.cantidadMinimaDescuento}+ unidades',
+                                                  style: const TextStyle(
+                                                      color: Colors.blue),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                          children: <Widget>[
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              child: SingleChildScrollView(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: <Widget>[
-                                    const Text(
-                                      'Detalles del Producto',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(producto.descripcion ??
-                                        'Sin descripción'),
-                                    const SizedBox(height: 16),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: <Widget>[
-                                        Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: <Widget>[
-                                            if (producto.liquidacion &&
-                                                producto.precioOferta !=
-                                                    null) ...<Widget>[
-                                              Text(
-                                                'Precio Normal: S/ ${producto.precioVenta.toStringAsFixed(2)}',
-                                                style: const TextStyle(
-                                                  decoration: TextDecoration
-                                                      .lineThrough,
-                                                  color: Colors.grey,
-                                                ),
-                                              ),
-                                              Text(
-                                                'Precio Liquidación: S/ ${producto.precioOferta!.toStringAsFixed(2)}',
-                                                style: const TextStyle(
-                                                  color: Colors.amber,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ] else
-                                              Text(
-                                                'Precio Normal: S/ ${producto.precioVenta.toStringAsFixed(2)}',
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            Text(
-                                              'Precio Compra: S/ ${producto.precioCompra.toStringAsFixed(2)}',
-                                              style: TextStyle(
-                                                color: Colors.grey[600],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.end,
-                                          children: <Widget>[
-                                            Text(
-                                              'Stock Actual: ${producto.stock}',
-                                              style: TextStyle(
-                                                color: _getEstadoColor(estado),
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            Text(
-                                              'Stock Mínimo: ${producto.stockMinimo ?? 0}',
-                                              style: TextStyle(
-                                                color: Colors.grey[600],
-                                              ),
-                                            ),
-                                            Text(
-                                              'Estado: ${_getEstadoText(estado)}',
-                                              style: TextStyle(
-                                                color: _getEstadoColor(estado),
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            if (stockFaltante.isNotEmpty)
-                                              Text(
-                                                stockFaltante,
-                                                style: const TextStyle(
-                                                  color: Colors.red,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                    if (producto.cantidadGratisDescuento !=
-                                            null ||
-                                        producto.porcentajeDescuento != null)
-                                      Container(
-                                        margin: const EdgeInsets.only(top: 16),
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue
-                                              .withValues(alpha: 0.1),
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                          border: Border.all(
-                                            color: Colors.blue
-                                                .withValues(alpha: 0.3),
-                                          ),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: <Widget>[
-                                            const Text(
-                                              'Promociones Activas:',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.blue,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            if (producto
-                                                    .cantidadGratisDescuento !=
-                                                null)
-                                              Text(
-                                                '• Lleva ${producto.cantidadMinimaDescuento}, paga ${producto.cantidadMinimaDescuento! - producto.cantidadGratisDescuento!}',
-                                                style: const TextStyle(
-                                                    color: Colors.blue),
-                                              ),
-                                            if (producto.porcentajeDescuento !=
-                                                null)
-                                              Text(
-                                                '• ${producto.porcentajeDescuento}% de descuento por ${producto.cantidadMinimaDescuento}+ unidades',
-                                                style: const TextStyle(
-                                                    color: Colors.blue),
-                                              ),
-                                          ],
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
                         ),
+                      );
+                    },
+                  ),
+                ),
+
+                // Controles de paginación usando el widget Paginador (sin ordenación)
+                if (_paginacion.totalPages > 1)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    child: Paginador(
+                      paginacion: _paginacion,
+                      onPageChanged: _cambiarPagina,
+                      onPageSizeChanged: (int newPageSize) {
+                        _cambiarTamanioPagina(newPageSize);
+                      },
+                      // Sin controles de ordenación - orden predeterminado por nombre
+                      // Configuración específica para colaboradores
+                      backgroundColor: const Color(0xFF2D2D2D),
+                      accentColor: const Color(0xFFE31E24),
+                      textColor: Colors.white,
+                      forceCompactMode: MediaQuery.of(context).size.width < 600,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+      ]),
+    );
+  }
+
+  /// Muestra la imagen del producto en un dialog ampliado
+  void _mostrarImagenAmpliada(BuildContext context, Producto producto) {
+    final String? url = ProductoRepository.getProductoImageUrl(producto);
+    if (url == null || url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No hay imagen disponible para este producto'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Stack(
+            children: [
+              // Imagen ampliada
+              Center(
+                child: InteractiveViewer(
+                  child: Image.network(
+                    url,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      width: 300,
+                      height: 300,
+                      color: Colors.grey[200],
+                      child: const Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.broken_image,
+                              color: Colors.grey, size: 64),
+                          SizedBox(height: 16),
+                          Text('Error al cargar la imagen'),
+                        ],
                       ),
-                    );
-                  },
+                    ),
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) {
+                        return child;
+                      }
+                      return Container(
+                        width: 300,
+                        height: 300,
+                        color: Colors.grey[200],
+                        child: const Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ),
-            ),
-        ],
-      ),
+              // Botón de cerrar
+              Positioned(
+                top: 8,
+                right: 8,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black54,
+                    shape: const CircleBorder(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
+  }
+
+  /// Cambia a una página específica
+  Future<void> _cambiarPagina(int pagina) async {
+    if (pagina < 1 || pagina > _paginacion.totalPages) {
+      return;
+    }
+
+    await _cargarDatos(page: pagina);
+
+    // Precargar páginas adyacentes para mejor UX
+    _precargarPaginasAdyacentes(pagina);
+  }
+
+  /// Precarga páginas adyacentes para navegación fluida
+  void _precargarPaginasAdyacentes(int paginaActual) {
+    final int totalPages = _paginacion.totalPages;
+
+    // Precargar página anterior si existe
+    if (paginaActual > 1) {
+      _precargarPagina(paginaActual - 1);
+    }
+
+    // Precargar página siguiente si existe
+    if (paginaActual < totalPages) {
+      _precargarPagina(paginaActual + 1);
+    }
+  }
+
+  /// Precarga una página específica en segundo plano
+  Future<void> _precargarPagina(int pagina) async {
+    // Solo precargar si no está en caché
+    if (_productosCache.containsKey(pagina)) {
+      return;
+    }
+
+    try {
+      final String? sucursalId =
+          await _productoRepository.getCurrentSucursalId();
+      if (sucursalId == null || sucursalId.isEmpty) {
+        return;
+      }
+
+      final response = await _productoRepository.getProductos(
+        sucursalId: sucursalId,
+        search: _searchQuery.isNotEmpty ? _searchQuery : null,
+        filter: _selectedCategory != 'Todos' ? 'categoria' : null,
+        filterValue: _selectedCategory != 'Todos' ? _selectedCategory : null,
+        page: pagina,
+        pageSize: _pageSize,
+        sortBy: _sortBy,
+        order: _order,
+      );
+
+      // Guardar en caché sin actualizar la UI
+      if (mounted) {
+        _productosCache[pagina] = response.items;
+        _paginacionCache[pagina] = response.paginacion;
+      }
+    } catch (e) {
+      // Silenciar errores de precarga
+      debugPrint('Error precargando página $pagina: $e');
+    }
+  }
+
+  /// Cambia el tamaño de página
+  Future<void> _cambiarTamanioPagina(int nuevoTamanio) async {
+    setState(() {
+      _pageSize = nuevoTamanio;
+    });
+    _limpiarCache(); // Limpiar caché al cambiar tamaño de página
+    await _cargarDatos(page: 1); // Volver a la primera página
   }
 }

@@ -3,14 +3,15 @@ import 'dart:io';
 import 'package:condorsmotors/models/color.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
-import 'package:condorsmotors/providers/admin/producto.admin.provider.dart';
+import 'package:condorsmotors/repositories/categoria.repository.dart';
+import 'package:condorsmotors/repositories/color.repository.dart';
+import 'package:condorsmotors/repositories/marcas.repository.dart';
 import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:condorsmotors/utils/productos_utils.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:provider/provider.dart';
 
 class ProductosFormDialogAdmin extends StatefulWidget {
   final Producto? producto;
@@ -149,11 +150,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
   }
 
   Future<void> _initProvider() async {
-    // Acceder al provider
-    final ProductoProvider productoProvider =
-        Provider.of<ProductoProvider>(context, listen: false);
-
-    // Cargar datos usando el provider
+    // Cargar datos usando repositorios directamente
     setState(() {
       _isLoadingCategorias = true;
       _isLoadingMarcas = true;
@@ -161,17 +158,18 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     });
 
     try {
-      // IMPORTANTE: Forzamos la carga de categorías, marcas y colores sin usar caché
-      // para asegurar que siempre tengamos la información más actualizada al abrir el formulario
-      await productoProvider.cargarCategorias();
-      await productoProvider.cargarMarcas();
-      await productoProvider.cargarColores();
+      // Cargar categorías, marcas y colores desde repositorios
+      final categoriaRepository = CategoriaRepository.instance;
+      final marcaRepository = MarcaRepository.instance;
+      final colorRepository = ColorRepository.instance;
 
-      // Extraer datos del provider después de asegurar que estén cargados
+      final categorias = await categoriaRepository.getCategorias();
+      final marcas = await marcaRepository.getMarcas();
+      final colores = await colorRepository.getColores();
+
       setState(() {
         // Obtener categorías
-        _categorias =
-            productoProvider.categorias.where((c) => c != 'Todos').toList();
+        _categorias = categorias.map((c) => c.nombre).toList();
         _isLoadingCategorias = false;
 
         // Establecer la categoría seleccionada
@@ -183,7 +181,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         }
 
         // Obtener marcas
-        _marcas = productoProvider.marcasMap.keys.toList();
+        _marcas = marcas.map((m) => m.nombre).toList();
         _marcas.sort();
         _isLoadingMarcas = false;
 
@@ -197,16 +195,18 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
             ..sort(); // Mantener orden alfabético
         }
 
-        // Obtener colores
-        _colores = productoProvider.colores;
+        // Obtener colores desde el endpoint real
+        _colores = colores;
         _isLoadingColores = false;
 
         // Si estamos editando un producto con color, seleccionarlo
         if (widget.producto?.color != null &&
             widget.producto!.color!.isNotEmpty) {
           // Buscar el color por nombre
-          _colorSeleccionado =
-              productoProvider.obtenerColorPorNombre(widget.producto!.color!);
+          _colorSeleccionado = _colores.firstWhere(
+            (color) => color.nombre == widget.producto!.color,
+            orElse: () => _colores.first,
+          );
         } else if (_colores.isNotEmpty) {
           // Seleccionar el primer color por defecto
           _colorSeleccionado = _colores.first;
@@ -232,11 +232,12 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     setState(() => _isLoadingSucursalesCompartidas = true);
 
     try {
-      final ProductoProvider productoProvider =
-          Provider.of<ProductoProvider>(context, listen: false);
-
+      // Usar ProductosUtils para obtener información del producto en todas las sucursales
       final List<ProductoEnSucursal> sucursalesCompartidas =
-          await productoProvider.obtenerSucursalesCompartidas(productoId);
+          await ProductosUtils.obtenerProductoEnSucursales(
+        productoId: productoId,
+        sucursales: widget.sucursales,
+      );
 
       if (mounted) {
         setState(() {
@@ -250,6 +251,21 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
       if (mounted) {
         setState(() => _isLoadingSucursalesCompartidas = false);
       }
+    }
+  }
+
+  // Método para recargar datos después de guardar
+  Future<void> _recargarDatos() async {
+    try {
+      // Recargar sucursales compartidas si estamos editando un producto existente
+      if (widget.producto != null) {
+        await _cargarSucursalesCompartidas(widget.producto!.id);
+      }
+
+      // Nota: Los repositorios se actualizan automáticamente en las próximas consultas
+      debugPrint('ProductosForm: Datos recargados correctamente');
+    } catch (e) {
+      debugPrint('Error al recargar datos: $e');
     }
   }
 
@@ -559,55 +575,57 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         const SizedBox(height: 16),
         // Cuando es un producto existente, el SKU es de solo lectura
         // Cuando es un producto nuevo, el campo no aparece (el backend lo generará)
-        if (widget.producto != null) TextFormField(
-                controller: _skuController,
-                decoration: _getInputDecoration('SKU (no editable)').copyWith(
-                  filled: true,
-                  fillColor: const Color(0xFF222222),
-                  prefixIcon: const Icon(Icons.lock_outline,
-                      color: Colors.white54, size: 20),
-                ),
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
-                enabled: false, // Campo deshabilitado para edición
-                readOnly: true, // Solo lectura
-              ) else Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  children: <Widget>[
-                    const Icon(Icons.info_outline,
-                        color: Colors.blue, size: 20),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          const Text(
-                            'SKU generado automáticamente',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'El código SKU será asignado por el sistema automáticamente al guardar el producto.',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.7),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
+        if (widget.producto != null)
+          TextFormField(
+            controller: _skuController,
+            decoration: _getInputDecoration('SKU (no editable)').copyWith(
+              filled: true,
+              fillColor: const Color(0xFF222222),
+              prefixIcon: const Icon(Icons.lock_outline,
+                  color: Colors.white54, size: 20),
+            ),
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+            enabled: false, // Campo deshabilitado para edición
+            readOnly: true, // Solo lectura
+          )
+        else
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: <Widget>[
+                const Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      const Text(
+                        'SKU generado automáticamente',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      Text(
+                        'El código SKU será asignado por el sistema automáticamente al guardar el producto.',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.7),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
+            ),
+          ),
       ],
     );
   }
@@ -806,7 +824,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         else
           _marcas.isNotEmpty
               ? DropdownButtonFormField<String>(
-                  value: _marcaController.text.isEmpty ||
+                  initialValue: _marcaController.text.isEmpty ||
                           !_marcas.contains(_marcaController.text)
                       ? 'Seleccione una marca' // Valor por defecto
                       : _marcaController.text,
@@ -860,7 +878,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         else
           _categorias.isNotEmpty
               ? DropdownButtonFormField<String>(
-                  value: _categoriaSeleccionada.isEmpty ||
+                  initialValue: _categoriaSeleccionada.isEmpty ||
                           !_categorias.contains(_categoriaSeleccionada)
                       ? _categorias.first
                       : _categoriaSeleccionada,
@@ -940,7 +958,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           )
         else if (_colores.isNotEmpty)
           DropdownButtonFormField<ColorApp>(
-            value: _colorSeleccionado,
+            initialValue: _colorSeleccionado,
             decoration: _getInputDecoration('Color'),
             dropdownColor: const Color(0xFF2D2D2D),
             style: const TextStyle(color: Colors.white),
@@ -1162,7 +1180,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                     _liquidacionActiva = value;
                   });
                 },
-                activeColor: Colors.amber,
+                activeThumbColor: Colors.amber,
               ),
             ],
           ),
@@ -1335,23 +1353,24 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
           children: <Widget>[
             SizedBox(
               width: 24,
-              child: Radio<String>(
-                value: value,
-                groupValue: _tipoPromocionSeleccionada,
-                onChanged: (String? newValue) {
-                  if (newValue != null) {
-                    setState(() {
-                      _tipoPromocionSeleccionada = newValue;
-                    });
-                  }
-                },
-                activeColor: color,
-                fillColor: WidgetStateProperty.resolveWith<Color>(
-                    (Set<WidgetState> states) {
-                  return states.contains(WidgetState.selected)
-                      ? color
-                      : Colors.white70;
-                }),
+              child: Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSelected ? color : Colors.white70,
+                    width: 2,
+                  ),
+                  color: isSelected ? color : Colors.transparent,
+                ),
+                child: isSelected
+                    ? const Icon(
+                        Icons.check,
+                        size: 12,
+                        color: Colors.white,
+                      )
+                    : null,
               ),
             ),
             const SizedBox(width: 8),
@@ -1745,7 +1764,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
             ),
           )
         else
-          Container(
+          DecoratedBox(
             decoration: BoxDecoration(
               color: const Color(0xFF2D2D2D),
               borderRadius: BorderRadius.circular(8),
@@ -2065,46 +2084,32 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
         return;
       }
 
-      // Verificar si estamos en modo edición
-      final bool esNuevoProducto = widget.producto == null;
-
-      // Obtener el provider
-      final ProductoProvider productoProvider =
-          Provider.of<ProductoProvider>(context, listen: false);
-
-      // Preparar los datos del producto usando el método del provider
-      final Map<String, dynamic> productoData =
-          productoProvider.prepararDatosProducto(
-        producto: widget.producto,
-        nombre: _nombreController.text,
-        descripcion: _descripcionController.text,
-        marca: _marcaController.text,
-        categoria: _categoriaSeleccionada,
-        precioVenta: double.tryParse(_precioVentaController.text) ?? 0,
-        precioCompra: double.tryParse(_precioCompraController.text) ?? 0,
-        stock: int.tryParse(_stockController.text) ?? 0,
-        stockMinimo: _stockMinimoController.text.isNotEmpty
-            ? int.tryParse(_stockMinimoController.text)
+      // Preparar los datos del producto
+      final Map<String, dynamic> productoData = {
+        'nombre': _nombreController.text,
+        'descripcion': _descripcionController.text,
+        'precioCompra': double.tryParse(_precioCompraController.text) ?? 0,
+        'precioVenta': double.tryParse(_precioVentaController.text) ?? 0,
+        'stock': int.tryParse(_stockController.text) ?? 0,
+        'stockMinimo': int.tryParse(_stockMinimoController.text),
+        'categoria': _categoriaSeleccionada,
+        'marca': _marcaController.text,
+        'color': _colorSeleccionado?.nombre ?? _colorController.text,
+        'liquidacion': _liquidacionActiva,
+        'precioOferta': _liquidacionActiva
+            ? double.tryParse(_precioOfertaController.text)
             : null,
-        liquidacion: _liquidacionActiva,
-        precioOferta:
-            _liquidacionActiva && _precioOfertaController.text.isNotEmpty
-                ? double.tryParse(_precioOfertaController.text)
-                : null,
-        tipoPromocion: _tipoPromocionSeleccionada,
-        cantidadMinimaDescuento:
-            _cantidadMinimaDescuentoController.text.isNotEmpty
-                ? int.tryParse(_cantidadMinimaDescuentoController.text)
-                : null,
-        cantidadGratisDescuento:
-            _cantidadGratisDescuentoController.text.isNotEmpty
-                ? int.tryParse(_cantidadGratisDescuentoController.text)
-                : null,
-        porcentajeDescuento: _porcentajeDescuentoController.text.isNotEmpty
-            ? int.tryParse(_porcentajeDescuentoController.text)
+        'cantidadMinimaDescuento': _tipoPromocionSeleccionada != 'ninguna'
+            ? int.tryParse(_cantidadMinimaDescuentoController.text)
             : null,
-        colorSeleccionado: _colorSeleccionado,
-      );
+        'porcentajeDescuento':
+            _tipoPromocionSeleccionada == 'descuentoPorcentual'
+                ? int.tryParse(_porcentajeDescuentoController.text)
+                : null,
+        'cantidadGratisDescuento': _tipoPromocionSeleccionada == 'gratis'
+            ? int.tryParse(_cantidadGratisDescuentoController.text)
+            : null,
+      };
 
       // Ejecutar en función asíncrona para evitar bloquear la UI
       Future<void> saveProducto() async {
@@ -2133,54 +2138,76 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
             );
           }
 
-          // Guardar el producto
-          final bool resultado = await productoProvider.guardarProducto(
-            productoData,
-            esNuevo: esNuevoProducto,
-            fotoFile: _selectedImageFile,
-          );
+          // Guardar el producto usando el repositorio
+          final productoRepository = ProductoRepository.instance;
+          final sucursalId = _sucursalSeleccionada!.id.toString();
 
-          if (resultado) {
-            // Mensaje de depuración al limpiar la caché
+          Producto? productoGuardado;
+
+          if (widget.producto == null) {
+            // Crear nuevo producto
+            productoGuardado = await productoRepository.createProducto(
+              sucursalId: sucursalId,
+              productoData: productoData,
+              fotoFile: _selectedImageFile,
+            );
+          } else {
+            // Actualizar producto existente
+            productoGuardado = await productoRepository.updateProducto(
+              sucursalId: sucursalId,
+              productoId: widget.producto!.id,
+              productoData: productoData,
+              fotoFile: _selectedImageFile,
+            );
+          }
+
+          if (productoGuardado == null) {
+            throw Exception('Error al guardar el producto');
+          }
+
+          // Invalidar caché para forzar actualización
+          // Si estamos editando un producto existente, invalidar caché de todas las sucursales
+          // ya que el producto puede existir en múltiples sucursales
+          if (widget.producto != null) {
+            // Invalidar caché global de productos para asegurar que todos los datos estén actualizados
+            productoRepository
+                .invalidateCache(); // Sin parámetro = invalidar todo
             debugPrint(
-                'ProductosForm: Producto guardado. Actualizando datos...');
+                'ProductosForm: Caché global invalidada para producto existente');
+          } else {
+            // Para productos nuevos, solo invalidar la sucursal actual
+            productoRepository.invalidateCache(sucursalId);
+            debugPrint(
+                'ProductosForm: Caché invalidada para sucursal: $sucursalId');
+          }
 
-            // IMPORTANTE: Forzamos una recarga completa de datos del servidor
-            // para asegurar que tengamos la información más actualizada, incluyendo
-            // nuevas categorías o marcas que puedan haberse creado automáticamente
-            await productoProvider.recargarDatos();
+          // Mensaje de depuración al limpiar la caché
+          debugPrint('ProductosForm: Producto guardado. Actualizando datos...');
 
-            debugPrint('ProductosForm: Datos actualizados correctamente');
+          // Recargar datos si estamos editando un producto existente
+          if (widget.producto != null) {
+            await _recargarDatos();
+          }
 
-            if (mounted) {
-              // Limpiar cualquier SnackBar existente
-              ScaffoldMessenger.of(context).clearSnackBars();
+          debugPrint('ProductosForm: Datos actualizados correctamente');
 
-              // Mostrar mensaje de éxito
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Producto guardado exitosamente'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-
-              // Pasar callback con el producto actualizado si está disponible
-              widget.onSave(productoData);
-
-              // Cerrar el diálogo y notificar a la vista padre que debe actualizarse
-              Navigator.pop(context, true);
-            }
-          } else if (mounted && productoProvider.errorMessage != null) {
+          if (mounted) {
             // Limpiar cualquier SnackBar existente
             ScaffoldMessenger.of(context).clearSnackBars();
 
-            // Mostrar mensaje de error
+            // Mostrar mensaje de éxito
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(productoProvider.errorMessage!),
-                backgroundColor: Colors.red,
+              const SnackBar(
+                content: Text('Producto guardado exitosamente'),
+                backgroundColor: Colors.green,
               ),
             );
+
+            // Pasar callback con el producto actualizado si está disponible
+            widget.onSave(productoData);
+
+            // Cerrar el diálogo y notificar a la vista padre que debe actualizarse
+            Navigator.pop(context, true);
           }
         } catch (e) {
           debugPrint('ProductosForm: ERROR al guardar producto: $e');

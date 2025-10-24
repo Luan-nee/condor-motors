@@ -46,8 +46,8 @@ class BusquedaClienteUtils {
     bool debugMode = false,
   }) {
     if (debugMode) {
-      debugPrint('🔍 Iniciando filtrado de clientes...');
-      debugPrint('📊 Total clientes antes de filtrar: ${clientes.length}');
+      debugPrint('Iniciando filtrado de clientes...');
+      debugPrint('Total clientes antes de filtrar: ${clientes.length}');
     }
 
     final String filtro = filtroTexto.toLowerCase().trim();
@@ -68,25 +68,25 @@ class BusquedaClienteUtils {
           cliente.nombre.toLowerCase().contains(filtro);
     }).toList()
 
-    // Ordenar resultados
-    ..sort((Cliente a, Cliente b) {
-      // Primero por tipo de documento
-      final int tipoComparacion = detectarTipoDocumento(a.numeroDocumento)
-          .index
-          .compareTo(detectarTipoDocumento(b.numeroDocumento).index);
+      // Ordenar resultados
+      ..sort((Cliente a, Cliente b) {
+        // Primero por tipo de documento
+        final int tipoComparacion = detectarTipoDocumento(a.numeroDocumento)
+            .index
+            .compareTo(detectarTipoDocumento(b.numeroDocumento).index);
 
-      if (tipoComparacion != 0) {
-        return tipoComparacion;
-      }
+        if (tipoComparacion != 0) {
+          return tipoComparacion;
+        }
 
-      // Luego por denominación
-      return a.denominacion
-          .toLowerCase()
-          .compareTo(b.denominacion.toLowerCase());
-    });
+        // Luego por denominación
+        return a.denominacion
+            .toLowerCase()
+            .compareTo(b.denominacion.toLowerCase());
+      });
 
     if (debugMode) {
-      debugPrint('✅ Clientes filtrados: ${clientesFiltrados.length}');
+      debugPrint('Clientes filtrados: ${clientesFiltrados.length}');
       debugPrint('- Filtro texto: "$filtroTexto"');
       debugPrint('- Tipo documento: $tipoDocumento');
     }

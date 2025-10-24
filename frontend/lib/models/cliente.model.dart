@@ -43,7 +43,7 @@ class Cliente extends Equatable {
 
   /// Crea una instancia de Cliente desde un mapa JSON
   factory Cliente.fromJson(Map<String, dynamic> json) {
-    debugPrint('🔄 Procesando datos de cliente: ${json.keys.join(', ')}');
+    debugPrint('Procesando datos de cliente: ${json.keys.join(', ')}');
 
     // Función auxiliar para parsear fechas con manejo de errores
     DateTime parseDate(date) {
@@ -59,7 +59,7 @@ class Cliente extends Equatable {
         }
         return DateTime.now();
       } catch (e) {
-        debugPrint('⚠️ Error al parsear fecha: $e');
+        debugPrint('Error al parsear fecha: $e');
         return DateTime.now();
       }
     }

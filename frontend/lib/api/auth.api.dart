@@ -229,7 +229,7 @@ class TokenService {
 
       // Notificar a la UI que el usuario debe ser deslogueado
       if (onLogout != null) {
-        onLogout(); // Ejemplo: authProvider.logout() o callback para redirigir a login
+        onLogout();
       }
     } catch (e) {
       logError('TokenService: ERROR al limpiar tokens', e);

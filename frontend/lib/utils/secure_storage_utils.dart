@@ -10,8 +10,8 @@ class SecureStorageUtils {
   }
 
   /// Lee un valor seguro
-  static Future<String?> read(String key) async {
-    return await _storage.read(key: key);
+  static Future<String?> read(String key) {
+    return _storage.read(key: key);
   }
 
   /// Elimina un valor seguro

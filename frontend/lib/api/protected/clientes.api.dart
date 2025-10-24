@@ -45,7 +45,7 @@ class ClientesApi {
       if (useCache && !forceRefresh) {
         final List<Cliente>? cachedData = _cache.get<List<Cliente>>(cacheKey);
         if (cachedData != null) {
-          debugPrint('✅ Clientes obtenidos desde caché: $cacheKey');
+          debugPrint('Clientes obtenidos desde caché: $cacheKey');
           return cachedData;
         }
       }
@@ -91,7 +91,7 @@ class ClientesApi {
       // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, clientes);
-        debugPrint('✅ Clientes guardados en caché: $cacheKey');
+        debugPrint('Clientes guardados en caché: $cacheKey');
       }
 
       return clientes;
@@ -123,7 +123,7 @@ class ClientesApi {
       if (useCache) {
         final Cliente? cachedData = _cache.get<Cliente>(cacheKey);
         if (cachedData != null) {
-          debugPrint('✅ Cliente obtenido desde caché: $cacheKey');
+          debugPrint('Cliente obtenido desde caché: $cacheKey');
           return cachedData;
         }
       }
@@ -162,7 +162,7 @@ class ClientesApi {
       // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, cliente);
-        debugPrint('✅ Cliente guardado en caché: $cacheKey');
+        debugPrint('Cliente guardado en caché: $cacheKey');
       }
 
       return cliente;
@@ -194,7 +194,7 @@ class ClientesApi {
       if (useCache) {
         final Cliente? cachedData = _cache.get<Cliente>(cacheKey);
         if (cachedData != null) {
-          debugPrint('✅ Cliente obtenido desde caché: $cacheKey');
+          debugPrint('Cliente obtenido desde caché: $cacheKey');
           return cachedData;
         }
       }
@@ -223,7 +223,7 @@ class ClientesApi {
       // Guardar en caché si useCache es true
       if (useCache) {
         _cache.set(cacheKey, cliente);
-        debugPrint('✅ Cliente guardado en caché: $cacheKey');
+        debugPrint('Cliente guardado en caché: $cacheKey');
       }
 
       return cliente;
@@ -412,13 +412,13 @@ class ClientesApi {
   /// Invalidar caché de listas de clientes
   void _invalidateListCache() {
     _cache.invalidateByPattern('clientes');
-    debugPrint('🗑️ Caché de listas de clientes invalidada');
+    debugPrint('Caché de listas de clientes invalidada');
   }
 
   /// Invalidar caché de un cliente específico
   void _invalidateClientCache(String clienteId) {
     _cache.invalidate('cliente_$clienteId');
     _invalidateListCache(); // También invalidar listas
-    debugPrint('🗑️ Caché del cliente #$clienteId invalidada');
+    debugPrint('Caché del cliente #$clienteId invalidada');
   }
 }

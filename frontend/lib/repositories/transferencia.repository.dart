@@ -31,7 +31,6 @@ class TransferenciaRepository implements BaseRepository {
     }
   }
 
-  // FIX: Implementación delegada para cumplir con BaseRepository y centralizar la lógica en AuthRepository.
   @override
   Future<Map<String, dynamic>?> getUserData() =>
       AuthRepository.instance.getUserData();
@@ -236,19 +235,16 @@ class TransferenciaRepository implements BaseRepository {
         textColor = const Color(0xFF4CAF50);
         iconData = Icons.check_circle;
         tooltipText = 'Transferencia completada';
-        break;
       case 'PEDIDO':
         backgroundColor = const Color(0xFFFFA000).withValues(alpha: 0.15);
         textColor = const Color(0xFFFFA000);
         iconData = Icons.history;
         tooltipText = 'En proceso';
-        break;
       case 'ENVIADO':
         backgroundColor = const Color(0xFF009688).withValues(alpha: 0.15);
         textColor = const Color(0xFF009688);
         iconData = Icons.local_shipping;
         tooltipText = 'En tránsito';
-        break;
       default:
         backgroundColor = const Color(0xFF757575).withValues(alpha: 0.15);
         textColor = const Color(0xFF9E9E9E);

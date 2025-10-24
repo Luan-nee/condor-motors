@@ -68,7 +68,9 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
   // Lista de colores disponibles
   List<ColorApp> _colores = <ColorApp>[];
 
-  // Paginación (local)
+  // Sistema de paginación optimizado
+  final Map<int, List<Producto>> _productosCache = <int, List<Producto>>{};
+  final Map<int, int> _totalPaginasCache = <int, int>{};
   int _itemsPorPagina = 10;
   int _paginaActual = 0;
   int _totalPaginas = 0;
@@ -156,9 +158,9 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
         _loadingCategorias = false;
       });
 
-      debugPrint('🔍 Categorías cargadas: ${categoriasCombinadas.length}');
+      debugPrint('Categorías cargadas: ${categoriasCombinadas.length}');
     } catch (e) {
-      debugPrint('🚨 Error al cargar categorías: $e');
+      debugPrint('Error al cargar categorías: $e');
       setState(() {
         _loadingCategorias = false;
         _categoriasList = <String>[
@@ -175,10 +177,25 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
       setState(() {
         _colores = colores;
       });
-      debugPrint('🎨 Colores cargados: ${colores.length}');
+      debugPrint('Colores cargados: ${colores.length}');
     } catch (e) {
-      debugPrint('🚨 Error al cargar colores: $e');
+      debugPrint('Error al cargar colores: $e');
     }
+  }
+
+  /// Verifica si necesita recargar la página (filtros cambiaron)
+  bool _necesitaRecargar(int page, int pageSize) {
+    // Si cambió el tamaño de página o filtros, recargar
+    return _itemsPorPagina != pageSize ||
+        _searchController.text.isNotEmpty ||
+        _filtroCategoria != 'Todos' ||
+        _tipoDescuentoSeleccionado != TipoDescuento.todos;
+  }
+
+  /// Limpia el caché cuando cambian los filtros
+  void _limpiarCache() {
+    _productosCache.clear();
+    _totalPaginasCache.clear();
   }
 
   /// Método principal para filtrar productos
@@ -187,7 +204,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
       _isLoadingLocal = true;
     });
 
-    debugPrint('🔍 Iniciando filtrado de productos...');
+    debugPrint('Iniciando filtrado de productos...');
 
     final List<Producto> resultados = BusquedaProductoUtils.filtrarProductos(
       productos: BusquedaProductoUtils.convertirAMapas(widget.productos),
@@ -197,7 +214,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
       debugMode: kDebugMode,
     );
 
-    debugPrint('✅ Productos filtrados: ${resultados.length}');
+    debugPrint('Productos filtrados: ${resultados.length}');
 
     setState(() {
       _productosFiltrados = resultados;
@@ -205,6 +222,9 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
       _calcularTotalPaginas();
       _isLoadingLocal = false;
     });
+
+    // Limpiar caché al cambiar filtros
+    _limpiarCache();
   }
 
   void _calcularTotalPaginas() {
@@ -214,13 +234,20 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
       _totalPaginas = 1; // Mínimo 1 página aunque esté vacía
     }
     debugPrint(
-        '📊 Total páginas calculadas: $_totalPaginas (total productos: $totalProductos, items por página: $_itemsPorPagina)');
+        'Total páginas calculadas: $_totalPaginas (total productos: $totalProductos, items por página: $_itemsPorPagina)');
   }
 
   List<Producto> _getProductosPaginaActual() {
     if (_productosFiltrados.isEmpty) {
-      debugPrint('⚠️ No hay productos filtrados disponibles');
+      debugPrint('No hay productos filtrados disponibles');
       return <Producto>[];
+    }
+
+    // Verificar si ya tenemos la página en caché
+    if (_productosCache.containsKey(_paginaActual) &&
+        !_necesitaRecargar(_paginaActual, _itemsPorPagina)) {
+      debugPrint('Cargando página $_paginaActual desde caché');
+      return _productosCache[_paginaActual]!;
     }
 
     final int inicio = _paginaActual * _itemsPorPagina;
@@ -228,7 +255,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
     // Validación para evitar errores de rango
     if (inicio >= _productosFiltrados.length) {
       debugPrint(
-          '⚠️ Inicio de paginación fuera de rango: $_paginaActual de $_totalPaginas (inicio=$inicio, total=${_productosFiltrados.length})');
+          'Inicio de paginación fuera de rango: $_paginaActual de $_totalPaginas (inicio=$inicio, total=${_productosFiltrados.length})');
       _paginaActual = 0;
       return _getProductosPaginaActual();
     }
@@ -238,15 +265,21 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
         : _productosFiltrados.length;
 
     debugPrint(
-        '📄 Obteniendo productos página $_paginaActual: $inicio-$fin de ${_productosFiltrados.length}');
+        'Obteniendo productos página $_paginaActual: $inicio-$fin de ${_productosFiltrados.length}');
 
     try {
       final List<Producto> productosEnPagina =
           _productosFiltrados.sublist(inicio, fin);
-      debugPrint('✅ Productos en página actual: ${productosEnPagina.length}');
+
+      // Guardar en caché
+      _productosCache[_paginaActual] = productosEnPagina;
+      _totalPaginasCache[_paginaActual] = _totalPaginas;
+
+      debugPrint(
+          'Productos en página actual: ${productosEnPagina.length} (guardado en caché)');
       return productosEnPagina;
     } catch (e) {
-      debugPrint('🚨 Error al obtener productos de la página: $e');
+      debugPrint('Error al obtener productos de la página: $e');
       // En caso de error, intentar mostrar la primera página
       _paginaActual = 0;
       if (_productosFiltrados.isNotEmpty) {
@@ -264,7 +297,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 600;
 
-    return Container(
+    return ColoredBox(
       color: darkBackground,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -297,8 +330,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
                   : 'Intenta con otro filtro',
               onRestablecerFiltro: () {
                 _restablecerTodosFiltros();
-                debugPrint(
-                    '🔄 Filtros restablecidos desde ListBusquedaProducto');
+                debugPrint('Filtros restablecidos desde ListBusquedaProducto');
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -315,11 +347,11 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
             ),
           ),
 
-          // Paginador (solo en la parte inferior)
+          // Paginador optimizado usando el widget Paginador
           if (_totalPaginas > 1)
             Padding(
               padding: const EdgeInsets.only(top: 12),
-              child: _buildPaginador(),
+              child: _buildPaginadorOptimizado(),
             ),
         ],
       ),
@@ -343,7 +375,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
             runSpacing: 8,
             children: <Widget>[
               // Botón de categoría
-              Container(
+              DecoratedBox(
                 decoration: BoxDecoration(
                   color: _isCategoriaExpanded
                       ? Colors.blue.withValues(alpha: 0.2)
@@ -385,7 +417,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
               ),
 
               // Botón de promoción
-              Container(
+              DecoratedBox(
                 decoration: BoxDecoration(
                   color: _isPromocionExpanded
                       ? Colors.purple.withValues(alpha: 0.2)
@@ -430,7 +462,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
               ),
 
               // Botón de búsqueda
-              Container(
+              DecoratedBox(
                 decoration: BoxDecoration(
                   color: _isSearchExpanded
                       ? Colors.orange.withValues(alpha: 0.2)
@@ -469,7 +501,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
               ),
 
               // Nuevo botón de limpiar filtros
-              Container(
+              DecoratedBox(
                 decoration: BoxDecoration(
                   color: hayFiltrosActivos
                       ? Colors.red.withValues(alpha: 0.2)
@@ -747,7 +779,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
 
     if (_itemsPorPagina != nuevoItemsPorPagina) {
       debugPrint(
-          '📱 Cambiando a modo ${isMobile ? "móvil" : "escritorio"}: $nuevoItemsPorPagina productos por página');
+          'Cambiando a modo ${isMobile ? "móvil" : "escritorio"}: $nuevoItemsPorPagina productos por página');
       setState(() {
         _itemsPorPagina = nuevoItemsPorPagina;
         _paginaActual = 0;
@@ -758,7 +790,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
 
   void _cambiarCategoria(String? nuevaCategoria) {
     if (nuevaCategoria == null) {
-      debugPrint('⚠️ Se intentó cambiar a una categoría nula');
+      debugPrint('Se intentó cambiar a una categoría nula');
       return;
     }
 
@@ -773,8 +805,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
         esCategoriaTodos ? 'Todos' : valorCategoriaFinal;
 
     if (valorGuardar != _filtroCategoria) {
-      debugPrint(
-          '🔄 Cambiando categoría: "$_filtroCategoria" → "$valorGuardar"');
+      debugPrint('Cambiando categoría: "$_filtroCategoria" → "$valorGuardar"');
 
       // Verificar si la categoría existe en la lista (saltarse esta verificación para 'Todos')
       if (!esCategoriaTodos) {
@@ -790,7 +821,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
 
         if (!categoriaExiste) {
           debugPrint(
-              '⚠️ Advertencia: La categoría "$valorCategoriaFinal" no existe en la lista de categorías');
+              'Advertencia: La categoría "$valorCategoriaFinal" no existe en la lista de categorías');
           // Mostrar las categorías disponibles para depuración
           final List<String> categoriasNormalizadas =
               _categoriasList.map((String c) => c.toLowerCase()).toList();
@@ -806,11 +837,11 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
 
       _filtrarProductos(); // Volver a filtrar con la nueva categoría
     } else {
-      debugPrint('ℹ️ La categoría seleccionada ya es: "$_filtroCategoria"');
+      debugPrint('La categoría seleccionada ya es: "$_filtroCategoria"');
     }
   }
 
-  Widget _buildPaginador() {
+  Widget _buildPaginadorOptimizado() {
     // Creamos un objeto Paginacion basado en nuestros datos actuales
     final Paginacion paginacion = Paginacion(
       currentPage: _paginaActual + 1, // Convertir a 1-indexed para el Paginador
@@ -830,6 +861,23 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
         paginacion: paginacion,
         onPageChanged: (int page) =>
             _irAPagina(page - 1), // Convertir de 1-indexed a 0-indexed
+        onPageSizeChanged: (int newPageSize) {
+          setState(() {
+            _itemsPorPagina = newPageSize;
+            _paginaActual = 0;
+            _calcularTotalPaginas();
+            _limpiarCache();
+          });
+          _filtrarProductos();
+        },
+        onSortByChanged: (String? sortBy) {
+          // Aquí podrías implementar ordenación si la necesitas
+          debugPrint('Ordenar por: $sortBy');
+        },
+        onOrderChanged: (String order) {
+          // Aquí podrías implementar cambio de dirección de orden
+          debugPrint('Dirección de orden: $order');
+        },
         backgroundColor: darkSurface,
         textColor: Colors.white,
         accentColor: Colors.blue,
@@ -854,7 +902,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
     if (!valorExisteEnLista &&
         !BusquedaProductoUtils.esCategoriaTodos(valorNormalizado)) {
       debugPrint(
-          '⚠️ Valor seleccionado "$valorNormalizado" no encontrado en la lista, añadiéndolo temporalmente');
+          'Valor seleccionado "$valorNormalizado" no encontrado en la lista, añadiéndolo temporalmente');
       categoriasFinal.add(valorNormalizado);
     }
 
@@ -868,7 +916,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
     }
 
     debugPrint(
-        '🔍 DropdownButton categorías: valor=$valorNormalizado, items=${categoriasFinal.length}');
+        'DropdownButton categorías: valor=$valorNormalizado, items=${categoriasFinal.length}');
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -1035,33 +1083,81 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
   /// Método para navegar a una página específica
   void _irAPagina(int pagina) {
     if (_totalPaginas <= 0) {
-      debugPrint('ℹ️ No hay páginas disponibles para navegar');
+      debugPrint('No hay páginas disponibles para navegar');
       return;
     }
 
     if (pagina < 0) {
       pagina = 0; // Evitar páginas negativas
-      debugPrint('⚠️ Ajustando página negativa a 0');
+      debugPrint('Ajustando página negativa a 0');
     }
 
     if (pagina >= _totalPaginas) {
       pagina = _totalPaginas - 1; // Evitar páginas fuera de rango
-      debugPrint('⚠️ Ajustando página > $_totalPaginas a ${_totalPaginas - 1}');
+      debugPrint('Ajustando página > $_totalPaginas a ${_totalPaginas - 1}');
     }
 
-    debugPrint('🔄 Cambiando a página ${pagina + 1} de $_totalPaginas');
+    debugPrint('Cambiando a página ${pagina + 1} de $_totalPaginas');
 
     // Solo actualizar si realmente cambiamos de página
     if (pagina != _paginaActual) {
       setState(() {
         _paginaActual = pagina;
       });
+
+      // Precargar páginas adyacentes para mejor UX
+      _precargarPaginasAdyacentes(pagina);
+    }
+  }
+
+  /// Precarga páginas adyacentes para navegación fluida
+  void _precargarPaginasAdyacentes(int paginaActual) {
+    // Precargar página anterior si existe
+    if (paginaActual > 0) {
+      _precargarPagina(paginaActual - 1);
+    }
+
+    // Precargar página siguiente si existe
+    if (paginaActual < _totalPaginas - 1) {
+      _precargarPagina(paginaActual + 1);
+    }
+  }
+
+  /// Precarga una página específica en segundo plano
+  void _precargarPagina(int pagina) {
+    // Solo precargar si no está en caché
+    if (_productosCache.containsKey(pagina)) {
+      return;
+    }
+
+    // Calcular productos de la página
+    final int inicio = pagina * _itemsPorPagina;
+    if (inicio >= _productosFiltrados.length) {
+      return;
+    }
+
+    final int fin = (inicio + _itemsPorPagina < _productosFiltrados.length)
+        ? inicio + _itemsPorPagina
+        : _productosFiltrados.length;
+
+    try {
+      final List<Producto> productosEnPagina =
+          _productosFiltrados.sublist(inicio, fin);
+
+      // Guardar en caché sin actualizar la UI
+      _productosCache[pagina] = productosEnPagina;
+      _totalPaginasCache[pagina] = _totalPaginas;
+
+      debugPrint(
+          'Página $pagina precargada en caché: ${productosEnPagina.length} productos');
+    } catch (e) {
+      debugPrint('Error precargando página $pagina: $e');
     }
   }
 
   // Nuevo método para restablecer todos los filtros
   void _restablecerTodosFiltros() {
-    debugPrint('🔄 Restableciendo todos los filtros');
+    debugPrint('Restableciendo todos los filtros');
 
     // Guardar valores anteriores para diagnóstico
     final String categoriaAnterior = _filtroCategoria;
@@ -1085,7 +1181,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
 
     // Logging detallado para diagnóstico
     debugPrint(
-        '🔍 Filtros antes: Categoría="$categoriaAnterior", Búsqueda="$busquedaAnterior", Promoción=$tipoDescuentoAnterior');
+        'Filtros antes: Categoría="$categoriaAnterior", Búsqueda="$busquedaAnterior", Promoción=$tipoDescuentoAnterior');
     debugPrint(
         '🧹 Filtros limpiados. Aplicando: Categoría="Todos", Búsqueda="", Promoción=todos');
 
@@ -1094,8 +1190,8 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
 
     // Verificación post-restablecimiento
     debugPrint(
-        '✅ Verificación: Categoría actual="$_filtroCategoria", Productos filtrados=${_productosFiltrados.length}');
-    debugPrint('✅ Todos los filtros han sido restablecidos');
+        'Verificación: Categoría actual="$_filtroCategoria", Productos filtrados=${_productosFiltrados.length}');
+    debugPrint('Todos los filtros han sido restablecidos');
   }
 
   // Método para alternar la expansión del dropdown de categoría

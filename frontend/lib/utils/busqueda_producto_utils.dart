@@ -39,7 +39,7 @@ class BusquedaProductoUtils {
         categoriaLC == 'todos' ||
         categoriaLC == 'all';
     if (esTodos) {
-      debugPrint('✅ Categoría identificada como "Todos": "$categoria"');
+      debugPrint('Categoría identificada como "Todos": "$categoria"');
     }
     return esTodos;
   }
@@ -103,7 +103,7 @@ class BusquedaProductoUtils {
 
     if (debugMode) {
       debugPrint(
-          '🔍 Aplicando filtro de tipo de descuento: $tipoDescuento a ${productos.length} productos');
+          'Aplicando filtro de tipo de descuento: $tipoDescuento a ${productos.length} productos');
     }
 
     // Antes de filtrar, verificar qué productos tienen cada tipo de promoción
@@ -124,7 +124,7 @@ class BusquedaProductoUtils {
         }
       }
 
-      debugPrint('📊 Productos con cada tipo de descuento:');
+      debugPrint('Productos con cada tipo de descuento:');
       debugPrint('- Liquidación: $conLiquidacion');
       debugPrint('- Promo "Lleva y Paga": $conPromoGratis');
       debugPrint('- Descuento porcentual: $conDescuentoPorcentual');
@@ -138,7 +138,6 @@ class BusquedaProductoUtils {
       switch (tipoDescuento) {
         case TipoDescuento.liquidacion:
           cumpleFiltro = producto.estaEnLiquidacion;
-          break;
         case TipoDescuento.promoGratis:
           cumpleFiltro = producto.tienePromocionGratis;
 
@@ -147,10 +146,9 @@ class BusquedaProductoUtils {
             if (producto.cantidadMinimaDescuento != null &&
                 producto.cantidadGratisDescuento != null) {
               debugPrint(
-                  '⚠️ Producto ${producto.nombre} tiene cantidadMinima=${producto.cantidadMinimaDescuento} y cantidadGratis=${producto.cantidadGratisDescuento} pero tienePromocionGratis=${producto.tienePromocionGratis}');
+                  'Producto ${producto.nombre} tiene cantidadMinima=${producto.cantidadMinimaDescuento} y cantidadGratis=${producto.cantidadGratisDescuento} pero tienePromocionGratis=${producto.tienePromocionGratis}');
             }
           }
-          break;
         case TipoDescuento.descuentoPorcentual:
           cumpleFiltro = producto.tieneDescuentoPorcentual;
 
@@ -159,13 +157,11 @@ class BusquedaProductoUtils {
             if (producto.cantidadMinimaDescuento != null &&
                 producto.porcentajeDescuento != null) {
               debugPrint(
-                  '⚠️ Producto ${producto.nombre} tiene cantidadMinima=${producto.cantidadMinimaDescuento} y descuentoPorcentaje=${producto.porcentajeDescuento} pero tieneDescuentoPorcentual=${producto.tieneDescuentoPorcentual}');
+                  'Producto ${producto.nombre} tiene cantidadMinima=${producto.cantidadMinimaDescuento} y descuentoPorcentaje=${producto.porcentajeDescuento} pero tieneDescuentoPorcentual=${producto.tieneDescuentoPorcentual}');
             }
           }
-          break;
         default:
           cumpleFiltro = true;
-          break;
       }
 
       return cumpleFiltro;
@@ -173,7 +169,7 @@ class BusquedaProductoUtils {
 
     if (debugMode) {
       debugPrint(
-          '✅ Filtro aplicado. Resultado: ${productosFiltrados.length} productos cumplen el filtro $tipoDescuento');
+          'Filtro aplicado. Resultado: ${productosFiltrados.length} productos cumplen el filtro $tipoDescuento');
     }
 
     return productosFiltrados;
@@ -192,7 +188,7 @@ class BusquedaProductoUtils {
 
     if (debugMode) {
       debugPrint(
-          '⚙️ Filtrando ${listaProductos.length} productos (después de convertir de Map)');
+          'Filtrando ${listaProductos.length} productos (después de convertir de Map)');
     }
 
     // 2. Aplicar filtrado por texto y categoría sobre List<Producto>
@@ -223,10 +219,10 @@ class BusquedaProductoUtils {
         if (debugMode) {
           if (!coincideCategoria) {
             debugPrint(
-                '❌ No coincide: "$categoriaProducto" ($categoriaProductoNormalizada) vs "$filtroCategoria" ($filtroCategoriaNormalizadoLC)');
+                'No coincide: "$categoriaProducto" ($categoriaProductoNormalizada) vs "$filtroCategoria" ($filtroCategoriaNormalizadoLC)');
           } else {
             debugPrint(
-                '✅ Coincidencia: "$categoriaProducto" con "$filtroCategoria"');
+                'Coincidencia: "$categoriaProducto" con "$filtroCategoria"');
           }
         }
       }
@@ -236,7 +232,7 @@ class BusquedaProductoUtils {
 
     if (debugMode) {
       debugPrint(
-          '🔍 Filtrado por texto/categoría: ${filtradoTextoCategoria.length} resultados');
+          'Filtrado por texto/categoría: ${filtradoTextoCategoria.length} resultados');
     }
 
     // 3. Aplicar filtrado por tipo de descuento sobre la lista de Producto ya filtrada
@@ -263,7 +259,7 @@ class BusquedaProductoUtils {
 
     if (debugMode) {
       debugPrint(
-          '✅ Filtrado completo y ordenado. Resultado: ${resultadosFinales.length} productos');
+          'Filtrado completo y ordenado. Resultado: ${resultadosFinales.length} productos');
     }
 
     return resultadosFinales;

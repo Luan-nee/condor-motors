@@ -1,13 +1,12 @@
 import 'dart:math' show min;
 
 import 'package:condorsmotors/models/ventas.model.dart';
-import 'package:condorsmotors/providers/admin/ventas.admin.provider.dart';
+import 'package:condorsmotors/providers/print.provider.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 
 class VentaDetalleDialog extends StatefulWidget {
   final Venta? venta;
@@ -46,10 +45,6 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
   // Controlador de animación
   late AnimationController _animationController;
   late Animation<double> _opacityAnimation;
-
-  // Obtener referencia al provider
-  VentasProvider get _ventasProvider =>
-      Provider.of<VentasProvider>(context, listen: false);
 
   @override
   void initState() {
@@ -362,7 +357,7 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
                 ),
                 tooltip: 'Ver PDF',
                 onPressed: () => pdfLink != null
-                    ? _ventasProvider.abrirPdf(pdfLink, context)
+                    ? PrintProvider.instance.abrirPdf(pdfLink, context)
                     : null,
               ),
             IconButton(
@@ -1082,32 +1077,29 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
                     switch (value) {
                       case 'imprimir_a4':
                         if (pdfLinkA4 != null) {
-                          _ventasProvider.imprimirDocumentoPdf(
+                          PrintProvider.instance.imprimirDocumentoPdf(
                             pdfLinkA4,
                             '${nombreDocumento}_A4',
                             context,
                           );
                         }
-                        break;
                       case 'imprimir_ticket':
                         if (pdfLinkTicket != null) {
-                          _ventasProvider.imprimirDocumentoPdf(
+                          PrintProvider.instance.imprimirDocumentoPdf(
                             pdfLinkTicket,
                             '${nombreDocumento}_Ticket',
                             context,
                           );
                         }
-                        break;
                       case 'abrir_a4':
                         if (pdfLinkA4 != null) {
-                          _ventasProvider.abrirPdf(pdfLinkA4, context);
+                          PrintProvider.instance.abrirPdf(pdfLinkA4, context);
                         }
-                        break;
                       case 'abrir_ticket':
                         if (pdfLinkTicket != null) {
-                          _ventasProvider.abrirPdf(pdfLinkTicket, context);
+                          PrintProvider.instance
+                              .abrirPdf(pdfLinkTicket, context);
                         }
-                        break;
                     }
                   },
                   itemBuilder: (BuildContext context) =>

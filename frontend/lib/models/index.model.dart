@@ -10,4 +10,3 @@ export 'paginacion.model.dart';
 export 'producto.model.dart';
 export 'proforma.model.dart';
 export 'sucursal.model.dart';
-// TODO: Exportar otros modelos a medida que se vayan creando/refactorizando

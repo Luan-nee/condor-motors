@@ -212,7 +212,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
 
               // Tabla de movimientos con paginación
               Expanded(
-                child: Container(
+                child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: const Color(0xFF1A1A1A),
                     borderRadius: BorderRadius.circular(12),
@@ -318,8 +318,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Paginador(
-                      paginacionProvider:
-                          transferenciasProvider.paginacionProvider,
+                      paginacion: transferenciasProvider.paginacion,
                       backgroundColor: const Color(0xFF1A1A1A),
                       textColor: Colors.white,
                       accentColor: const Color(0xFFE31E24),
@@ -376,7 +375,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
     }
 
     debugPrint(
-        '🔍 Iniciando visualización de detalles para transferencia #${transferencia.id}');
+        'Iniciando visualización de detalles para transferencia #${transferencia.id}');
 
     await showDialog(
       context: context,
@@ -385,7 +384,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
       },
     );
 
-    debugPrint('✅ Diálogo de detalles cerrado correctamente');
+    debugPrint('Diálogo de detalles cerrado correctamente');
   }
 
   // Formato de fecha

@@ -35,7 +35,6 @@ String normalizeRole(rol) {
     return 'desconocido';
   }
 
-  // FIX: (anterior) Lógica duplicada para normalizar 'administrador'
   // Ahora se comprueba una sola vez
   if (roleString == 'administrador') {
     return 'admin';

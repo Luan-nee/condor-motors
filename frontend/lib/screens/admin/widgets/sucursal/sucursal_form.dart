@@ -301,7 +301,7 @@ class _SucursalFormState extends State<SucursalForm>
                                     ),
                                     const SizedBox(height: 8),
                                     DropdownButtonFormField<String>(
-                                      value: _sucursalCentral
+                                      initialValue: _sucursalCentral
                                           ? 'Central'
                                           : 'Sucursal',
                                       items: SucursalUtils.tiposSucursal
@@ -709,7 +709,7 @@ class _SucursalFormState extends State<SucursalForm>
 
     // Si es código de establecimiento, solo permitir dígitos
     if (prefix == 'E') {
-      final digitsOnly = value.replaceAll(RegExp(r'[^0-9]'), '');
+      final digitsOnly = value.replaceAll(RegExp('[^0-9]'), '');
       if (digitsOnly != value) {
         controller
           ..text = digitsOnly
@@ -733,7 +733,7 @@ class _SucursalFormState extends State<SucursalForm>
     if (prefix != 'E' && !value.startsWith(prefix) && value.isNotEmpty) {
       // Solo para series de factura y boleta forzamos el prefijo si hay contenido
       controller
-        ..text = '$prefix${value.replaceAll(RegExp(r'[^0-9]'), '')}'
+        ..text = '$prefix${value.replaceAll(RegExp('[^0-9]'), '')}'
         ..selection = TextSelection.fromPosition(
           TextPosition(offset: controller.text.length),
         );
@@ -767,7 +767,7 @@ class _SucursalFormState extends State<SucursalForm>
     }
 
     // Filtrar: permitir solo dígitos
-    final digitsOnly = value.replaceAll(RegExp(r'[^0-9]'), '');
+    final digitsOnly = value.replaceAll(RegExp('[^0-9]'), '');
 
     // Si el usuario intentó ingresar algo que no son dígitos, corregirlo
     if (digitsOnly != value) {

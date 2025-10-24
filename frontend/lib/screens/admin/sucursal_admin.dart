@@ -527,7 +527,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
                             _mostrarAgrupados = value;
                           });
                         },
-                        activeColor: const Color(0xFFE31E24),
+                        activeThumbColor: const Color(0xFFE31E24),
                       ),
                     ],
                   ),
@@ -1399,7 +1399,7 @@ class _SucursalFormDialogState extends State<SucursalFormDialog> {
                 subtitle: const Text(
                     'Las sucursales centrales tienen permisos especiales'),
                 value: _sucursalCentral,
-                activeColor: const Color(0xFFE31E24),
+                activeThumbColor: const Color(0xFFE31E24),
                 onChanged: (bool value) =>
                     setState(() => _sucursalCentral = value),
               ),

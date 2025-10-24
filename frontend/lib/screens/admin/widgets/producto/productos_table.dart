@@ -10,7 +10,7 @@ class ProductosTable extends StatefulWidget {
   final List<Producto> productos;
   final List<Sucursal> sucursales;
   final Function(Producto) onEdit;
-  final Function(Producto) onDelete;
+  final Function(Producto)? onDelete;
   final Function(Producto) onViewDetails;
   final Function(String)? onSort;
   final String? sortBy;
@@ -23,7 +23,7 @@ class ProductosTable extends StatefulWidget {
     required this.productos,
     required this.sucursales,
     required this.onEdit,
-    required this.onDelete,
+    this.onDelete,
     required this.onViewDetails,
     this.onSort,
     this.sortBy,
@@ -288,7 +288,7 @@ class _ProductosTableState extends State<ProductosTable>
         ),
         if (widget.isLoading)
           Positioned.fill(
-            child: Container(
+            child: ColoredBox(
               color: Colors.black54,
               child: AnimatedBuilder(
                 animation: _loadingAnimation,
@@ -300,8 +300,8 @@ class _ProductosTableState extends State<ProductosTable>
                       child: CircularProgressIndicator(
                         strokeWidth: 3,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          const Color(0xFFE31E24).withValues(alpha:
-                              0.8 + (0.2 * _loadingAnimation.value)),
+                          const Color(0xFFE31E24).withValues(
+                              alpha: 0.8 + (0.2 * _loadingAnimation.value)),
                         ),
                       ),
                     ),
@@ -318,7 +318,7 @@ class _ProductosTableState extends State<ProductosTable>
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Container(
+        child: DecoratedBox(
           decoration: BoxDecoration(
             color: const Color(0xFF222222),
             borderRadius: BorderRadius.circular(8),

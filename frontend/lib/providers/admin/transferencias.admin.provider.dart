@@ -1,21 +1,25 @@
+import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart' as sucursal_model;
 import 'package:condorsmotors/models/transferencias.model.dart';
-import 'package:condorsmotors/providers/paginacion.provider.dart';
 import 'package:condorsmotors/repositories/sucursal.repository.dart';
 // Importar los repositorios
 import 'package:condorsmotors/repositories/transferencia.repository.dart';
 import 'package:flutter/material.dart';
 
 /// Provider para gestionar las transferencias de inventario desde la vista de administración
+/// - Usa estado local de paginación (más simple y eficiente)
 class TransferenciasProvider extends ChangeNotifier {
   // Instancias de repositorios
   final TransferenciaRepository _transferenciaRepository =
       TransferenciaRepository.instance;
   final SucursalRepository _sucursalRepository = SucursalRepository.instance;
 
-  // API legacy que se seguirá usando hasta la transición completa
-
-  final PaginacionProvider paginacionProvider = PaginacionProvider();
+  // Estado local de paginación (más simple que un provider separado)
+  int _currentPage = 1;
+  int _pageSize = 10;
+  String _sortBy = 'fechaCreacion';
+  String _order = 'desc';
+  Paginacion _paginacion = Paginacion.emptyPagination;
 
   List<TransferenciaInventario> _transferencias = [];
   List<sucursal_model.Sucursal> _sucursales = [];
@@ -33,13 +37,17 @@ class TransferenciasProvider extends ChangeNotifier {
   String _orden = 'desc';
 
   TransferenciasProvider() {
-    // Configurar valores por defecto para mostrar transferencias más recientes primero
-    paginacionProvider..cambiarOrdenarPor('fechaCreacion')
-    ..cambiarOrden('desc');
-
     // Cargar sucursales al inicializar
     cargarSucursales();
   }
+
+  // Getters para paginación
+  int get currentPage => _currentPage;
+  int get pageSize => _pageSize;
+  String get sortBy => _sortBy;
+  String get order => _order;
+  Paginacion get paginacion => _paginacion;
+  int get itemsPerPage => _pageSize;
 
   // Getters
   List<TransferenciaInventario> get transferencias => _transferencias;
@@ -134,15 +142,15 @@ class TransferenciasProvider extends ChangeNotifier {
         estado: estadoFiltro,
         fechaInicio: _fechaInicio,
         fechaFin: _fechaFin,
-        sortBy: paginacionProvider.ordenarPor ?? 'fechaCreacion',
-        order: paginacionProvider.orden,
-        page: paginacionProvider.paginacion.currentPage,
-        pageSize: paginacionProvider.itemsPerPage,
+        sortBy: _sortBy,
+        order: _order,
+        page: _currentPage,
+        pageSize: _pageSize,
         forceRefresh: forceRefresh,
       );
 
       _transferencias = paginatedResponse.items;
-      paginacionProvider.actualizarDesdeResponse(paginatedResponse);
+      _paginacion = paginatedResponse.paginacion;
       _errorMessage = null;
     } catch (e) {
       _setError('Error al cargar transferencias: $e');
@@ -287,25 +295,43 @@ class TransferenciasProvider extends ChangeNotifier {
 
   /// Cambia la página actual y recarga los datos
   Future<void> cambiarPagina(int nuevaPagina) async {
-    paginacionProvider.cambiarPagina(nuevaPagina);
+    if (nuevaPagina < 1 || nuevaPagina > _paginacion.totalPages) {
+      return;
+    }
+
+    _currentPage = nuevaPagina;
     await cargarTransferencias(showLoading: false);
   }
 
   /// Cambia el tamaño de página y recarga los datos
   Future<void> cambiarTamanoPagina(int nuevoTamano) async {
-    paginacionProvider.cambiarItemsPorPagina(nuevoTamano);
+    if (nuevoTamano < 1 || nuevoTamano > 200) {
+      return;
+    }
+
+    _pageSize = nuevoTamano;
+    _currentPage = 1; // Reset a primera página
     await cargarTransferencias(showLoading: false);
   }
 
   /// Cambia el orden de los resultados y recarga los datos
   Future<void> cambiarOrden(String nuevoOrden) async {
-    paginacionProvider.cambiarOrden(nuevoOrden);
+    if (nuevoOrden != 'asc' && nuevoOrden != 'desc') {
+      return;
+    }
+
+    _order = nuevoOrden;
     await cargarTransferencias(showLoading: false);
   }
 
   /// Cambia el campo de ordenación y recarga los datos
   Future<void> cambiarOrdenarPor(String? nuevoOrdenarPor) async {
-    paginacionProvider.cambiarOrdenarPor(nuevoOrdenarPor);
+    if (nuevoOrdenarPor == _sortBy) {
+      return;
+    }
+
+    _sortBy = nuevoOrdenarPor ?? 'fechaCreacion';
+    _currentPage = 1; // Reset a primera página
     await cargarTransferencias(showLoading: false);
   }
 
@@ -346,9 +372,9 @@ class TransferenciasProvider extends ChangeNotifier {
       // Recargamos los datos
       await cargarTransferencias(forceRefresh: true);
 
-      debugPrint('✅ Transferencia #$id enviada exitosamente');
+      debugPrint('Transferencia #$id enviada exitosamente');
     } catch (e) {
-      debugPrint('❌ Error al completar envío de transferencia: $e');
+      debugPrint('Error al completar envío de transferencia: $e');
       _setError('Error al completar envío: $e');
       rethrow;
     } finally {

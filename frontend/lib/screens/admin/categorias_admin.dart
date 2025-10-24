@@ -1,8 +1,7 @@
 import 'package:condorsmotors/models/categoria.model.dart';
-import 'package:condorsmotors/providers/admin/index.admin.provider.dart';
+import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:provider/provider.dart';
 
 class CategoriasAdminScreen extends StatefulWidget {
   const CategoriasAdminScreen({super.key});
@@ -16,16 +15,93 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
   final TextEditingController _nombreController = TextEditingController();
   final TextEditingController _descripcionController = TextEditingController();
 
-  late CategoriasProvider _categoriasProvider;
+  // Repositorio
+  final CategoriaRepository _categoriaRepository = CategoriaRepository.instance;
+
+  // Estado local
+  bool _isLoading = false;
+  bool _isCreating = false;
+  String _errorMessage = '';
+  List<Categoria> _categorias = [];
 
   @override
   void initState() {
     super.initState();
     // Inicialización y primera carga de datos
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _categoriasProvider =
-          Provider.of<CategoriasProvider>(context, listen: false);
-      _categoriasProvider.cargarCategorias();
+      _cargarCategorias();
+    });
+  }
+
+  // Método para cargar categorías
+  Future<void> _cargarCategorias({bool useCache = true}) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+
+    try {
+      debugPrint('Cargando categorías desde el repositorio...');
+      final List<Categoria> categoriasObtenidas =
+          await _categoriaRepository.getCategorias(useCache: useCache);
+
+      setState(() {
+        _categorias = categoriasObtenidas;
+        _isLoading = false;
+      });
+      debugPrint('${_categorias.length} categorías cargadas correctamente');
+    } catch (e) {
+      debugPrint('Error al cargar categorías: $e');
+      setState(() {
+        _errorMessage = 'Error al cargar categorías: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  // Método para recargar datos
+  Future<void> _recargarDatos() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+
+    try {
+      debugPrint(
+          'Forzando recarga de datos de categorías desde el repositorio...');
+      await _cargarCategorias(useCache: false);
+      debugPrint('Datos de categorías recargados exitosamente');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Datos recargados exitosamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error al recargar datos de categorías: $e');
+      setState(() {
+        _errorMessage = 'Error al recargar datos: $e';
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_errorMessage),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // Método para limpiar errores
+  void _limpiarErrores() {
+    setState(() {
+      _errorMessage = '';
     });
   }
 
@@ -116,9 +192,8 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: <Widget>[
                     TextButton(
-                      onPressed: _categoriasProvider.isCreating
-                          ? null
-                          : () => Navigator.pop(context),
+                      onPressed:
+                          _isCreating ? null : () => Navigator.pop(context),
                       child: const Text(
                         'Cancelar',
                         style: TextStyle(color: Colors.white54),
@@ -134,10 +209,10 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
                           vertical: 12,
                         ),
                       ),
-                      onPressed: _categoriasProvider.isCreating
+                      onPressed: _isCreating
                           ? null
                           : () => _guardarCategoria(categoria),
-                      child: _categoriasProvider.isCreating
+                      child: _isCreating
                           ? const SizedBox(
                               width: 20,
                               height: 20,
@@ -158,7 +233,7 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
     );
   }
 
-  // Método para guardar la categoría usando el provider
+  // Método para guardar la categoría usando el repositorio
   Future<void> _guardarCategoria([Categoria? categoria]) async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -182,436 +257,450 @@ class _CategoriasAdminScreenState extends State<CategoriasAdminScreen> {
       Navigator.pop(context);
     }
 
-    final bool exito = await _categoriasProvider.guardarCategoria(
-      id: categoria?.id,
-      nombre: nombre,
-      descripcion: descripcion,
-    );
+    try {
+      setState(() {
+        _isCreating = true;
+      });
 
-    // Verificar si el widget aún está montado
-    if (!mounted) {
-      return;
-    }
+      bool exito = false;
+      if (categoria == null) {
+        // Crear nueva categoría
+        await _categoriaRepository.createCategoria(
+          nombre: nombre,
+          descripcion: descripcion.isNotEmpty ? descripcion : null,
+        );
+        exito = true;
+      } else {
+        // Actualizar categoría existente
+        await _categoriaRepository.updateCategoria(
+          id: categoria.id.toString(),
+          nombre: nombre,
+          descripcion: descripcion.isNotEmpty ? descripcion : null,
+        );
+        exito = true;
+      }
 
-    if (exito) {
-      showSuccessSnackBar();
+      // Verificar si el widget aún está montado
+      if (!mounted) {
+        return;
+      }
+
+      if (exito) {
+        showSuccessSnackBar();
+        await _cargarCategorias(); // Recargar datos después de guardar
+      }
+    } catch (e) {
+      debugPrint('Error al guardar categoría: $e');
+      setState(() {
+        _errorMessage = 'Error al guardar categoría: $e';
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_errorMessage),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isCreating = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<CategoriasProvider>(
-      builder: (context, categoriasProvider, _) {
-        _categoriasProvider = categoriasProvider;
-        final List<Categoria> categorias = categoriasProvider.categorias;
-        final bool isLoading = categoriasProvider.isLoading;
-        final String errorMessage = categoriasProvider.errorMessage;
-
-        return Scaffold(
-          body: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            // Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
-                // Header
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
-                    Row(
-                      children: <Widget>[
-                        const FaIcon(
-                          FontAwesomeIcons.folderTree,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 16),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            const Text(
-                              'INVENTARIO',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            Text(
-                              'categorías',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white.withValues(alpha: 0.7),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                    const FaIcon(
+                      FontAwesomeIcons.folderTree,
+                      color: Colors.white,
+                      size: 24,
                     ),
-                    Row(
+                    const SizedBox(width: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        ElevatedButton.icon(
-                          icon: isLoading
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const FaIcon(
-                                  FontAwesomeIcons.arrowsRotate,
-                                  size: 16,
-                                  color: Colors.white,
-                                ),
-                          label: Text(
-                            isLoading ? 'Recargando...' : 'Recargar',
-                            style: const TextStyle(color: Colors.white),
+                        const Text(
+                          'INVENTARIO',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2D2D2D),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                          ),
-                          onPressed: isLoading
-                              ? null
-                              : () async {
-                                  // Definir funciones para mostrar SnackBars
-                                  void showErrorSnackBar() {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                            categoriasProvider.errorMessage),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  }
-
-                                  void showSuccessSnackBar() {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                            'Datos recargados exitosamente'),
-                                        backgroundColor: Colors.green,
-                                      ),
-                                    );
-                                  }
-
-                                  await categoriasProvider.recargarDatos();
-
-                                  // Verificar si el widget aún está montado
-                                  if (!mounted) {
-                                    return;
-                                  }
-
-                                  if (categoriasProvider
-                                      .errorMessage.isNotEmpty) {
-                                    showErrorSnackBar();
-                                  } else {
-                                    showSuccessSnackBar();
-                                  }
-                                },
                         ),
-                        const SizedBox(width: 12),
-                        ElevatedButton.icon(
-                          icon: const FaIcon(FontAwesomeIcons.plus,
-                              size: 16, color: Colors.white),
-                          label: const Text('Nueva Categoría'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFE31E24),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 16,
-                            ),
+                        Text(
+                          'categorías',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white.withValues(alpha: 0.7),
                           ),
-                          onPressed: _mostrarFormularioCategoria,
                         ),
                       ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 32),
-
-                // Mensaje de error si existe
-                if (errorMessage.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border:
-                          Border.all(color: Colors.red.withValues(alpha: 0.3)),
-                    ),
-                    child: Row(
-                      children: <Widget>[
-                        const Icon(Icons.error_outline, color: Colors.red),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Text(
-                            errorMessage,
-                            style: const TextStyle(color: Colors.red),
-                          ),
+                Row(
+                  children: <Widget>[
+                    ElevatedButton.icon(
+                      icon: _isLoading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const FaIcon(
+                              FontAwesomeIcons.arrowsRotate,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                      label: Text(
+                        _isLoading ? 'Recargando...' : 'Recargar',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2D2D2D),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.close, color: Colors.red),
-                          onPressed: () {
-                            categoriasProvider.clearError();
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
+                      ),
+                      onPressed: _isLoading
+                          ? null
+                          : () async {
+                              // Definir funciones para mostrar SnackBars
+                              void showErrorSnackBar() {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(_errorMessage),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
 
-                // Tabla de categorías
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1A1A1A),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.1),
+                              void showSuccessSnackBar() {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content:
+                                        Text('Datos recargados exitosamente'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              }
+
+                              await _recargarDatos();
+
+                              // Verificar si el widget aún está montado
+                              if (!mounted) {
+                                return;
+                              }
+
+                              if (_errorMessage.isNotEmpty) {
+                                showErrorSnackBar();
+                              } else {
+                                showSuccessSnackBar();
+                              }
+                            },
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton.icon(
+                      icon: const FaIcon(FontAwesomeIcons.plus,
+                          size: 16, color: Colors.white),
+                      label: const Text('Nueva Categoría'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE31E24),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
+                      ),
+                      onPressed: _mostrarFormularioCategoria,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 32),
+
+            // Mensaje de error si existe
+            if (_errorMessage.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: <Widget>[
+                    const Icon(Icons.error_outline, color: Colors.red),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        _errorMessage,
+                        style: const TextStyle(color: Colors.red),
                       ),
                     ),
-                    child: isLoading
-                        ? const Center(
-                            child: CircularProgressIndicator(),
-                          )
-                        : categorias.isEmpty
-                            ? Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: <Widget>[
-                                    const FaIcon(
-                                      FontAwesomeIcons.folderOpen,
-                                      color: Colors.grey,
-                                      size: 48,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      'No hay categorías disponibles',
-                                      style: TextStyle(
-                                        color: Colors.grey[400],
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    ElevatedButton.icon(
-                                      icon: const FaIcon(
-                                        FontAwesomeIcons.plus,
-                                        size: 14,
-                                      ),
-                                      label: const Text('Crear categoría'),
-                                      onPressed: _mostrarFormularioCategoria,
-                                    ),
-                                  ],
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.red),
+                      onPressed: _limpiarErrores,
+                    ),
+                  ],
+                ),
+              ),
+
+            // Tabla de categorías
+            Expanded(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A1A1A),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.1),
+                  ),
+                ),
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(),
+                      )
+                    : _categorias.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: <Widget>[
+                                const FaIcon(
+                                  FontAwesomeIcons.folderOpen,
+                                  color: Colors.grey,
+                                  size: 48,
                                 ),
-                              )
-                            : SingleChildScrollView(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: <Widget>[
-                                    // Encabezado de la tabla
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No hay categorías disponibles',
+                                  style: TextStyle(
+                                    color: Colors.grey[400],
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                ElevatedButton.icon(
+                                  icon: const FaIcon(
+                                    FontAwesomeIcons.plus,
+                                    size: 14,
+                                  ),
+                                  label: const Text('Crear categoría'),
+                                  onPressed: _mostrarFormularioCategoria,
+                                ),
+                              ],
+                            ),
+                          )
+                        : SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: <Widget>[
+                                // Encabezado de la tabla
+                                Container(
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF2D2D2D),
+                                    borderRadius: BorderRadius.vertical(
+                                        top: Radius.circular(12)),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 16, horizontal: 20),
+                                  child: const Row(
+                                    children: <Widget>[
+                                      // Categorías (30% del ancho)
+                                      Expanded(
+                                        flex: 30,
+                                        child: Text(
+                                          'Categorías',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      // Descripción (40% del ancho)
+                                      Expanded(
+                                        flex: 40,
+                                        child: Text(
+                                          'Descripción',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      // Cant. de productos (15% del ancho)
+                                      Expanded(
+                                        flex: 15,
+                                        child: Text(
+                                          'Cant. de productos',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      // Acciones (15% del ancho)
+                                      Expanded(
+                                        flex: 15,
+                                        child: Text(
+                                          'Acciones',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                // Filas de categorías
+                                ..._categorias.map((Categoria categoria) =>
                                     Container(
-                                      decoration: const BoxDecoration(
-                                        color: Color(0xFF2D2D2D),
-                                        borderRadius: BorderRadius.vertical(
-                                            top: Radius.circular(12)),
+                                      decoration: BoxDecoration(
+                                        color: Colors.transparent,
+                                        border: Border(
+                                          bottom: BorderSide(
+                                            color: Colors.white
+                                                .withValues(alpha: 0.1),
+                                          ),
+                                        ),
+                                        borderRadius: BorderRadius.zero,
                                       ),
                                       padding: const EdgeInsets.symmetric(
-                                          vertical: 16, horizontal: 20),
-                                      child: const Row(
+                                          vertical: 12, horizontal: 20),
+                                      child: Row(
                                         children: <Widget>[
-                                          // Categorías (30% del ancho)
+                                          // Categoría
                                           Expanded(
                                             flex: 30,
-                                            child: Text(
-                                              'Categorías',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                              ),
+                                            child: Row(
+                                              children: <Widget>[
+                                                const FaIcon(
+                                                  FontAwesomeIcons.folder,
+                                                  color: Color(0xFFE31E24),
+                                                  size: 20,
+                                                ),
+                                                const SizedBox(width: 12),
+                                                Text(
+                                                  categoria.nombre,
+                                                  style: const TextStyle(
+                                                      color: Colors.white),
+                                                ),
+                                              ],
                                             ),
                                           ),
-                                          // Descripción (40% del ancho)
+                                          // Descripción
                                           Expanded(
                                             flex: 40,
                                             child: Text(
-                                              'Descripción',
+                                              categoria.descripcion ?? '',
                                               style: TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white
+                                                    .withValues(alpha: 0.7),
                                               ),
                                             ),
                                           ),
-                                          // Cant. de productos (15% del ancho)
+                                          // Cant. de productos
                                           Expanded(
                                             flex: 15,
-                                            child: Text(
-                                              'Cant. de productos',
-                                              textAlign: TextAlign.center,
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
+                                            child: Center(
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFFE31E24)
+                                                      .withValues(alpha: 0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 12,
+                                                  vertical: 4,
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: <Widget>[
+                                                    const FaIcon(
+                                                      FontAwesomeIcons.box,
+                                                      size: 12,
+                                                      color: Color(0xFFE31E24),
+                                                    ),
+                                                    const SizedBox(width: 6),
+                                                    Text(
+                                                      categoria.totalProductos
+                                                          .toString(),
+                                                      style: const TextStyle(
+                                                        color:
+                                                            Color(0xFFE31E24),
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
                                             ),
                                           ),
-                                          // Acciones (15% del ancho)
+                                          // Acciones
                                           Expanded(
                                             flex: 15,
-                                            child: Text(
-                                              'Acciones',
-                                              textAlign: TextAlign.center,
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                              ),
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: <Widget>[
+                                                IconButton(
+                                                  icon: const FaIcon(
+                                                    FontAwesomeIcons
+                                                        .penToSquare,
+                                                    color: Colors.white54,
+                                                    size: 16,
+                                                  ),
+                                                  onPressed: () =>
+                                                      _mostrarFormularioCategoria(
+                                                          categoria),
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                    minWidth: 30,
+                                                    minHeight: 30,
+                                                  ),
+                                                  padding: EdgeInsets.zero,
+                                                )
+                                              ],
                                             ),
                                           ),
                                         ],
                                       ),
-                                    ),
-
-                                    // Filas de categorías
-                                    ...categorias.map((Categoria categoria) =>
-                                        Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.transparent,
-                                            border: Border(
-                                              bottom: BorderSide(
-                                                color: Colors.white
-                                                    .withValues(alpha: 0.1),
-                                              ),
-                                            ),
-                                            borderRadius: BorderRadius.zero,
-                                          ),
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 12, horizontal: 20),
-                                          child: Row(
-                                            children: <Widget>[
-                                              // Categoría
-                                              Expanded(
-                                                flex: 30,
-                                                child: Row(
-                                                  children: <Widget>[
-                                                    const FaIcon(
-                                                      FontAwesomeIcons.folder,
-                                                      color: Color(0xFFE31E24),
-                                                      size: 20,
-                                                    ),
-                                                    const SizedBox(width: 12),
-                                                    Text(
-                                                      categoria.nombre,
-                                                      style: const TextStyle(
-                                                          color: Colors.white),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              // Descripción
-                                              Expanded(
-                                                flex: 40,
-                                                child: Text(
-                                                  categoria.descripcion ?? '',
-                                                  style: TextStyle(
-                                                    color: Colors.white
-                                                        .withValues(alpha: 0.7),
-                                                  ),
-                                                ),
-                                              ),
-                                              // Cant. de productos
-                                              Expanded(
-                                                flex: 15,
-                                                child: Center(
-                                                  child: Container(
-                                                    decoration: BoxDecoration(
-                                                      color: const Color(
-                                                              0xFFE31E24)
-                                                          .withValues(
-                                                              alpha: 0.1),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8),
-                                                    ),
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                      horizontal: 12,
-                                                      vertical: 4,
-                                                    ),
-                                                    child: Row(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: <Widget>[
-                                                        const FaIcon(
-                                                          FontAwesomeIcons.box,
-                                                          size: 12,
-                                                          color:
-                                                              Color(0xFFE31E24),
-                                                        ),
-                                                        const SizedBox(
-                                                            width: 6),
-                                                        Text(
-                                                          categoria
-                                                              .totalProductos
-                                                              .toString(),
-                                                          style:
-                                                              const TextStyle(
-                                                            color: Color(
-                                                                0xFFE31E24),
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                              // Acciones
-                                              Expanded(
-                                                flex: 15,
-                                                child: Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.center,
-                                                  children: <Widget>[
-                                                    IconButton(
-                                                      icon: const FaIcon(
-                                                        FontAwesomeIcons
-                                                            .penToSquare,
-                                                        color: Colors.white54,
-                                                        size: 16,
-                                                      ),
-                                                      onPressed: () =>
-                                                          _mostrarFormularioCategoria(
-                                                              categoria),
-                                                      constraints:
-                                                          const BoxConstraints(
-                                                        minWidth: 30,
-                                                        minHeight: 30,
-                                                      ),
-                                                      padding: EdgeInsets.zero,
-                                                    )
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        )),
-                                  ],
-                                ),
-                              ),
-                  ),
-                ),
-              ],
+                                    )),
+                              ],
+                            ),
+                          ),
+              ),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 

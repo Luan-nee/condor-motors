@@ -172,7 +172,7 @@ class _BusquedaClienteFormState extends State<BusquedaClienteForm> {
 
             // Selector de tipo de documento actualizado
             DropdownButtonFormField<int>(
-              value: tipoDocumentoSeleccionado,
+              initialValue: tipoDocumentoSeleccionado,
               decoration: const InputDecoration(
                 labelText: 'Tipo de Documento *',
                 labelStyle: TextStyle(color: Colors.white70),
@@ -273,7 +273,6 @@ class _BusquedaClienteFormState extends State<BusquedaClienteForm> {
                     if (!RegExp(r'^[12][0]\d{9}$').hasMatch(value)) {
                       return 'El RUC debe comenzar con 10 o 20';
                     }
-                    break;
                   case 2: // DNI
                     if (value.length != 8) {
                       return 'El DNI debe tener 8 dígitos';
@@ -281,7 +280,6 @@ class _BusquedaClienteFormState extends State<BusquedaClienteForm> {
                     if (!RegExp(r'^\d+$').hasMatch(value)) {
                       return 'El DNI solo debe contener números';
                     }
-                    break;
                   case 3: // Carnet de Extranjería
                     if (value.length < 8 || value.length > 12) {
                       return 'El CE debe tener entre 8 y 12 caracteres';
@@ -289,7 +287,6 @@ class _BusquedaClienteFormState extends State<BusquedaClienteForm> {
                     if (!RegExp(r'^[A-Z0-9]+$').hasMatch(value.toUpperCase())) {
                       return 'El CE solo debe contener números y letras';
                     }
-                    break;
                   case 4: // Pasaporte
                     if (value.length < 6 || value.length > 12) {
                       return 'El Pasaporte debe tener entre 6 y 12 caracteres';
@@ -297,7 +294,6 @@ class _BusquedaClienteFormState extends State<BusquedaClienteForm> {
                     if (!RegExp(r'^[A-Z0-9]+$').hasMatch(value.toUpperCase())) {
                       return 'El Pasaporte solo debe contener números y letras';
                     }
-                    break;
                 }
                 return null;
               },

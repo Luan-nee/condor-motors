@@ -1,26 +1,26 @@
 import 'package:condorsmotors/api/main.api.dart' show ApiException;
 import 'package:condorsmotors/models/empleado.model.dart';
-import 'package:condorsmotors/providers/admin/index.admin.provider.dart';
+import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:condorsmotors/utils/empleados_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:provider/provider.dart';
 
 /// Diálogo para gestionar la cuenta de un empleado
 ///
 /// Permite crear una nueva cuenta o actualizar una existente (cambiar usuario y/o clave)
-
 class EmpleadoCuentaDialog extends StatefulWidget {
   final Empleado empleado;
   final List<Map<String, dynamic>> roles;
   final bool? esNuevaCuenta; // Permite forzar el modo de creación
+  final VoidCallback? onRefresh; // Callback para refrescar la lista
 
   const EmpleadoCuentaDialog({
     super.key,
     required this.empleado,
     required this.roles,
     this.esNuevaCuenta,
+    this.onRefresh,
   });
 
   @override
@@ -32,7 +32,8 @@ class EmpleadoCuentaDialog extends StatefulWidget {
     properties
       ..add(DiagnosticsProperty<Empleado>('empleado', empleado))
       ..add(IterableProperty<Map<String, dynamic>>('roles', roles))
-      ..add(DiagnosticsProperty<bool?>('esNuevaCuenta', esNuevaCuenta));
+      ..add(DiagnosticsProperty<bool?>('esNuevaCuenta', esNuevaCuenta))
+      ..add(ObjectFlagProperty<VoidCallback?>.has('onRefresh', onRefresh));
   }
 }
 
@@ -49,33 +50,24 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
   String? _errorMessage;
   int? _selectedRolId;
   String? _rolActualNombre;
-  late EmpleadoProvider _empleadoProvider;
+  late final EmpleadoRepository _empleadoRepository;
 
   // Constantes de colores para tema oscuro con rojo
-  static const Color colorPrimario = Color(0xFFE31E24); // Rojo Condor Motors
+  static const Color colorPrimario = Color(0xFFE31E24); // Rojo TiendaPeru
 
   // Determinar si es una nueva cuenta o actualización
   bool get _esNuevaCuenta =>
       widget.esNuevaCuenta ?? !widget.empleado.tieneCuenta;
 
-  // Colores y estilos para UI consistente
-
   @override
   void initState() {
     super.initState();
+    _empleadoRepository = EmpleadoRepository.instance;
 
-    // Obtener el provider
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      _empleadoProvider = Provider.of<EmpleadoProvider>(context, listen: false);
-
-      // Para cuentas existentes, obtener el ID del rol actual
-      if (!_esNuevaCuenta) {
-        _cargarDatosRolActual();
-      }
-    });
+    // Para cuentas existentes, obtener el ID del rol actual
+    if (!_esNuevaCuenta) {
+      _cargarDatosRolActual();
+    }
 
     // Inicializar formulario con datos existentes si aplica
     _inicializarFormulario();
@@ -142,9 +134,8 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
     }
 
     // Validar coincidencia de contraseñas
-    final String? errorConfirmacion =
-        _empleadoProvider.validarConfirmacionClave(
-            _confirmarClaveController.text, _claveController.text);
+    final String? errorConfirmacion = _validarConfirmacionClave(
+        _confirmarClaveController.text, _claveController.text);
 
     if (errorConfirmacion != null) {
       setState(() => _errorMessage = errorConfirmacion);
@@ -152,6 +143,47 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
     }
 
     return true;
+  }
+
+  // Validar confirmación de clave
+  String? _validarConfirmacionClave(String? confirmacion, String clave) {
+    if (confirmacion == null || confirmacion.isEmpty) {
+      return 'Debe confirmar la contraseña';
+    }
+    if (confirmacion != clave) {
+      return 'Las contraseñas no coinciden';
+    }
+    return null;
+  }
+
+  // Validar usuario
+  String? _validarUsuario(String? usuario) {
+    if (usuario == null || usuario.isEmpty) {
+      return 'El nombre de usuario es obligatorio';
+    }
+    if (usuario.length < 3) {
+      return 'El nombre de usuario debe tener al menos 3 caracteres';
+    }
+    if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(usuario)) {
+      return 'El nombre de usuario solo puede contener letras, números y guiones bajos';
+    }
+    return null;
+  }
+
+  // Validar clave
+  String? _validarClave(String? clave, {bool esRequerida = true}) {
+    if (esRequerida && (clave == null || clave.isEmpty)) {
+      return 'La contraseña es obligatoria';
+    }
+    if (clave != null && clave.isNotEmpty && clave.length < 6) {
+      return 'La contraseña debe tener al menos 6 caracteres';
+    }
+    if (clave != null &&
+        clave.isNotEmpty &&
+        !RegExp(r'.*\d.*').hasMatch(clave)) {
+      return 'La contraseña debe contener al menos un número';
+    }
+    return null;
   }
 
   // Método principal para guardar la cuenta
@@ -190,6 +222,10 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
             backgroundColor: Colors.green,
           ),
         );
+
+        // Refrescar la lista de empleados antes de cerrar
+        widget.onRefresh?.call();
+
         Navigator.of(context).pop(true);
       } else {
         setState(() {
@@ -212,58 +248,61 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
       return false;
     }
 
-    // Usar el provider para validar y crear la cuenta
-    final Map<String, dynamic> resultado =
-        await _empleadoProvider.gestionarCreacionCuenta(
-      empleadoId: widget.empleado.id,
-      usuario: _usuarioController.text,
-      clave: _claveController.text,
-      rolCuentaEmpleadoId: _selectedRolId!,
-    );
+    try {
+      // Usar el repository para crear la cuenta
+      final Map<String, dynamic> resultado =
+          await _empleadoRepository.registerEmpleadoAccount(
+        empleadoId: widget.empleado.id,
+        usuario: _usuarioController.text,
+        clave: _claveController.text,
+        rolCuentaEmpleadoId: _selectedRolId!,
+      );
 
-    if (!resultado['success']) {
+      return resultado['success'] == true;
+    } catch (e) {
       setState(() {
-        _errorMessage = resultado['message'];
+        _errorMessage = e.toString();
       });
       return false;
     }
-
-    return resultado['success'];
   }
 
   // Actualizar una cuenta existente
   Future<bool> _actualizarCuentaExistente() async {
-    // Usar el provider para validar y actualizar la cuenta
-    final Map<String, dynamic> resultado =
-        await _empleadoProvider.gestionarActualizacionCuenta(
-      empleado: widget.empleado,
-      nuevoUsuario:
-          _usuarioController.text.isNotEmpty ? _usuarioController.text : null,
-      nuevaClave:
-          _claveController.text.isNotEmpty ? _claveController.text : null,
-      nuevoRolId: _selectedRolId,
-    );
+    try {
+      // Obtener la cuenta actual del empleado
+      final Map<String, dynamic>? cuentaActual =
+          await _empleadoRepository.getCuentaByEmpleadoId(widget.empleado.id);
 
-    if (resultado['noChanges'] == true) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No se realizaron cambios'),
-            backgroundColor: Colors.blue,
-          ),
-        );
+      if (cuentaActual == null) {
+        setState(() {
+          _errorMessage = 'No se encontró la cuenta del empleado';
+        });
+        return false;
       }
-      return true;
-    }
 
-    if (!resultado['success']) {
+      final int cuentaId = cuentaActual['id'];
+      final String? nuevoUsuario =
+          _usuarioController.text.isNotEmpty ? _usuarioController.text : null;
+      final String? nuevaClave =
+          _claveController.text.isNotEmpty ? _claveController.text : null;
+
+      // Usar el repository para actualizar la cuenta
+      final Map<String, dynamic> resultado =
+          await _empleadoRepository.updateCuentaEmpleado(
+        id: cuentaId,
+        usuario: nuevoUsuario,
+        clave: nuevaClave,
+        rolCuentaEmpleadoId: _selectedRolId,
+      );
+
+      return resultado['success'] == true;
+    } catch (e) {
       setState(() {
-        _errorMessage = resultado['message'];
+        _errorMessage = e.toString();
       });
       return false;
     }
-
-    return resultado['success'];
   }
 
   // Manejar errores de forma amigable
@@ -275,7 +314,6 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
       switch (e.statusCode) {
         case 401:
           errorMsg = 'Sesión expirada. Inicie sesión nuevamente.';
-          break;
         case 400:
           if (e.message.contains('exists') || e.message.contains('ya existe')) {
             errorMsg =
@@ -283,16 +321,12 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
           } else {
             errorMsg = 'Error en los datos: ${e.message}';
           }
-          break;
         case 403:
           errorMsg = 'No tiene permisos para realizar esta acción.';
-          break;
         case 404:
           errorMsg = 'No se encontró la cuenta o empleado especificado.';
-          break;
         case 500:
           errorMsg = 'Error en el servidor. Intente nuevamente más tarde.';
-          break;
       }
     }
 
@@ -408,28 +442,40 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
     });
 
     try {
-      // Usar el provider para eliminar la cuenta con validación
-      final Map<String, dynamic> resultado =
-          await _empleadoProvider.gestionarEliminacionCuenta(
-        empleado: widget.empleado,
-      );
+      // Obtener la cuenta actual del empleado
+      final Map<String, dynamic>? cuentaActual =
+          await _empleadoRepository.getCuentaByEmpleadoId(widget.empleado.id);
+
+      if (cuentaActual == null) {
+        setState(() {
+          _errorMessage = 'No se encontró la cuenta del empleado';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final int cuentaId = cuentaActual['id'];
+
+      // Usar el repository para eliminar la cuenta
+      final bool success =
+          await _empleadoRepository.deleteCuentaEmpleado(cuentaId);
 
       if (!mounted) {
         return;
       }
 
-      if (resultado['success']) {
+      if (success) {
         // Notificar éxito y cerrar diálogo
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(resultado['message']),
+          const SnackBar(
+            content: Text('Cuenta eliminada exitosamente'),
             backgroundColor: Colors.green,
           ),
         );
         Navigator.of(context).pop(true);
       } else {
         setState(() {
-          _errorMessage = resultado['message'];
+          _errorMessage = 'No se pudo eliminar la cuenta';
           _isLoading = false;
         });
       }
@@ -443,6 +489,31 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
         _errorMessage = 'Error al eliminar cuenta: ${e.toString()}';
         _isLoading = false;
       });
+    }
+  }
+
+  // Método para cargar el ID del rol actual usando el repository
+  Future<void> _cargarDatosRolActual() async {
+    try {
+      final Map<String, dynamic>? cuentaInfo =
+          await _empleadoRepository.getCuentaByEmpleadoId(widget.empleado.id);
+
+      if (cuentaInfo != null &&
+          cuentaInfo['rolCuentaEmpleadoId'] != null &&
+          mounted) {
+        setState(() {
+          _selectedRolId = cuentaInfo['rolCuentaEmpleadoId'] as int;
+        });
+      }
+    } catch (e) {
+      // El empleado no tiene cuenta (404)
+      if (e.toString().contains('404') || e.toString().contains('Not found')) {
+        debugPrint(
+            'Empleado ${widget.empleado.id} no tiene cuenta asociada (normal)');
+      } else {
+        // Solo loggear errores reales
+        debugPrint('Error al cargar datos del rol: $e');
+      }
     }
   }
 
@@ -775,23 +846,6 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        const Row(
-          children: [
-            FaIcon(FontAwesomeIcons.penToSquare, size: 14, color: Colors.blue),
-            SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Puede modificar el usuario, contraseña y rol de la cuenta',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                  height: 1.4,
-                ),
-              ),
-            ),
-          ],
-        ),
       ],
     );
   }
@@ -869,14 +923,14 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
                   helperText: 'Usuario para iniciar sesión',
                   helperStyle: TextStyle(color: Colors.white54),
                 ),
-                validator: (value) => _empleadoProvider.validarUsuario(value),
+                validator: _validarUsuario,
               ),
             ),
             if (widget.roles.isNotEmpty) ...<Widget>[
               const SizedBox(width: 16),
               Expanded(
                 child: DropdownButtonFormField<int>(
-                  value: _selectedRolId,
+                  initialValue: _selectedRolId,
                   dropdownColor: const Color(0xFF2D2D2D),
                   style: const TextStyle(color: Colors.white, fontSize: 14),
                   decoration: const InputDecoration(
@@ -895,13 +949,10 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
                     switch (codigo) {
                       case 'administrador':
                         iconData = FontAwesomeIcons.userGear;
-                        break;
                       case 'vendedor':
                         iconData = FontAwesomeIcons.cashRegister;
-                        break;
                       case 'computadora':
                         iconData = FontAwesomeIcons.desktop;
-                        break;
                     }
 
                     return DropdownMenuItem<int>(
@@ -957,6 +1008,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
               color: colorPrimario,
             ),
             SizedBox(width: 8),
+            SizedBox(width: 8),
             Text(
               'CONTRASEÑA',
               style: TextStyle(
@@ -999,8 +1051,8 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
                       : 'Vacío = no cambiar',
                   helperStyle: const TextStyle(color: Colors.white54),
                 ),
-                validator: (value) => _empleadoProvider.validarClave(value,
-                    esRequerida: _esNuevaCuenta),
+                validator: (value) =>
+                    _validarClave(value, esRequerida: _esNuevaCuenta),
               ),
             ),
             const SizedBox(width: 16),
@@ -1031,8 +1083,8 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
                   helperText: 'Debe coincidir con la contraseña',
                   helperStyle: const TextStyle(color: Colors.white54),
                 ),
-                validator: (String? value) => _empleadoProvider
-                    .validarConfirmacionClave(value, _claveController.text),
+                validator: (String? value) =>
+                    _validarConfirmacionClave(value, _claveController.text),
               ),
             ),
           ],
@@ -1112,21 +1164,5 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
         ),
       ],
     );
-  }
-
-  // Método para cargar el ID del rol actual usando el provider
-  Future<void> _cargarDatosRolActual() async {
-    try {
-      final datosGestion =
-          await _empleadoProvider.prepararDatosGestionCuenta(widget.empleado);
-      if (datosGestion['rolActualId'] != null && mounted) {
-        setState(() {
-          _selectedRolId = datosGestion['rolActualId'] as int;
-        });
-      }
-    } catch (e) {
-      // Silenciar errores, se mantiene el rol por defecto
-      debugPrint('Error al cargar datos del rol: $e');
-    }
   }
 }

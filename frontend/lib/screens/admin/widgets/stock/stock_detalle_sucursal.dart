@@ -1,14 +1,13 @@
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
-import 'package:condorsmotors/providers/admin/stock.admin.provider.dart';
 import 'package:condorsmotors/repositories/producto.repository.dart';
 // Importar los repositorios necesarios
 import 'package:condorsmotors/repositories/stock.repository.dart';
 import 'package:condorsmotors/screens/admin/widgets/stock/stock_detalles_dialog.dart';
+import 'package:condorsmotors/utils/stock_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:provider/provider.dart';
 
 /// Diálogo que muestra el stock de un producto en todas las sucursales
 class StockDetalleSucursalDialog extends StatefulWidget {
@@ -42,7 +41,6 @@ class _StockDetalleSucursalDialogState
   Map<String, int> _stockPorSucursal = <String, int>{};
   Map<String, bool> _productoDisponibleEnSucursal = <String, bool>{};
   bool _dataLoaded = false;
-  late StockProvider _stockProvider;
 
   @override
   void initState() {
@@ -50,12 +48,6 @@ class _StockDetalleSucursalDialogState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _cargarSucursales();
     });
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _stockProvider = Provider.of<StockProvider>(context, listen: false);
   }
 
   Future<void> _cargarSucursales() async {
@@ -169,7 +161,7 @@ class _StockDetalleSucursalDialogState
   // Métodos auxiliares que usan el provider
   Color _getStockStatusColor(int stockActual, int stockMinimo) {
     final StockStatus status =
-        _stockProvider.getStockStatus(stockActual, stockMinimo);
+        StockUtils.getStockStatus(stockActual, stockMinimo);
     switch (status) {
       case StockStatus.agotado:
         return Colors.red.shade800;
@@ -182,7 +174,7 @@ class _StockDetalleSucursalDialogState
 
   IconData _getStockStatusIcon(int stockActual, int stockMinimo) {
     final StockStatus status =
-        _stockProvider.getStockStatus(stockActual, stockMinimo);
+        StockUtils.getStockStatus(stockActual, stockMinimo);
     switch (status) {
       case StockStatus.agotado:
         return FontAwesomeIcons.ban;
@@ -195,7 +187,7 @@ class _StockDetalleSucursalDialogState
 
   String _getStockStatusText(int stockActual, int stockMinimo) {
     final StockStatus status =
-        _stockProvider.getStockStatus(stockActual, stockMinimo);
+        StockUtils.getStockStatus(stockActual, stockMinimo);
     switch (status) {
       case StockStatus.agotado:
         return 'Agotado';
@@ -507,21 +499,24 @@ class _StockDetalleSucursalDialogState
                                       ),
                                     ),
                                     const SizedBox(height: 4),
-                                    if (disponible) Text(
-                                            stockEnSucursal.toString(),
-                                            style: TextStyle(
-                                              color: statusColor,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 18,
-                                            ),
-                                          ) else const Text(
-                                            '—',
-                                            style: TextStyle(
-                                              color: Colors.grey,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 18,
-                                            ),
-                                          ),
+                                    if (disponible)
+                                      Text(
+                                        stockEnSucursal.toString(),
+                                        style: TextStyle(
+                                          color: statusColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 18,
+                                        ),
+                                      )
+                                    else
+                                      const Text(
+                                        '—',
+                                        style: TextStyle(
+                                          color: Colors.grey,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 18,
+                                        ),
+                                      ),
                                   ],
                                 ),
                               ),

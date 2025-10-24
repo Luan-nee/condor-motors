@@ -38,7 +38,7 @@ class ProformaNotification {
         // Inicializar la biblioteca de notificaciones de Windows
         final bool initialized = await WinToast.instance().initialize(
           aumId: 'com.condorsmotors.app',
-          displayName: 'Condor Motors',
+          displayName: 'TiendaPeru',
           iconPath: '', // Dejar vacío por ahora
           clsid:
               '936C39FC-6BBC-4A57-B8F8-7C627E401B2F', // Debe coincidir con msix_config
@@ -51,7 +51,7 @@ class ProformaNotification {
           Logger.info(
               '🔔 Sistema de notificaciones para proformas inicializado correctamente');
         } else {
-          Logger.warn('⚠️ No se pudo inicializar el sistema de notificaciones');
+          Logger.warn('No se pudo inicializar el sistema de notificaciones');
           _notificationsEnabled = false;
         }
       } catch (e) {
@@ -192,7 +192,7 @@ class ProformaNotification {
         : '¡NUEVA PROFORMA PENDIENTE! Monto: S/ ${proforma.total.toStringAsFixed(2)}';
     await _attemptShowNotification(
       proforma: proforma,
-      title: '⚠️ Nueva Proforma #${proforma.id}',
+      title: 'Nueva Proforma #${proforma.id}',
       body: message,
       tagPrefix: 'pending_proforma_',
       logMessage: 'Proforma pendiente',
@@ -226,7 +226,7 @@ class ProformaNotification {
       <binding template="ToastGeneric">
          <text hint-style="title" hint-maxLines="1">$title</text>
          <text hint-style="body" hint-maxLines="2">$body</text>
-         <text placement="attribution">Condor Motors - Sistema de Proformas</text>
+         <text placement="attribution">TiendaPeru - Sistema de Proformas</text>
       </binding>
    </visual>
    <actions>

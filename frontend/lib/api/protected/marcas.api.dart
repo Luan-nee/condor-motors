@@ -322,7 +322,7 @@ class MarcasApi {
   /// Crea una nueva marca usando un objeto [Marca]
   ///
   /// [marca] Objeto Marca con los datos a crear
-  Future<Marca> createMarcaObjeto(Marca marca) async {
+  Future<Marca> createMarcaObjeto(Marca marca) {
     return createMarca(marca.toJson());
   }
 
@@ -389,7 +389,7 @@ class MarcasApi {
   /// Actualiza una marca existente usando un objeto [Marca]
   ///
   /// [marca] Objeto Marca con los datos actualizados
-  Future<Marca> updateMarcaObjeto(Marca marca) async {
+  Future<Marca> updateMarcaObjeto(Marca marca) {
     return updateMarca(marca.id, marca.toJson());
   }
 

@@ -13,11 +13,11 @@ class ClienteRepository {
   Future<Map<String, dynamic>?> buscarClientePorDoc(
       String numeroDocumento) async {
     try {
-      debugPrint('🔍 Buscando cliente con documento: $numeroDocumento');
+      debugPrint('Buscando cliente con documento: $numeroDocumento');
       final datos = await _api.buscarClienteExternoPorDoc(numeroDocumento);
 
       if (datos != null) {
-        debugPrint('✅ Datos encontrados para documento $numeroDocumento');
+        debugPrint('Datos encontrados para documento $numeroDocumento');
         return {
           'tipoDocumentoId':
               datos['tipoDocumentoId'] ?? 2, // Por defecto DNI si no viene
@@ -29,7 +29,7 @@ class ClienteRepository {
 
       return null;
     } catch (e) {
-      debugPrint('❌ Error al buscar cliente por documento: $e');
+      debugPrint('Error al buscar cliente por documento: $e');
       rethrow;
     }
   }
@@ -40,7 +40,7 @@ class ClienteRepository {
       debugPrint('➕ Creando nuevo cliente: ${clienteData['denominacion']}');
       return await _api.createCliente(clienteData);
     } catch (e) {
-      debugPrint('❌ Error al crear cliente: $e');
+      debugPrint('Error al crear cliente: $e');
       rethrow;
     }
   }
@@ -48,10 +48,10 @@ class ClienteRepository {
   /// Obtiene un cliente por su ID
   Future<Cliente> obtenerCliente(String clienteId) async {
     try {
-      debugPrint('🔍 Obteniendo cliente con ID: $clienteId');
+      debugPrint('Obteniendo cliente con ID: $clienteId');
       return await _api.getCliente(clienteId);
     } catch (e) {
-      debugPrint('❌ Error al obtener cliente: $e');
+      debugPrint('Error al obtener cliente: $e');
       rethrow;
     }
   }
@@ -59,16 +59,16 @@ class ClienteRepository {
   /// Obtiene un cliente por su número de documento
   Future<Cliente?> obtenerClientePorDoc(String numeroDocumento) async {
     try {
-      debugPrint('🔍 Obteniendo cliente con documento: $numeroDocumento');
+      debugPrint('Obteniendo cliente con documento: $numeroDocumento');
       return await _api.getClienteByDoc(numeroDocumento);
     } catch (e) {
-      debugPrint('❌ Error al obtener cliente por documento: $e');
+      debugPrint('Error al obtener cliente por documento: $e');
       rethrow;
     }
   }
 
   /// Obtiene la lista de clientes
-  Future<List<Cliente>> getClientes({int? pageSize, String? sortBy}) async {
-    return await _api.getClientes(pageSize: pageSize, sortBy: sortBy);
+  Future<List<Cliente>> getClientes({int? pageSize, String? sortBy}) {
+    return _api.getClientes(pageSize: pageSize, sortBy: sortBy);
   }
 }

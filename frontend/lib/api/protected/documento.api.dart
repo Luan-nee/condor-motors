@@ -244,15 +244,15 @@ class DocumentoApi {
   /// Obtiene el ID para el tipo de documento según su nombre
   /// [tipoDocumento] - Nombre del tipo de documento ('BOLETA' o 'FACTURA')
   Future<int> getTipoDocumentoId(
-      String sucursalId, String tipoDocumento) async {
+      String sucursalId, String tipoDocumento) {
     if (tipoDocumento.toUpperCase() == 'BOLETA') {
-      return await getBoletaId(sucursalId);
+      return getBoletaId(sucursalId);
     } else if (tipoDocumento.toUpperCase() == 'FACTURA') {
-      return await getFacturaId(sucursalId);
+      return getFacturaId(sucursalId);
     } else {
       Logger.warn(
           'Tipo de documento desconocido: $tipoDocumento, usando Boleta por defecto');
-      return await getBoletaId(sucursalId);
+      return getBoletaId(sucursalId);
     }
   }
 }

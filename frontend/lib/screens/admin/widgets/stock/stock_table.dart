@@ -1,10 +1,10 @@
 import 'package:condorsmotors/models/producto.model.dart';
-import 'package:condorsmotors/providers/admin/stock.admin.provider.dart';
+import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:condorsmotors/screens/admin/widgets/stock/stock_detalle_sucursal.dart';
+import 'package:condorsmotors/utils/stock_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:provider/provider.dart';
 
 class TableProducts extends StatelessWidget {
   final String selectedSucursalId;
@@ -48,8 +48,6 @@ class TableProducts extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Provider.of<StockProvider>(context, listen: false);
-
     // Mostrar indicador de carga
     if (isLoading) {
       return Container(
@@ -355,7 +353,6 @@ class TableProducts extends StatelessWidget {
   }
 
   Widget _buildProductRow(BuildContext context, Producto producto) {
-    final stockProvider = Provider.of<StockProvider>(context, listen: false);
     final int stockActual = producto.stock;
     final int stockMinimo = producto.stockMinimo ?? 0;
 
@@ -384,7 +381,7 @@ class TableProducts extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.network(
-                    stockProvider.getProductoImageUrl(producto),
+                    ProductoRepository.getProductoImageUrl(producto) ?? '',
                     width: 48,
                     height: 48,
                     fit: BoxFit.cover,
@@ -716,16 +713,13 @@ class _InventarioResumenState extends State<InventarioResumen> {
 
   @override
   Widget build(BuildContext context) {
-    final StockProvider stockProvider =
-        Provider.of<StockProvider>(context, listen: false);
-
     if (widget.productos.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    // Agrupar productos por disponibilidad usando el StockProvider
+    // Agrupar productos por disponibilidad usando StockUtils
     final Map<StockStatus, List<Producto>> agrupados =
-        stockProvider.agruparProductosPorEstadoStock(widget.productos);
+        StockUtils.agruparProductosPorEstadoStock(widget.productos);
 
     // Obtener contadores
     final int agotadosCount = agrupados[StockStatus.agotado]!.length;

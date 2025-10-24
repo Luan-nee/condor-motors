@@ -203,13 +203,10 @@ class EmpleadosApi {
           case 'jpg':
           case 'jpeg':
             mimeType = 'jpeg';
-            break;
           case 'png':
             mimeType = 'png';
-            break;
           case 'webp':
             mimeType = 'webp';
-            break;
           default:
             mimeType = 'jpeg';
         }
@@ -333,13 +330,10 @@ class EmpleadosApi {
           case 'jpg':
           case 'jpeg':
             mimeType = 'jpeg';
-            break;
           case 'png':
             mimeType = 'png';
-            break;
           case 'webp':
             mimeType = 'webp';
-            break;
           default:
             mimeType = 'jpeg';
         }
@@ -472,7 +466,7 @@ class EmpleadosApi {
     int pageSize = 10,
     String order = 'asc',
     bool useCache = true,
-  }) async {
+  }) {
     return getEmpleados(
       page: page,
       pageSize: pageSize,
@@ -489,7 +483,7 @@ class EmpleadosApi {
     int pageSize = 10,
     String order = 'asc',
     bool useCache = true,
-  }) async {
+  }) {
     return getEmpleados(
       page: page,
       pageSize: pageSize,

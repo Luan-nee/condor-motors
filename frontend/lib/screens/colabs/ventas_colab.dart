@@ -291,7 +291,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
                     isLoading: _provider.isLoadingProductos,
                     sucursalId: _provider.sucursalId,
                     onProductoSeleccionado: (Producto producto) {
-                      debugPrint('✅ Producto seleccionado: ${producto.nombre}');
+                      debugPrint('Producto seleccionado: ${producto.nombre}');
                       _mostrarDetallesPromocion(producto);
                     },
                   ),
@@ -306,7 +306,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
 
   // Mostrar detalles de promoción
   void _mostrarDetallesPromocion(Producto producto) {
-    debugPrint('🔍 Verificando promociones para: ${producto.nombre}');
+    debugPrint('Verificando promociones para: ${producto.nombre}');
     Navigator.pop(context); // Cerrar diálogo de búsqueda
     _agregarProductoConVerificacion(producto);
   }
@@ -318,7 +318,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
     // Verificar stock disponible
     final int stockDisponible = producto.stock;
     if (stockDisponible <= 0) {
-      debugPrint('❌ Error: Producto sin stock disponible');
+      debugPrint('Error: Producto sin stock disponible');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('${producto.nombre} no tiene stock disponible'),
@@ -332,7 +332,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
     final bool resultado = _agregarProducto(producto);
 
     if (resultado) {
-      debugPrint('✅ Producto agregado exitosamente');
+      debugPrint('Producto agregado exitosamente');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('${producto.nombre} agregado al carrito'),
@@ -340,7 +340,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
         ),
       );
     } else {
-      debugPrint('❌ Error al agregar el producto');
+      debugPrint('Error al agregar el producto');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Error al agregar el producto'),
@@ -352,11 +352,11 @@ class _VentasColabScreenState extends State<VentasColabScreen>
 
   // Métodos para delegar al provider
   bool _agregarProducto(Producto producto) {
-    debugPrint('➡️ Delegando agregar producto al provider: ${producto.nombre}');
+    debugPrint('Delegando agregar producto al provider: ${producto.nombre}');
     final bool resultado = _provider.agregarProducto(producto);
     // Mostrar mensaje de promoción si existe
     if (resultado && _provider.mensajePromocion.isNotEmpty) {
-      debugPrint('🎉 Mostrando mensaje de promoción');
+      debugPrint('Mostrando mensaje de promoción');
       _mostrarMensajePromocionConAnimacion(
         _provider.nombreProductoPromocion,
         _provider.mensajePromocion,
@@ -395,7 +395,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
 
   // Método para finalizar venta (verificar stock y crear proforma)
   Future<void> _finalizarVenta() async {
-    debugPrint('🛍️ Iniciando proceso de finalización de venta...');
+    debugPrint('Iniciando proceso de finalización de venta...');
 
     // Validar que haya productos y cliente seleccionado
     if (_productosVenta.isEmpty) {
@@ -477,7 +477,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
 
   // Método para crear proforma de venta
   Future<void> _crearProformaVenta() async {
-    debugPrint('📝 Iniciando creación de proforma...');
+    debugPrint('Iniciando creación de proforma...');
 
     // Mostrar indicador de carga con más contexto para reducir ansiedad
     _provider.setLoading(
@@ -590,7 +590,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
             TextButton(
               onPressed: () {
                 debugPrint(
-                    '✅ Venta finalizada exitosamente. Limpiando carrito...');
+                    'Venta finalizada exitosamente. Limpiando carrito...');
                 Navigator.pop(dialogContext);
                 _provider
                     .limpiarVenta(); // Limpiar el carrito usando el provider
@@ -609,7 +609,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
         ),
       );
     } catch (e) {
-      debugPrint('🚨 Error al crear la proforma: $e');
+      debugPrint('Error al crear la proforma: $e');
 
       if (!mounted) {
         return;
@@ -722,7 +722,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
         builder: (BuildContext context) => BarcodeColabScreen(
           productos: _productos,
           onProductoSeleccionado: (Producto producto) {
-            debugPrint('✅ Producto escaneado: ${producto.nombre}');
+            debugPrint('Producto escaneado: ${producto.nombre}');
             _agregarProductoConVerificacion(producto);
           },
           isLoading: _isLoading,
@@ -759,7 +759,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
       builder:
           (BuildContext context, VentasColabProvider provider, Widget? child) {
         debugPrint(
-            '🔄 Reconstruyendo VentasColabScreen - Productos en carrito: ${provider.productosVenta.length}');
+            'Reconstruyendo VentasColabScreen - Productos en carrito: ${provider.productosVenta.length}');
         debugPrint(
             '💰 Total actual: S/ ${provider.totalVenta.toStringAsFixed(2)}');
 
@@ -950,50 +950,53 @@ class _VentasColabScreenState extends State<VentasColabScreen>
                 Expanded(
                   child: Stack(
                     children: <Widget>[
-                      if (provider.productosVenta.isEmpty) const Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: <Widget>[
-                                  FaIcon(
-                                    FontAwesomeIcons.cartShopping,
-                                    size: 64,
-                                    color: Colors.grey,
-                                  ),
-                                  SizedBox(height: 16),
-                                  Text(
-                                    'No hay productos en el carrito',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    'Busca o escanea productos para agregarlos',
-                                    style: TextStyle(
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                ],
+                      if (provider.productosVenta.isEmpty)
+                        const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: <Widget>[
+                              FaIcon(
+                                FontAwesomeIcons.cartShopping,
+                                size: 64,
+                                color: Colors.grey,
                               ),
-                            ) else ListView.builder(
-                              padding: const EdgeInsets.only(
-                                  bottom:
-                                      100), // Espacio para el botón de finalizar
-                              itemCount: provider.productosVenta.length,
-                              itemBuilder: (BuildContext context, int index) {
-                                final producto = provider.productosVenta[index];
-                                final cantidad = provider.cantidades[index];
-                                return ProductoVentaItemWidget(
-                                  producto: producto,
-                                  cantidad: cantidad,
-                                  onEliminar: () => _eliminarProducto(index),
-                                  onCambiarCantidad: (nuevaCantidad) {
-                                    _cambiarCantidad(index, nuevaCantidad);
-                                  },
-                                );
+                              SizedBox(height: 16),
+                              Text(
+                                'No hay productos en el carrito',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'Busca o escanea productos para agregarlos',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        ListView.builder(
+                          padding: const EdgeInsets.only(
+                              bottom:
+                                  100), // Espacio para el botón de finalizar
+                          itemCount: provider.productosVenta.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            final producto = provider.productosVenta[index];
+                            final cantidad = provider.cantidades[index];
+                            return ProductoVentaItemWidget(
+                              producto: producto,
+                              cantidad: cantidad,
+                              onEliminar: () => _eliminarProducto(index),
+                              onCambiarCantidad: (nuevaCantidad) {
+                                _cambiarCantidad(index, nuevaCantidad);
                               },
-                            ),
+                            );
+                          },
+                        ),
 
                       // Mensaje de promoción animado
                       if (_mostrarMensajePromocion)

@@ -21,10 +21,9 @@ class ColoresApi {
 
       // Intentar obtener desde caché si useCache es true
       if (useCache) {
-        final List<ColorApp>? cachedData =
-            _cache.get<List<ColorApp>>(cacheKey);
+        final List<ColorApp>? cachedData = _cache.get<List<ColorApp>>(cacheKey);
         if (cachedData != null) {
-          debugPrint('✅ Colores obtenidos desde caché');
+          debugPrint('Colores obtenidos desde caché');
           return cachedData;
         }
       }
@@ -43,7 +42,7 @@ class ColoresApi {
         // Guardar en caché si useCache es true
         if (useCache) {
           _cache.set(cacheKey, colores);
-          debugPrint('✅ Colores guardados en caché');
+          debugPrint('Colores guardados en caché');
         }
 
         return colores;
@@ -59,6 +58,6 @@ class ColoresApi {
   /// Método público para forzar refresco de caché
   void invalidateCache() {
     _cache.clear();
-    debugPrint('✅ Caché de colores completamente invalidada');
+    debugPrint('Caché de colores completamente invalidada');
   }
 }
