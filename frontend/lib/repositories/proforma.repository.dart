@@ -1,4 +1,4 @@
-import 'package:condorsmotors/api/index.api.dart';
+import 'package:condorsmotors/api/index.api.dart' as api_index;
 import 'package:condorsmotors/api/protected/proforma.api.dart' as api_proforma;
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/proforma.model.dart' as model_proforma;
@@ -23,7 +23,7 @@ class ProformaRepository implements BaseRepository {
   ProformaRepository._internal() {
     try {
       // Utilizamos la API global inicializada en index.api.dart
-      _proformasApi = api.proformas;
+      _proformasApi = api_index.api.proformas;
     } catch (e) {
       debugPrint('Error al obtener ProformaVentaApi: $e');
       // Si hay un error al acceder a la API global, lanzamos una excepción
@@ -36,14 +36,14 @@ class ProformaRepository implements BaseRepository {
   /// Ayuda a los providers a acceder a la información del usuario autenticado
   @override
   Future<Map<String, dynamic>?> getUserData() =>
-      AuthRepository.instance.getUserData();
+      api_index.AuthManager.getUserData();
 
   /// Obtiene el ID de la sucursal del usuario actual
   ///
   /// Útil para operaciones que requieren el ID de sucursal automáticamente
   @override
   Future<String?> getCurrentSucursalId() =>
-      AuthRepository.instance.getCurrentSucursalId();
+      api_index.AuthManager.getCurrentSucursalId();
 
   /// Obtiene las proformas de una sucursal con paginación
   ///
@@ -224,7 +224,8 @@ class ProformaRepository implements BaseRepository {
   /// [sucursalId] ID de la sucursal
   Future<int> getTipoDocumentoIdBoleta(String sucursalId) async {
     try {
-      return await api.documentos.getTipoDocumentoId(sucursalId, 'BOLETA');
+      return await api_index.api.documentos
+          .getTipoDocumentoId(sucursalId, 'BOLETA');
     } catch (e) {
       debugPrint('Error en ProformaRepository.getTipoDocumentoIdBoleta: $e');
       rethrow;
@@ -236,7 +237,7 @@ class ProformaRepository implements BaseRepository {
   /// [sucursalId] ID de la sucursal
   Future<int> getGravadoTaxId(String sucursalId) async {
     try {
-      return await api.documentos.getGravadoTaxId(sucursalId);
+      return await api_index.api.documentos.getGravadoTaxId(sucursalId);
     } catch (e) {
       debugPrint('Error en ProformaRepository.getGravadoTaxId: $e');
       rethrow;
@@ -331,7 +332,7 @@ class ProformaRepository implements BaseRepository {
       if (empleadoId == null) {
         // Buscar un empleado de la sucursal
         final empleados =
-            await api.empleados.getEmpleadosPorSucursal(sucursalId);
+            await api_index.api.empleados.getEmpleadosPorSucursal(sucursalId);
         if (empleados.empleados.isNotEmpty) {
           empleadoId = int.tryParse(empleados.empleados.first.id);
         }
@@ -352,7 +353,7 @@ class ProformaRepository implements BaseRepository {
       };
 
       // Crear la venta
-      final ventaResponse = await api.ventas.createVenta(
+      final ventaResponse = await api_index.api.ventas.createVenta(
         ventaData,
         sucursalId: sucursalId,
       );

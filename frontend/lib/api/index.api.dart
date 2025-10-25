@@ -1,8 +1,23 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:condorsmotors/api/auth.api.dart';
 import 'package:condorsmotors/api/main.api.dart';
-import 'package:condorsmotors/api/protected/index.protected.dart';
+import 'package:condorsmotors/api/protected/categorias.api.dart';
+import 'package:condorsmotors/api/protected/clientes.api.dart';
+import 'package:condorsmotors/api/protected/colores.api.dart';
+import 'package:condorsmotors/api/protected/documento.api.dart';
+import 'package:condorsmotors/api/protected/empleados.api.dart';
+import 'package:condorsmotors/api/protected/estadisticas.api.dart';
+import 'package:condorsmotors/api/protected/facturacion.api.dart';
+import 'package:condorsmotors/api/protected/marcas.api.dart';
+import 'package:condorsmotors/api/protected/pedidos.api.dart';
+import 'package:condorsmotors/api/protected/productos.api.dart';
+import 'package:condorsmotors/api/protected/proforma.api.dart';
+import 'package:condorsmotors/api/protected/stocks.api.dart';
+import 'package:condorsmotors/api/protected/sucursales.api.dart';
+import 'package:condorsmotors/api/protected/transferencias.api.dart';
+import 'package:condorsmotors/api/protected/ventas.api.dart';
 import 'package:condorsmotors/utils/logger.dart';
 import 'package:condorsmotors/utils/secure_storage_utils.dart';
 import 'package:dio/dio.dart';
@@ -10,7 +25,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 export 'auth.api.dart';
 export 'main.api.dart';
-export 'protected/index.protected.dart';
 
 // Instancia global de la API
 late CondorMotorsApi api;
@@ -125,7 +139,6 @@ Future<void> initializeApi() async {
 class CondorMotorsApi {
   late final ApiClient _apiClient;
   late final AuthApi auth;
-  late final AuthService authService;
   late final SucursalesApi sucursales;
   late final EmpleadosApi empleados;
   late final MarcasApi marcas;
@@ -134,7 +147,6 @@ class CondorMotorsApi {
   late final ProductosApi productos;
   late final StocksApi stocks;
   late final CategoriasApi categorias;
-  late final CuentasEmpleadosApi cuentasEmpleados;
   late final ProformaVentaApi proformas;
   late final ColoresApi colores;
   late final ClientesApi clientes;
@@ -150,10 +162,11 @@ class CondorMotorsApi {
     try {
       // Crear el cliente API
       _apiClient = ApiClient(baseUrl: baseUrl);
+      _globalApiClient =
+          _apiClient; // Configurar instancia global para AuthManager
 
       // Inicializar APIs de autenticación
-      auth = AuthApi(_apiClient);
-      authService = AuthService(auth);
+      auth = AuthApi();
 
       // Inicializar APIs protegidas
       sucursales = SucursalesApi(_apiClient);
@@ -164,7 +177,6 @@ class CondorMotorsApi {
       productos = ProductosApi(_apiClient);
       stocks = StocksApi(_apiClient);
       categorias = CategoriasApi(_apiClient);
-      cuentasEmpleados = CuentasEmpleadosApi(_apiClient);
       proformas = ProformaVentaApi(_apiClient);
       colores = ColoresApi(_apiClient);
       clientes = ClientesApi(_apiClient);
@@ -182,6 +194,203 @@ class CondorMotorsApi {
   /// Devuelve la baseUrl sin el sufijo /api para construir URLs absolutas de imágenes
   String getBaseUrlSinApi() {
     return _apiClient.baseUrl.replaceFirst(RegExp('/api/?'), '');
+  }
+}
+
+// Instancia global del cliente API
+late ApiClient _globalApiClient;
+
+/// Centraliza el manejo de autenticación y tokens
+class AuthManager {
+  // Claves para almacenamiento
+  static const String _accessTokenKey = 'access_token';
+  static const String _refreshTokenKey = 'refresh_token';
+  static const String _userDataKey = 'user_data';
+  static const String _sucursalKey = 'current_sucursal';
+  static const String _sucursalIdKey = 'current_sucursal_id';
+  static const String _rememberKey = 'remember_me';
+  static const String _usernameKey = 'username';
+  static const String _passwordKey = 'password';
+  static const String _usernameAutoKey = 'username_auto';
+  static const String _passwordAutoKey = 'password_auto';
+
+  /// Inicia sesión con usuario y contraseña
+  static Future<Map<String, dynamic>?> login(String username, String password,
+      {bool saveAutoLogin = false}) async {
+    try {
+      final Map<String, dynamic> response = await _globalApiClient.request(
+        endpoint: '/auth/login',
+        method: 'POST',
+        body: <String, String>{
+          'usuario': username,
+          'clave': password,
+        },
+      );
+
+      if (response['status'] != 'success' || response['data'] == null) {
+        return null;
+      }
+
+      final Map<String, dynamic> userData =
+          response['data'] as Map<String, dynamic>;
+
+      // Guardar datos del usuario
+      await saveUserData(userData);
+
+      // Guardar credenciales para auto-login si corresponde
+      if (saveAutoLogin) {
+        await saveAutoLoginCredentials(username, password);
+      }
+
+      return userData;
+    } catch (e) {
+      logError('Error durante login: $e');
+      return null;
+    }
+  }
+
+  /// Cierra la sesión del usuario
+  static Future<void> logout() async {
+    try {
+      // Intentar hacer logout en el servidor
+      await _globalApiClient.request(
+        endpoint: '/auth/logout',
+        method: 'POST',
+        requiresAuth: true,
+        queryParams: {'x-no-retry-on-401': 'true'},
+      );
+    } catch (e) {
+      logWarning('Error al hacer logout en servidor: $e');
+    }
+
+    // Limpiar todos los datos locales
+    await clearTokens();
+  }
+
+  /// Verifica si el token actual es válido
+  static Future<bool> verificarToken() async {
+    try {
+      final Map<String, dynamic> response = await _globalApiClient.request(
+        endpoint: '/auth/testsession',
+        method: 'POST',
+        requiresAuth: true,
+      );
+
+      if (response['status'] != 'success' || response['data'] == null) {
+        await clearTokens();
+        return false;
+      }
+
+      // Actualizar datos del usuario
+      final Map<String, dynamic> userData =
+          response['data'] as Map<String, dynamic>;
+      await saveUserData(userData);
+      return true;
+    } catch (e) {
+      logError('Error verificando token: $e');
+      await clearTokens();
+      return false;
+    }
+  }
+
+  /// Obtiene los datos del usuario almacenados
+  static Future<Map<String, dynamic>?> getUserData() async {
+    try {
+      final String? userData = await SecureStorageUtils.read(_userDataKey);
+      if (userData == null) {
+        return null;
+      }
+      return json.decode(userData) as Map<String, dynamic>;
+    } catch (e) {
+      logError('Error obteniendo datos del usuario: $e');
+      return null;
+    }
+  }
+
+  /// Guarda los datos del usuario
+  static Future<void> saveUserData(Map<String, dynamic> userData) async {
+    try {
+      await SecureStorageUtils.write(_userDataKey, json.encode(userData));
+
+      // Guardar atributos específicos para acceso rápido
+      if (userData['id'] != null) {
+        await SecureStorageUtils.write('user_id', userData['id'].toString());
+      }
+      if (userData['usuario'] != null) {
+        await SecureStorageUtils.write(
+            'username', userData['usuario'].toString());
+      }
+      if (userData['rolCuentaEmpleadoCodigo'] != null) {
+        await SecureStorageUtils.write('user_role',
+            userData['rolCuentaEmpleadoCodigo'].toString().toLowerCase());
+      }
+      if (userData['sucursal'] != null) {
+        await SecureStorageUtils.write(
+            _sucursalKey, userData['sucursal'].toString());
+      }
+      if (userData['sucursalId'] != null) {
+        await SecureStorageUtils.write(
+            _sucursalIdKey, userData['sucursalId'].toString());
+      }
+    } catch (e) {
+      logError('Error al guardar datos del usuario: $e');
+      rethrow;
+    }
+  }
+
+  /// Guarda credenciales para auto-login
+  static Future<void> saveAutoLoginCredentials(
+      String username, String password) async {
+    await SecureStorageUtils.write(_usernameAutoKey, username);
+    await SecureStorageUtils.write(_passwordAutoKey, password);
+  }
+
+  /// Limpia todos los tokens y datos de usuario
+  static Future<void> clearTokens() async {
+    try {
+      await Future.wait([
+        SecureStorageUtils.delete(_accessTokenKey),
+        SecureStorageUtils.delete(_refreshTokenKey),
+        SecureStorageUtils.delete(_userDataKey),
+        SecureStorageUtils.delete(_sucursalKey),
+        SecureStorageUtils.delete(_sucursalIdKey),
+        SecureStorageUtils.delete(_rememberKey),
+        SecureStorageUtils.delete(_usernameKey),
+        SecureStorageUtils.delete(_passwordKey),
+        SecureStorageUtils.delete(_usernameAutoKey),
+        SecureStorageUtils.delete(_passwordAutoKey),
+        SecureStorageUtils.delete('user_id'),
+        SecureStorageUtils.delete('username'),
+        SecureStorageUtils.delete('user_role'),
+      ]);
+      logInfo('AuthManager: Todos los tokens y datos limpiados');
+    } catch (e) {
+      logError('Error al limpiar tokens: $e');
+    }
+  }
+
+  /// Verifica si hay un token válido almacenado
+  static Future<bool> isAuthenticated() async {
+    try {
+      final String? token = await SecureStorageUtils.read(_accessTokenKey);
+      if (token == null || token.isEmpty) {
+        return false;
+      }
+      return await verificarToken();
+    } catch (e) {
+      logError('Error verificando autenticación: $e');
+      return false;
+    }
+  }
+
+  /// Obtiene el ID de la sucursal actual
+  static Future<String?> getCurrentSucursalId() async {
+    try {
+      return await SecureStorageUtils.read(_sucursalIdKey);
+    } catch (e) {
+      logError('Error obteniendo sucursal actual: $e');
+      return null;
+    }
   }
 }
 
@@ -207,6 +416,12 @@ class RefreshTokenManager {
   /// Elimina el refresh token del almacenamiento seguro
   static Future<void> clearRefreshToken() async {
     await SecureStorageUtils.delete(_refreshTokenKey);
+    clearAccessTokenCache();
+  }
+
+  /// Elimina el access token del almacenamiento seguro
+  static Future<void> clearAccessToken() async {
+    await SecureStorageUtils.delete(_accessTokenKey);
     clearAccessTokenCache();
   }
 

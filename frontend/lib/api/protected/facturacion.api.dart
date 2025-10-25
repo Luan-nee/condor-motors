@@ -1,4 +1,5 @@
 import 'package:condorsmotors/api/index.api.dart';
+import 'package:condorsmotors/api/protected/cache/fast_cache.dart';
 import 'package:condorsmotors/utils/logger.dart';
 
 /// API para gestionar la facturación electrónica y declaración SUNAT
@@ -45,18 +46,6 @@ class FacturacionApi {
   }) async {
     try {
       Logger.debug('Declarando venta $ventaId a SUNAT desde FacturacionApi');
-
-      // Validar ID de sucursal
-      if (sucursalId.isEmpty) {
-        throw Exception(
-            'El ID de sucursal es requerido para declarar una venta');
-      }
-
-      // Validar ID de venta
-      if (ventaId <= 0) {
-        throw Exception('ID de venta inválido: $ventaId');
-      }
-
       // Construir el endpoint para la declaración
       final String endpoint = '/$sucursalId/facturacion/declarar';
 

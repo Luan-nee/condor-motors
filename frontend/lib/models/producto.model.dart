@@ -189,8 +189,11 @@ class Producto extends Equatable {
         if (pathFoto != null) 'pathFoto': pathFoto,
       };
 
-  /// Helper para convertir valores numéricos a double
-  static double _parseDouble(value) {
+  /// Helper para convertir valores numéricos a double de forma segura
+  static double _parseDouble(value, {double defaultValue = 0.0}) {
+    if (value == null) {
+      return defaultValue;
+    }
     if (value is double) {
       return value;
     }
@@ -198,13 +201,16 @@ class Producto extends Equatable {
       return value.toDouble();
     }
     if (value is String) {
-      return double.parse(value);
+      return double.tryParse(value) ?? defaultValue;
     }
-    return 0.0;
+    return defaultValue;
   }
 
   /// Helper para convertir valores a int de forma segura
-  static int _parseInt(value) {
+  static int _parseInt(value, {int defaultValue = 0}) {
+    if (value == null) {
+      return defaultValue;
+    }
     if (value is int) {
       return value;
     }
@@ -212,18 +218,71 @@ class Producto extends Equatable {
       return value.toInt();
     }
     if (value is String) {
-      try {
-        return int.parse(value);
-      } catch (_) {
-        return 0;
-      }
+      return int.tryParse(value) ?? defaultValue;
     }
-    return 0;
+    return defaultValue;
   }
 
   /// Formatea el precio de venta a soles peruanos
   String getPrecioVentaFormateado() {
     return 'S/ ${precioVenta.toStringAsFixed(2)}';
+  }
+
+  /// Valida si hay stock suficiente para la cantidad solicitada
+  static String? validateStock(Producto producto, int cantidadSolicitada) {
+    if (cantidadSolicitada <= 0) {
+      return 'La cantidad debe ser mayor a 0';
+    }
+
+    if (producto.stock < cantidadSolicitada) {
+      return 'Stock insuficiente. Disponible: ${producto.stock}, Solicitado: $cantidadSolicitada';
+    }
+
+    return null; // Sin errores
+  }
+
+  /// Valida si el producto está disponible para venta
+  static String? validateProductForSale(Producto producto) {
+    if (producto.stock <= 0) {
+      return 'El producto no tiene stock disponible';
+    }
+
+    if (producto.liquidacion && producto.stock <= 0) {
+      return 'El producto en liquidación no tiene stock';
+    }
+
+    return null; // Sin errores
+  }
+
+  /// Valida múltiples productos para venta
+  static List<String> validateProductsForSale(
+      List<Producto> productos, List<int> cantidades) {
+    final List<String> errors = [];
+
+    if (productos.length != cantidades.length) {
+      errors.add('La cantidad de productos no coincide con las cantidades');
+      return errors;
+    }
+
+    for (int i = 0; i < productos.length; i++) {
+      final producto = productos[i];
+      final cantidad = cantidades[i];
+
+      // Validar producto para venta
+      final String? productError = validateProductForSale(producto);
+      if (productError != null) {
+        errors.add('${producto.nombre}: $productError');
+        continue;
+      }
+
+      // Validar stock
+      final String? stockError = validateStock(producto, cantidad);
+      if (stockError != null) {
+        errors.add('${producto.nombre}: $stockError');
+      }
+    }
+
+    return errors;
   }
 
   /// Formatea el precio de compra a soles peruanos

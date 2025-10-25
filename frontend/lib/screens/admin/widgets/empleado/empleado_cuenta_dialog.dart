@@ -1,6 +1,6 @@
 import 'package:condorsmotors/api/main.api.dart' show ApiException;
 import 'package:condorsmotors/models/empleado.model.dart';
-import 'package:condorsmotors/repositories/index.repository.dart';
+import 'package:condorsmotors/repositories/empleado.repository.dart';
 import 'package:condorsmotors/utils/empleados_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -258,7 +258,9 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
         rolCuentaEmpleadoId: _selectedRolId!,
       );
 
-      return resultado['success'] == true;
+      // La API devuelve los datos de la cuenta creada directamente
+      // Si llegamos aquí sin excepción, la cuenta se creó exitosamente
+      return resultado.isNotEmpty;
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();
@@ -276,7 +278,8 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
 
       if (cuentaActual == null) {
         setState(() {
-          _errorMessage = 'No se encontró la cuenta del empleado';
+          _errorMessage =
+              'No se encontró la cuenta del empleado. Es posible que el empleado no tenga cuenta asociada.';
         });
         return false;
       }
@@ -296,11 +299,23 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
         rolCuentaEmpleadoId: _selectedRolId,
       );
 
-      return resultado['success'] == true;
+      // La API devuelve los datos actualizados directamente
+      // Si llegamos aquí sin excepción, la cuenta se actualizó exitosamente
+      return resultado.isNotEmpty;
     } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-      });
+      // Manejar específicamente el caso de empleado sin cuenta
+      if (e.toString().contains('404') ||
+          e.toString().contains('Not found') ||
+          e.toString().contains('no tiene cuenta asociada')) {
+        setState(() {
+          _errorMessage =
+              'El empleado no tiene cuenta asociada. Use "Crear Cuenta" en su lugar.';
+        });
+      } else {
+        setState(() {
+          _errorMessage = e.toString();
+        });
+      }
       return false;
     }
   }
@@ -448,7 +463,8 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
 
       if (cuentaActual == null) {
         setState(() {
-          _errorMessage = 'No se encontró la cuenta del empleado';
+          _errorMessage =
+              'No se encontró la cuenta del empleado. Es posible que el empleado no tenga cuenta asociada.';
           _isLoading = false;
         });
         return;
@@ -484,11 +500,20 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
         return;
       }
 
-      // Mostrar mensaje de error
-      setState(() {
-        _errorMessage = 'Error al eliminar cuenta: ${e.toString()}';
-        _isLoading = false;
-      });
+      // Manejar específicamente el caso de empleado sin cuenta
+      if (e.toString().contains('404') ||
+          e.toString().contains('Not found') ||
+          e.toString().contains('no tiene cuenta asociada')) {
+        setState(() {
+          _errorMessage = 'El empleado no tiene cuenta asociada para eliminar.';
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _errorMessage = 'Error al eliminar cuenta: ${e.toString()}';
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -506,10 +531,14 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
         });
       }
     } catch (e) {
-      // El empleado no tiene cuenta (404)
-      if (e.toString().contains('404') || e.toString().contains('Not found')) {
+      // El empleado no tiene cuenta (404) - esto es normal para empleados sin cuenta
+      if (e.toString().contains('404') ||
+          e.toString().contains('Not found') ||
+          e.toString().contains('no tiene cuenta asociada')) {
         debugPrint(
             'Empleado ${widget.empleado.id} no tiene cuenta asociada (normal)');
+        // No es un error, es el comportamiento esperado
+        return;
       } else {
         // Solo loggear errores reales
         debugPrint('Error al cargar datos del rol: $e');

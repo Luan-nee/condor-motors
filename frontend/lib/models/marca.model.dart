@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'package:flutter/foundation.dart';
 
 /// Modelo para las marcas
 class Marca extends Equatable {
@@ -37,28 +36,12 @@ class Marca extends Equatable {
 
   /// Crea una instancia de [Marca] a partir de un mapa JSON
   factory Marca.fromJson(Map<String, dynamic> json) {
-    // Asegurar que siempre tengamos un ID numérico
-    int id;
-    final rawId = json['id'];
-    if (rawId is int) {
-      id = rawId;
-    } else if (rawId is String) {
-      id = int.tryParse(rawId) ?? 0; // Usar 0 como fallback
-    } else {
-      id = 0; // Valor por defecto si no hay ID o no se puede parsear
-      debugPrint(
-          'Marca.fromJson: ID no válido: $rawId (${rawId?.runtimeType})');
-    }
+    // Parsear ID de forma segura
+    final int id = _parseInt(json['id']);
 
-    // Parseamos totalProductos de manera segura
-    int totalProductos = 0;
-    if (json['totalProductos'] != null) {
-      if (json['totalProductos'] is int) {
-        totalProductos = json['totalProductos'];
-      } else if (json['totalProductos'] is String) {
-        totalProductos = int.tryParse(json['totalProductos']) ?? 0;
-      }
-    }
+    // Parsear totalProductos de forma segura
+    final int totalProductos =
+        _parseInt(json['totalProductos']);
 
     return Marca(
       id: id,
@@ -98,5 +81,22 @@ class Marca extends Equatable {
       if (fechaActualizacion != null)
         'fechaActualizacion': fechaActualizacion!.toIso8601String(),
     };
+  }
+
+  /// Helper para parsear enteros de forma segura
+  static int _parseInt(value, {int defaultValue = 0}) {
+    if (value == null) {
+      return defaultValue;
+    }
+    if (value is int) {
+      return value;
+    }
+    if (value is double) {
+      return value.toInt();
+    }
+    if (value is String) {
+      return int.tryParse(value) ?? defaultValue;
+    }
+    return defaultValue;
   }
 }

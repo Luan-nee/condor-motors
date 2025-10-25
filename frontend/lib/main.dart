@@ -12,7 +12,6 @@ import 'package:condorsmotors/providers/computer/proforma.computer.provider.dart
 import 'package:condorsmotors/providers/computer/ventas.computer.provider.dart';
 import 'package:condorsmotors/providers/login.provider.dart';
 import 'package:condorsmotors/providers/session.provider.dart';
-import 'package:condorsmotors/repositories/auth.repository.dart';
 import 'package:condorsmotors/routes/routes.dart' as routes;
 import 'package:condorsmotors/screens/login.dart';
 import 'package:condorsmotors/theme/apptheme.dart';
@@ -71,7 +70,7 @@ void main() async {
   await ApiInitializer.instance.initializeApiIfNeeded();
 
   // Inicializar globalAuthProvider ANTES de cualquier petición protegida
-  globalAuthProvider = AuthProvider(AuthRepository.instance);
+  globalAuthProvider = AuthProvider();
 
   // Agrupación de providers por dominio
   final List<SingleChildWidget> globalProviders = [
@@ -88,9 +87,6 @@ void main() async {
   ];
 
   final List<SingleChildWidget> adminProviders = [
-    // ChangeNotifierProvider<EmpleadoProvider>( // ELIMINADO: Provider innecesario
-    //   create: (_) => EmpleadoProvider(),
-    // ),
     ChangeNotifierProvider<TransferenciasProvider>(
       create: (_) => TransferenciasProvider(),
     ),
@@ -106,12 +102,6 @@ void main() async {
     ChangeNotifierProvider<VentasComputerProvider>(
       create: (_) => VentasComputerProvider(),
     ),
-    // opción más robusta que `Provider.of` en el `create` callback.
-    // Permite que el provider dependiente se actualice si su dependencia cambia.
-    // ChangeNotifierProxyProvider<VentasComputerProvider, ProformaComputerProvider>(
-    //   create: (context) => ProformaComputerProvider(context.read<VentasComputerProvider>()),
-    //   update: (context, ventas, proforma) => proforma!..update(ventas),
-    // ),
     ChangeNotifierProvider<ProformaComputerProvider>(
       create: (context) => ProformaComputerProvider(
         Provider.of<VentasComputerProvider>(context, listen: false),

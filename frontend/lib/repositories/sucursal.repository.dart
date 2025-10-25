@@ -1,4 +1,5 @@
-import 'package:condorsmotors/api/index.api.dart';
+import 'package:condorsmotors/api/index.api.dart' as api_index;
+import 'package:condorsmotors/api/protected/sucursales.api.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:flutter/foundation.dart';
@@ -21,7 +22,7 @@ class SucursalRepository implements BaseRepository {
   SucursalRepository._internal() {
     try {
       // Utilizamos la API global inicializada en index.api.dart
-      _sucursalesApi = api.sucursales;
+      _sucursalesApi = api_index.api.sucursales;
     } catch (e) {
       debugPrint('Error al obtener SucursalesApi: $e');
       // Si hay un error al acceder a la API global, lanzamos una excepción
@@ -34,14 +35,14 @@ class SucursalRepository implements BaseRepository {
   /// Ayuda a los providers a acceder a la información del usuario autenticado
   @override
   Future<Map<String, dynamic>?> getUserData() =>
-      AuthRepository.instance.getUserData();
+      api_index.AuthManager.getUserData();
 
   /// Obtiene el ID de la sucursal del usuario actual
   ///
   /// Útil para operaciones que requieren el ID de sucursal automáticamente
   @override
   Future<String?> getCurrentSucursalId() =>
-      AuthRepository.instance.getCurrentSucursalId();
+      api_index.AuthManager.getCurrentSucursalId();
 
   /// Obtiene la lista de todas las sucursales
   ///
@@ -126,6 +127,13 @@ class SucursalRepository implements BaseRepository {
   /// [sucursalData] Datos de la sucursal a crear
   Future<Sucursal> createSucursal(Map<String, dynamic> sucursalData) async {
     try {
+      // Validar datos usando el modelo antes de llamar a la API
+      final String? validationError =
+          Sucursal.validateSucursalData(sucursalData);
+      if (validationError != null) {
+        throw Exception(validationError);
+      }
+
       return await _sucursalesApi.createSucursal(sucursalData);
     } catch (e) {
       debugPrint('Error en SucursalRepository.createSucursal: $e');
@@ -140,6 +148,13 @@ class SucursalRepository implements BaseRepository {
   Future<Sucursal> updateSucursal(
       String sucursalId, Map<String, dynamic> sucursalData) async {
     try {
+      // Validar datos usando el modelo antes de llamar a la API
+      final String? validationError =
+          Sucursal.validateSucursalData(sucursalData);
+      if (validationError != null) {
+        throw Exception(validationError);
+      }
+
       return await _sucursalesApi.updateSucursal(sucursalId, sucursalData);
     } catch (e) {
       debugPrint('Error en SucursalRepository.updateSucursal: $e');

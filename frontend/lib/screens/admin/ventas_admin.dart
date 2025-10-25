@@ -5,6 +5,7 @@ import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:condorsmotors/screens/admin/widgets/slide_sucursal.dart';
 import 'package:condorsmotors/screens/admin/widgets/venta/venta_detalle_dialog.dart';
 import 'package:condorsmotors/widgets/paginador.dart';
+import 'package:condorsmotors/widgets/toast_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
@@ -758,28 +759,6 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
                     }
                   },
           ),
-          const SizedBox(width: 16),
-          ElevatedButton.icon(
-            icon: const FaIcon(FontAwesomeIcons.plus, size: 16),
-            label: const Text('Nueva Venta'),
-            style: ElevatedButton.styleFrom(
-              foregroundColor: Colors.white,
-              backgroundColor: const Color(0xFFE31E24),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-            ),
-            onPressed: () {
-              // Implementar creación de nueva venta
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Función en desarrollo'),
-                  backgroundColor: Colors.orange,
-                ),
-              );
-            },
-          ),
         ],
       ),
     );
@@ -1210,11 +1189,6 @@ class _VentasAdminScreenState extends State<VentasAdminScreen> {
     }
 
     // Implementar apertura de PDF
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Abriendo PDF: $url'),
-        backgroundColor: Colors.blue,
-      ),
-    );
+    context.showInfoToast('Abriendo PDF: $url');
   }
 }

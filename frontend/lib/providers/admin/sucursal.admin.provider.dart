@@ -73,20 +73,7 @@ class SucursalProvider extends ChangeNotifier {
     return codigosDisponibles;
   }
 
-  /// Verifica si una serie de factura está disponible
-  bool isSerieFacturaDisponible(String serie) {
-    return !_sucursales.any((s) => s.serieFactura == serie);
-  }
-
-  /// Verifica si una serie de boleta está disponible
-  bool isSerieBoletaDisponible(String serie) {
-    return !_sucursales.any((s) => s.serieBoleta == serie);
-  }
-
-  /// Verifica si un código de establecimiento está disponible
-  bool isCodigoEstablecimientoDisponible(String codigo) {
-    return !_sucursales.any((s) => s.codigoEstablecimiento == codigo);
-  }
+  // Los métodos de validación ahora están en el modelo Sucursal
 
   /// Obtiene el siguiente número disponible para facturas
   int getSiguienteNumeroFactura() {
@@ -180,53 +167,41 @@ class SucursalProvider extends ChangeNotifier {
     }
   }
 
-  /// Guarda una sucursal (nueva o actualizada) con validaciones mejoradas
+  /// Guarda una sucursal (nueva o actualizada) con validaciones del modelo
   Future<String?> guardarSucursal(Map<String, dynamic> data) async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      // Validaciones adicionales
-      if (data['nombre']?.toString().trim().isEmpty ?? true) {
-        return 'El nombre de la sucursal es requerido';
+      // Usar validaciones del modelo Sucursal
+      final String? validationError = Sucursal.validateSucursalData(data);
+      if (validationError != null) {
+        return validationError;
       }
 
-      // Validar series y códigos únicos solo si se proporcionan
+      // Validar series y códigos únicos usando métodos del modelo
       if (data['serieFactura'] != null &&
           data['serieFactura'].toString().isNotEmpty) {
-        if (!isSerieFacturaDisponible(data['serieFactura']) &&
-            (data['id'] == null ||
-                _sucursales
-                        .firstWhere(
-                            (s) => s.serieFactura == data['serieFactura'])
-                        .id !=
-                    data['id'])) {
+        if (!Sucursal.isSerieFacturaDisponible(
+            data['serieFactura'], _sucursales,
+            excludeId: data['id'])) {
           return 'La serie de factura ya está en uso';
         }
       }
 
       if (data['serieBoleta'] != null &&
           data['serieBoleta'].toString().isNotEmpty) {
-        if (!isSerieBoletaDisponible(data['serieBoleta']) &&
-            (data['id'] == null ||
-                _sucursales
-                        .firstWhere((s) => s.serieBoleta == data['serieBoleta'])
-                        .id !=
-                    data['id'])) {
+        if (!Sucursal.isSerieBoletaDisponible(data['serieBoleta'], _sucursales,
+            excludeId: data['id'])) {
           return 'La serie de boleta ya está en uso';
         }
       }
 
       if (data['codigoEstablecimiento'] != null &&
           data['codigoEstablecimiento'].toString().isNotEmpty) {
-        if (!isCodigoEstablecimientoDisponible(data['codigoEstablecimiento']) &&
-            (data['id'] == null ||
-                _sucursales
-                        .firstWhere((s) =>
-                            s.codigoEstablecimiento ==
-                            data['codigoEstablecimiento'])
-                        .id !=
-                    data['id'])) {
+        if (!Sucursal.isCodigoEstablecimientoDisponible(
+            data['codigoEstablecimiento'], _sucursales,
+            excludeId: data['id'])) {
           return 'El código de establecimiento ya está en uso';
         }
       }

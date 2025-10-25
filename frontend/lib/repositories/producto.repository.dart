@@ -1,6 +1,7 @@
 import 'dart:io';
 
-import 'package:condorsmotors/api/index.api.dart';
+import 'package:condorsmotors/api/index.api.dart' as api_index;
+import 'package:condorsmotors/api/protected/productos.api.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
@@ -24,7 +25,7 @@ class ProductoRepository implements BaseRepository {
   ProductoRepository._internal() {
     try {
       // Utilizamos la API global inicializada en index.api.dart
-      _productosApi = api.productos;
+      _productosApi = api_index.api.productos;
     } catch (e) {
       debugPrint('Error al obtener ProductosApi: $e');
       // Si hay un error al acceder a la API global, lanzamos una excepción
@@ -37,14 +38,14 @@ class ProductoRepository implements BaseRepository {
   /// Ayuda a los providers a acceder a la información del usuario autenticado
   @override
   Future<Map<String, dynamic>?> getUserData() =>
-      AuthRepository.instance.getUserData();
+      api_index.AuthManager.getUserData();
 
   /// Obtiene el ID de la sucursal del usuario actual
   ///
   /// Útil para operaciones que requieren el ID de sucursal automáticamente
   @override
   Future<String?> getCurrentSucursalId() =>
-      AuthRepository.instance.getCurrentSucursalId();
+      api_index.AuthManager.getCurrentSucursalId();
 
   /// Obtiene los productos de una sucursal con filtros y paginación
   ///
@@ -712,7 +713,7 @@ class ProductoRepository implements BaseRepository {
   static String? getProductoImageUrl(Producto producto) {
     // Obtener baseUrl sin /api usando index.api.dart
     // Importa correctamente: import 'package:condorsmotors/api/index.api.dart' show api;
-    final String baseUrl = api.getBaseUrlSinApi();
+    final String baseUrl = api_index.api.getBaseUrlSinApi();
     return producto.getFotoUrlCompleta(baseUrl);
   }
 }

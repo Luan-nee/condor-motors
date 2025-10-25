@@ -1,4 +1,4 @@
-import 'package:condorsmotors/api/index.api.dart';
+import 'package:condorsmotors/api/index.api.dart' as api_index;
 import 'package:condorsmotors/models/color.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:flutter/foundation.dart';
@@ -21,7 +21,7 @@ class ColorRepository implements BaseRepository {
   ColorRepository._internal() {
     try {
       // Utilizamos la API global inicializada en index.api.dart
-      _coloresApi = api.colores;
+      _coloresApi = api_index.api.colores;
     } catch (e) {
       debugPrint('Error al obtener API de colores: $e');
       // Si hay un error al acceder a la API global, lanzamos una excepción
@@ -108,9 +108,9 @@ class ColorRepository implements BaseRepository {
 
   @override
   Future<Map<String, dynamic>?> getUserData() =>
-      AuthRepository.instance.getUserData();
+      api_index.AuthManager.getUserData();
 
   @override
   Future<String?> getCurrentSucursalId() =>
-      AuthRepository.instance.getCurrentSucursalId();
+      api_index.AuthManager.getCurrentSucursalId();
 }

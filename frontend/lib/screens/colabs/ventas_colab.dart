@@ -1,8 +1,8 @@
-import 'package:condorsmotors/api/index.api.dart';
-import 'package:condorsmotors/models/cliente.model.dart'; // Importamos el modelo de Cliente
+import 'package:condorsmotors/models/cliente.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
-import 'package:condorsmotors/models/proforma.model.dart' hide DetalleProforma;
+import 'package:condorsmotors/models/proforma.model.dart';
 import 'package:condorsmotors/providers/colabs/ventas.colab.provider.dart';
+import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:condorsmotors/screens/colabs/barcode_colab.dart';
 import 'package:condorsmotors/screens/colabs/ventas/producto_venta_item.widget.dart';
 import 'package:condorsmotors/screens/colabs/widgets/busqueda_producto.dart';
@@ -43,9 +43,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
   bool get _productosLoaded => _provider.productosLoaded;
   String get _sucursalId => _provider.sucursalId;
   double get _totalVenta => _provider.totalVenta;
-  int get _empleadoId => _provider.empleadoId;
-  ProductosApi get _productosApi => api.productos;
-  ProformaVentaApi get _proformasApi => api.proformas;
+  // Los repositorios se acceden a través del provider
 
   @override
   void initState() {
@@ -436,11 +434,25 @@ class _VentasColabScreenState extends State<VentasColabScreen>
               message: 'Verificando stock de ${producto.nombre}...');
         }
         // Obtener producto actualizado para verificar stock
-        final Producto productoActual = await _productosApi.getProducto(
+        final Producto? productoActual =
+            await ProductoRepository.instance.getProducto(
           sucursalId: _sucursalId,
           productoId: productoId,
           useCache: false,
         );
+
+        if (productoActual == null) {
+          _provider.setLoading(loading: false);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Producto no encontrado'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        }
         if (!mounted) {
           return;
         }
@@ -490,13 +502,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
             loading: true, message: 'Preparando detalles de la venta...');
       }
 
-      // Convertir los productos de la venta al formato esperado por la API
-      final List<DetalleProforma> detalles =
-          List.generate(_productosVenta.length, (i) {
-        final producto = _productosVenta[i];
-        final cantidad = _provider.cantidades[i];
-        return DetalleProforma.fromProducto(producto, cantidad: cantidad);
-      });
+      // Los detalles se manejan internamente en el provider
 
       // Actualizar mensaje para proporcionar retroalimentación del progreso
       if (mounted) {
@@ -504,27 +510,12 @@ class _VentasColabScreenState extends State<VentasColabScreen>
             loading: true, message: 'Comunicando con el servidor...');
       }
 
-      // Llamar a la API para crear la proforma
-      final Map<String, dynamic> respuesta =
-          await _proformasApi.createProformaVenta(
-        sucursalId: _sucursalId,
-        nombre: 'Proforma ${_clienteSeleccionado!.denominacion}',
-        total: _totalVenta,
-        detalles: detalles,
-        empleadoId: _empleadoId,
-        clienteId: _clienteSeleccionado!.id,
-      );
+      // Crear proforma a través del provider (arquitectura correcta)
+      final Proforma? proformaCreada = await _provider.crearProformaVenta();
 
       if (!mounted) {
         return;
       }
-
-      // Actualizar mensaje para proporcionar retroalimentación del progreso
-      _provider.setLoading(loading: true, message: 'Procesando respuesta...');
-
-      // Convertir la respuesta a un objeto estructurado
-      final Proforma? proformaCreada =
-          _proformasApi.parseProformaVenta(respuesta);
 
       // Recargar productos para reflejar el stock actualizado por el backend
       _provider.cargarProductos();

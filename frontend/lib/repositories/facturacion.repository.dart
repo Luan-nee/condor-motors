@@ -1,4 +1,4 @@
-import 'package:condorsmotors/api/index.api.dart';
+import 'package:condorsmotors/api/index.api.dart' as api_index;
 import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:flutter/foundation.dart';
 
@@ -17,12 +17,12 @@ class FacturacionRepository implements BaseRepository {
   /// Obtiene datos del usuario desde la API centralizada
   @override
   Future<Map<String, dynamic>?> getUserData() =>
-      AuthRepository.instance.getUserData();
+      api_index.AuthManager.getUserData();
 
   /// Obtiene el ID de la sucursal del usuario actual
   @override
   Future<String?> getCurrentSucursalId() =>
-      AuthRepository.instance.getCurrentSucursalId();
+      api_index.AuthManager.getCurrentSucursalId();
 
   /// Declara una venta a SUNAT
   ///
@@ -49,7 +49,7 @@ class FacturacionRepository implements BaseRepository {
       }
 
       // Llamar a la API de facturación
-      return await api.facturacion.declararVenta(
+      return await api_index.api.facturacion.declararVenta(
         ventaId: ventaIdInt,
         sucursalId: sucursalIdFinal,
         enviarCliente: enviarCliente,
@@ -83,7 +83,7 @@ class FacturacionRepository implements BaseRepository {
       }
 
       // Llamar a la API de facturación
-      return await api.facturacion.sincronizarDocumento(
+      return await api_index.api.facturacion.sincronizarDocumento(
         documentoId: documentoIdInt,
         sucursalId: sucursalIdFinal,
       );
@@ -118,7 +118,7 @@ class FacturacionRepository implements BaseRepository {
       }
 
       // Llamar a la API de facturación
-      return await api.facturacion.anularDocumento(
+      return await api_index.api.facturacion.anularDocumento(
         documentoId: documentoIdInt,
         sucursalId: sucursalIdFinal,
         motivo: motivo,

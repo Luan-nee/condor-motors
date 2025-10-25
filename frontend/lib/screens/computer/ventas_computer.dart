@@ -106,80 +106,94 @@ class _VentasComputerScreenState extends State<VentasComputerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Consumer<VentasComputerProvider>(
-        builder: (context, ventasProvider, child) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(context, ventasProvider),
-              Expanded(
-                child: _buildVentasContent(context, ventasProvider),
-              ),
-            ],
-          );
-        },
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header estático - no necesita Consumer
+          _buildHeader(context),
+          // Solo el contenido dinámico necesita Consumer
+          Expanded(
+            child: Consumer<VentasComputerProvider>(
+              builder: (context, ventasProvider, child) {
+                return _buildVentasContent(context, ventasProvider);
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildHeader(
-      BuildContext context, VentasComputerProvider ventasProvider) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          const FaIcon(
-            FontAwesomeIcons.fileInvoiceDollar,
-            color: Color(0xFFE31E24),
-            size: 20,
-          ),
-          const SizedBox(width: 12),
-          Text(
-            ventasProvider.sucursalSeleccionada?.nombre ??
-                widget.nombreSucursal,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+  Widget _buildHeader(BuildContext context) {
+    return RepaintBoundary(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2D2D2D),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
             ),
-          ),
-          const SizedBox(width: 24),
-          Expanded(
-            child: _buildSearchField(ventasProvider),
-          ),
-          const SizedBox(width: 16),
-          ElevatedButton.icon(
-            icon: const FaIcon(FontAwesomeIcons.plus, size: 16),
-            label: const Text('Nueva Venta'),
-            style: ElevatedButton.styleFrom(
-              foregroundColor: Colors.white,
-              backgroundColor: const Color(0xFFE31E24),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
+          ],
+        ),
+        child: Row(
+          children: [
+            const FaIcon(
+              FontAwesomeIcons.fileInvoiceDollar,
+              color: Color(0xFFE31E24),
+              size: 20,
             ),
-            onPressed: () {
-              // Implementar creación de nueva venta
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Función en desarrollo'),
-                  backgroundColor: Colors.orange,
+            const SizedBox(width: 12),
+            // Solo el nombre de sucursal y búsqueda necesitan Consumer
+            Consumer<VentasComputerProvider>(
+              builder: (context, ventasProvider, child) {
+                return Expanded(
+                  child: Row(
+                    children: [
+                      Text(
+                        ventasProvider.sucursalSeleccionada?.nombre ??
+                            widget.nombreSucursal,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 24),
+                      Expanded(
+                        child: _buildSearchField(ventasProvider),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            const SizedBox(width: 16),
+            ElevatedButton.icon(
+              icon: const FaIcon(FontAwesomeIcons.plus, size: 16),
+              label: const Text('Nueva Venta'),
+              style: ElevatedButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: const Color(0xFFE31E24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
                 ),
-              );
-            },
-          ),
-        ],
+              ),
+              onPressed: () {
+                // Implementar creación de nueva venta
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Función en desarrollo'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -303,8 +317,13 @@ class _VentasComputerScreenState extends State<VentasComputerScreen> {
             itemCount: ventasProvider.ventas.length,
             itemBuilder: (context, index) {
               final venta = ventasProvider.ventas[index];
-              return _buildVentaItem(context, ventasProvider, venta);
+              return RepaintBoundary(
+                child: _buildVentaItem(context, ventasProvider, venta),
+              );
             },
+            // Optimizaciones de rendimiento
+            cacheExtent: 200, // Cache de elementos fuera de pantalla
+            addAutomaticKeepAlives: false, // No mantener widgets inactivos
           ),
         ),
         // Paginador al final de la columna

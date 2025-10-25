@@ -2,6 +2,7 @@ import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:condorsmotors/screens/colabs/selector_colab.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/busqueda_producto_utils.dart';
 import 'package:condorsmotors/utils/stock_utils.dart';
 import 'package:condorsmotors/widgets/paginador.dart';
@@ -95,9 +96,25 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
     _paginacionCache.clear();
   }
 
+  /// Recarga los datos limpiando la caché y forzando refresh
+  Future<void> _recargarDatos() async {
+    // Limpiar caché local
+    _limpiarCache();
+
+    // Limpiar caché del repositorio
+    _productoRepository.invalidateCache();
+
+    // Recargar datos forzando refresh
+    await _cargarDatos(forceRefresh: true);
+  }
+
   /// Carga los datos iniciales (productos y categorías)
   Future<void> _cargarDatos(
-      {int? page, int? pageSize, String? sortBy, String? order}) async {
+      {int? page,
+      int? pageSize,
+      String? sortBy,
+      String? order,
+      bool forceRefresh = false}) async {
     if (!mounted) {
       return;
     }
@@ -107,8 +124,9 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
     final String targetSortBy = sortBy ?? _sortBy;
     final String targetOrder = order ?? _order;
 
-    // Verificar si ya tenemos la página en caché
-    if (_productosCache.containsKey(targetPage) &&
+    // Verificar si ya tenemos la página en caché (solo si no se fuerza refresh)
+    if (!forceRefresh &&
+        _productosCache.containsKey(targetPage) &&
         _paginacionCache.containsKey(targetPage) &&
         !_necesitaRecargar(
             targetPage, targetPageSize, targetSortBy, targetOrder)) {
@@ -140,6 +158,7 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
         pageSize: pageSize ?? _pageSize,
         sortBy: sortBy ?? _sortBy,
         order: order ?? _order,
+        forceRefresh: forceRefresh, // ← Pasar el parámetro forceRefresh
       );
 
       // Extraer categorías únicas y normalizadas usando BusquedaProductoUtils
@@ -246,17 +265,6 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
         return Colors.orange;
       case StockStatus.agotado:
         return Colors.red;
-    }
-  }
-
-  String _getEstadoText(StockStatus estado) {
-    switch (estado) {
-      case StockStatus.disponible:
-        return 'Disponible';
-      case StockStatus.stockBajo:
-        return 'Stock Bajo';
-      case StockStatus.agotado:
-        return 'Agotado';
     }
   }
 
@@ -465,10 +473,15 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
     double? iconSize,
     double? chipFontSize,
   }) {
-    return DecoratedBox(
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
       decoration: BoxDecoration(
-        color: active ? color.withValues(alpha: 0.2) : Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
+        color: active ? color.withValues(alpha: 0.2) : AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+        border: Border.all(
+          color: active ? color : Colors.white.withValues(alpha: 0.1),
+        ),
+        boxShadow: active ? AppTheme.commonShadows : null,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -482,15 +495,21 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
               selectedLabel != 'Todos' &&
               selectedLabel != 'Todas')
             Padding(
-              padding: const EdgeInsets.only(right: 4),
-              child: Chip(
-                label: Text(
-                  selectedLabel,
-                  style: TextStyle(fontSize: chipFontSize ?? 12, color: color),
+              padding: const EdgeInsets.only(right: 8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                 ),
-                backgroundColor: color.withValues(alpha: 0.15),
-                visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  selectedLabel,
+                  style: TextStyle(
+                    fontSize: chipFontSize ?? 12,
+                    color: color,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
             ),
         ],
@@ -503,8 +522,10 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+        border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
+        boxShadow: AppTheme.commonShadows,
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
@@ -689,15 +710,20 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+        boxShadow: AppTheme.commonShadows,
       ),
       child: TextField(
-        decoration: const InputDecoration(
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
           hintText: 'Buscar por código, nombre o marca...',
-          prefixIcon: Icon(Icons.search),
+          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+          prefixIcon: const Icon(Icons.search, color: Colors.orange),
           border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
         onChanged: (String value) {
           setState(() {
@@ -709,36 +735,6 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
     );
   }
 
-  // NUEVO: Cálculo de cuánto falta para stock mínimo
-  String _getStockFaltanteText(Producto producto) {
-    if (producto.stockMinimo != null &&
-        producto.stock < producto.stockMinimo!) {
-      final int faltan = producto.stockMinimo! - producto.stock;
-      return 'Faltan $faltan para stock mínimo';
-    }
-    return '';
-  }
-
-  // NUEVO: Progreso de stock para barra de progreso
-  double _getStockProgress(Producto producto) {
-    if (producto.stockMinimo == null || producto.stockMinimo == 0) {
-      return 1.0;
-    }
-    final progress = producto.stock / producto.stockMinimo!;
-    return progress.clamp(0.0, 1.0);
-  }
-
-  Color _getStockProgressColor(Producto producto) {
-    if (producto.stock == 0) {
-      return Colors.red;
-    }
-    if (producto.stockMinimo != null &&
-        producto.stock < producto.stockMinimo!) {
-      return Colors.orange;
-    }
-    return Colors.green;
-  }
-
   Widget _buildActiveFilter({
     required IconData icon,
     required String label,
@@ -746,21 +742,42 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
     required VoidCallback onClear,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      margin: const EdgeInsets.only(right: 8, bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(10),
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+        boxShadow: AppTheme.commonShadows,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
-          Text(label, style: TextStyle(fontSize: 12, color: color)),
-          const SizedBox(width: 4),
-          InkWell(
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: color,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 6),
+          GestureDetector(
             onTap: onClear,
-            child: const Icon(Icons.close, size: 14, color: Colors.black54),
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Icon(
+                Icons.close,
+                size: 12,
+                color: color,
+              ),
+            ),
           ),
         ],
       ),
@@ -775,11 +792,29 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(8),
+          color: AppTheme.cardColor,
+          borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         ),
-        child:
-            const Icon(Icons.image_not_supported, color: Colors.grey, size: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.image_not_supported,
+              color: Colors.grey,
+              size: 24,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'Sin imagen',
+              style: TextStyle(
+                color: Colors.grey.withValues(alpha: 0.7),
+                fontSize: 8,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       );
     }
     return GestureDetector(
@@ -787,31 +822,92 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
         _mostrarImagenAmpliada(context, producto);
       },
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.network(
-          url,
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => Container(
-            width: size,
-            height: size,
-            color: Colors.grey[200],
-            child: const Icon(Icons.broken_image, color: Colors.grey, size: 32),
-          ),
-          loadingBuilder: (context, child, progress) {
-            if (progress == null) {
-              return child;
-            }
-            return Container(
-              width: size,
-              height: size,
-              alignment: Alignment.center,
-              child: const CircularProgressIndicator(strokeWidth: 2),
-            );
-          },
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+        child: _buildOptimizedImage(
+          url: url,
+          size: size,
         ),
       ),
+    );
+  }
+
+  /// Widget optimizado para cargar imágenes sin gestión de estados innecesaria
+  Widget _buildOptimizedImage({required String url, required double size}) {
+    return Image.network(
+      url,
+      width: size,
+      height: size,
+      fit: BoxFit.cover,
+      // Optimizaciones de rendimiento
+      cacheWidth: (size * MediaQuery.of(context).devicePixelRatio).round(),
+      cacheHeight: (size * MediaQuery.of(context).devicePixelRatio).round(),
+      // Animación suave
+      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+        if (wasSynchronouslyLoaded) return child;
+        return AnimatedOpacity(
+          opacity: frame == null ? 0 : 1,
+          duration: const Duration(milliseconds: 200),
+          child: child,
+        );
+      },
+      errorBuilder: (context, error, stackTrace) => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: AppTheme.cardColor,
+          borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.broken_image, color: Colors.grey, size: 24),
+            const SizedBox(height: 2),
+            Text(
+              'Error',
+              style: TextStyle(
+                color: Colors.grey.withValues(alpha: 0.7),
+                fontSize: 8,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) {
+          return child;
+        }
+        return Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: AppTheme.cardColor,
+            borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          ),
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppTheme.primaryColor,
+                value: null, // Indeterminado
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Cargando...',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -819,8 +915,9 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
   Widget build(BuildContext context) {
     final List<Producto> productosFiltrados = _getProductosFiltrados();
     return Scaffold(
+      backgroundColor: AppTheme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF2D2D2D),
+        backgroundColor: AppTheme.appBarColor,
         elevation: 0,
         leading: IconButton(
           icon: const FaIcon(
@@ -838,28 +935,54 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
           },
           tooltip: 'Volver al Selector',
         ),
-        title: const Row(
+        title: Row(
           children: <Widget>[
-            FaIcon(
-              FontAwesomeIcons.box,
-              size: 20,
-              color: Colors.white,
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+              ),
+              child: const FaIcon(
+                FontAwesomeIcons.box,
+                size: 20,
+                color: AppTheme.primaryColor,
+              ),
             ),
-            SizedBox(width: 12),
-            Text(
+            const SizedBox(width: 12),
+            const Text(
               'Productos',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
+                fontSize: 20,
               ),
             ),
           ],
         ),
         actions: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _cargarDatos,
-            tooltip: 'Recargar datos',
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withValues(alpha: 0.1),
+              shape: BoxShape.circle, // ← Forma circular
+              // Sin sombra para evitar el color fuerte
+            ),
+            child: IconButton(
+              icon: const Icon(
+                Icons.refresh,
+                color: AppTheme.primaryColor,
+              ),
+              onPressed: _recargarDatos,
+              tooltip: 'Recargar datos',
+              // Eliminar efectos de click cuadrados
+              style: IconButton.styleFrom(
+                shape: const CircleBorder(), // ← Hover circular
+                splashFactory: NoSplash.splashFactory, // ← Sin splash
+                highlightColor: Colors.transparent, // ← Sin highlight
+                hoverColor: Colors.transparent, // ← Sin hover
+              ),
+            ),
           ),
         ],
       ),
@@ -915,307 +1038,253 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                         producto.stock,
                         producto.stockMinimo ?? 0,
                       );
-                      final String stockFaltante =
-                          _getStockFaltanteText(producto);
                       return RepaintBoundary(
                         key: ValueKey('producto_colab_${producto.id}'),
-                        child: Card(
+                        child: Container(
                           margin: const EdgeInsets.only(bottom: 16),
-                          child: ExpansionTile(
-                            title: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: <Widget>[
-                                    _buildProductoImagen(producto, size: 48),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      producto.sku,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        producto.nombre,
-                                        style: producto.liquidacion
-                                            ? const TextStyle(
-                                                color: Colors.amber,
-                                                fontWeight: FontWeight.bold)
-                                            : null,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                // Barra de progreso central
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 4),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      LinearProgressIndicator(
-                                        value: _getStockProgress(producto),
-                                        backgroundColor: Colors.grey[300],
-                                        valueColor: AlwaysStoppedAnimation<
-                                                Color>(
-                                            _getStockProgressColor(producto)),
-                                        minHeight: 12,
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        'Stock: ${producto.stock} / ${producto.stockMinimo ?? "-"}',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          color:
-                                              _getStockProgressColor(producto),
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                          decoration: BoxDecoration(
+                            color: AppTheme.cardColor,
+                            borderRadius:
+                                BorderRadius.circular(AppTheme.mediumRadius),
+                            border: Border.all(
+                              color: Colors.transparent, // Sin borde visible
+                              width: 0,
                             ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                Row(
-                                  children: <Widget>[
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context)
-                                            .primaryColor
-                                            .withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        producto.categoria,
-                                        style: TextStyle(
-                                          color: Theme.of(context).primaryColor,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Flexible(
-                                      child: Text(
-                                        producto.marca,
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                          fontSize: 12,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                if (stockFaltante.isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 4),
-                                    child: Text(
-                                      stockFaltante,
-                                      style: const TextStyle(
-                                        color: Colors.red,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                              ],
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Theme(
+                            data: Theme.of(context).copyWith(
+                              splashColor: Colors.transparent,
+                              highlightColor: Colors.transparent,
+                              hoverColor: Colors.transparent,
+                              dividerColor: Colors.transparent,
                             ),
-                            trailing: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: <Widget>[
-                                if (producto.liquidacion &&
-                                    producto.precioOferta != null)
-                                  Text(
-                                    'S/ ${producto.precioVenta.toStringAsFixed(2)}',
-                                    style: const TextStyle(
-                                      decoration: TextDecoration.lineThrough,
-                                      color: Colors.grey,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                Text(
-                                  'S/ ${(producto.liquidacion && producto.precioOferta != null ? producto.precioOferta! : producto.precioVenta).toStringAsFixed(2)}',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                    color: producto.liquidacion
-                                        ? Colors.amber
-                                        : null,
-                                  ),
-                                ),
-                                Text(
-                                  'Stock: ${producto.stock}',
-                                  style: TextStyle(
-                                    color: _getEstadoColor(estado),
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            children: <Widget>[
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                child: SingleChildScrollView(
-                                  child: Column(
+                            child: ExpansionTile(
+                              tilePadding: const EdgeInsets.only(
+                                left:
+                                    24.0, // Aumentado para separar imagen del texto
+                                right: 16.0,
+                                top: 8.0,
+                                bottom: 8.0,
+                              ),
+                              // Eliminar iluminación blanca al hacer click
+                              collapsedShape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                    AppTheme.mediumRadius),
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                    AppTheme.mediumRadius),
+                              ),
+                              // Eliminar splash color y highlight color
+                              // splashColor, highlightColor y hoverColor se manejan en el Theme
+                              title: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: <Widget>[
-                                      const Text(
-                                        'Detalles del Producto',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(producto.descripcion ??
-                                          'Sin descripción'),
-                                      const SizedBox(height: 16),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: <Widget>[
-                                          Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: <Widget>[
-                                              if (producto.liquidacion &&
-                                                  producto.precioOferta !=
-                                                      null) ...<Widget>[
-                                                Text(
-                                                  'Precio Normal: S/ ${producto.precioVenta.toStringAsFixed(2)}',
-                                                  style: const TextStyle(
-                                                    decoration: TextDecoration
-                                                        .lineThrough,
-                                                    color: Colors.grey,
-                                                  ),
-                                                ),
-                                                Text(
-                                                  'Precio Liquidación: S/ ${producto.precioOferta!.toStringAsFixed(2)}',
-                                                  style: const TextStyle(
-                                                    color: Colors.amber,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ] else
-                                                Text(
-                                                  'Precio Normal: S/ ${producto.precioVenta.toStringAsFixed(2)}',
-                                                  style: const TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              Text(
-                                                'Precio Compra: S/ ${producto.precioCompra.toStringAsFixed(2)}',
-                                                style: TextStyle(
-                                                  color: Colors.grey[600],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.end,
-                                            children: <Widget>[
-                                              Text(
-                                                'Stock Actual: ${producto.stock}',
-                                                style: TextStyle(
-                                                  color:
-                                                      _getEstadoColor(estado),
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                              Text(
-                                                'Stock Mínimo: ${producto.stockMinimo ?? 0}',
-                                                style: TextStyle(
-                                                  color: Colors.grey[600],
-                                                ),
-                                              ),
-                                              Text(
-                                                'Estado: ${_getEstadoText(estado)}',
-                                                style: TextStyle(
-                                                  color:
-                                                      _getEstadoColor(estado),
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                              if (stockFaltante.isNotEmpty)
-                                                Text(
-                                                  stockFaltante,
-                                                  style: const TextStyle(
-                                                    color: Colors.red,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                      if (producto.cantidadGratisDescuento !=
-                                              null ||
-                                          producto.porcentajeDescuento != null)
-                                        Container(
-                                          margin:
-                                              const EdgeInsets.only(top: 16),
-                                          padding: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(
-                                            color: Colors.blue
-                                                .withValues(alpha: 0.1),
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                            border: Border.all(
-                                              color: Colors.blue
-                                                  .withValues(alpha: 0.3),
+                                      _buildProductoImagen(producto, size: 48),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              producto.nombre,
+                                              style: producto.liquidacion
+                                                  ? const TextStyle(
+                                                      color: Colors.amber,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 16,
+                                                    )
+                                                  : const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 16,
+                                                    ),
+                                              overflow: TextOverflow.ellipsis,
                                             ),
-                                          ),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: <Widget>[
-                                              const Text(
-                                                'Promociones Activas:',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.blue,
-                                                ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              producto.sku,
+                                              style: TextStyle(
+                                                color: Colors.grey[600],
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w500,
                                               ),
-                                              const SizedBox(height: 8),
-                                              if (producto
-                                                      .cantidadGratisDescuento !=
-                                                  null)
-                                                Text(
-                                                  '• Lleva ${producto.cantidadMinimaDescuento}, paga ${producto.cantidadMinimaDescuento! - producto.cantidadGratisDescuento!}',
-                                                  style: const TextStyle(
-                                                      color: Colors.blue),
-                                                ),
-                                              if (producto
-                                                      .porcentajeDescuento !=
-                                                  null)
-                                                Text(
-                                                  '• ${producto.porcentajeDescuento}% de descuento por ${producto.cantidadMinimaDescuento}+ unidades',
-                                                  style: const TextStyle(
-                                                      color: Colors.blue),
-                                                ),
-                                            ],
-                                          ),
+                                            ),
+                                          ],
                                         ),
+                                      ),
                                     ],
                                   ),
+                                  const SizedBox(
+                                      height:
+                                          12), // Espaciado vertical entre imagen y categoría
+                                ],
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Row(
+                                    children: <Widget>[
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue
+                                              .withValues(alpha: 0.15),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: Colors.blue
+                                                .withValues(alpha: 0.3),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          producto.categoria,
+                                          style: const TextStyle(
+                                            color: Colors.blue,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Flexible(
+                                        child: Text(
+                                          producto.marca,
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontSize: 12,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  // Stock en formato actual/óptimo
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Text(
+                                      'Stock: ${producto.stock}/${producto.stockMinimo ?? producto.stock}',
+                                      style: TextStyle(
+                                        color: _getEstadoColor(estado),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              trailing: SizedBox(
+                                width: 90,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    if (producto.liquidacion &&
+                                        producto.precioOferta != null)
+                                      Text(
+                                        'S/ ${producto.precioVenta.toStringAsFixed(2)}',
+                                        style: const TextStyle(
+                                          decoration:
+                                              TextDecoration.lineThrough,
+                                          color: Colors.grey,
+                                          fontSize: 9,
+                                        ),
+                                      ),
+                                    Text(
+                                      'S/ ${(producto.liquidacion && producto.precioOferta != null ? producto.precioOferta! : producto.precioVenta).toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                        color: producto.liquidacion
+                                            ? Colors.amber
+                                            : null,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
+                              children: <Widget>[
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  child: SingleChildScrollView(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: <Widget>[
+                                        Text(producto.descripcion ??
+                                            'Sin descripción'),
+                                        if (producto.cantidadGratisDescuento !=
+                                                null ||
+                                            producto.porcentajeDescuento !=
+                                                null)
+                                          Container(
+                                            margin:
+                                                const EdgeInsets.only(top: 16),
+                                            padding: const EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              color: Colors.blue
+                                                  .withValues(alpha: 0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: Colors.blue
+                                                    .withValues(alpha: 0.3),
+                                              ),
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: <Widget>[
+                                                const Text(
+                                                  'Promociones Activas:',
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.blue,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 8),
+                                                if (producto
+                                                        .cantidadGratisDescuento !=
+                                                    null)
+                                                  Text(
+                                                    '• Lleva ${producto.cantidadMinimaDescuento}, paga ${producto.cantidadMinimaDescuento! - producto.cantidadGratisDescuento!}',
+                                                    style: const TextStyle(
+                                                        color: Colors.blue),
+                                                  ),
+                                                if (producto
+                                                        .porcentajeDescuento !=
+                                                    null)
+                                                  Text(
+                                                    '• ${producto.porcentajeDescuento}% de descuento por ${producto.cantidadMinimaDescuento}+ unidades',
+                                                    style: const TextStyle(
+                                                        color: Colors.blue),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       );
@@ -1235,8 +1304,8 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                       },
                       // Sin controles de ordenación - orden predeterminado por nombre
                       // Configuración específica para colaboradores
-                      backgroundColor: const Color(0xFF2D2D2D),
-                      accentColor: const Color(0xFFE31E24),
+                      backgroundColor: AppTheme.appBarColor,
+                      accentColor: AppTheme.primaryColor,
                       textColor: Colors.white,
                       forceCompactMode: MediaQuery.of(context).size.width < 600,
                     ),

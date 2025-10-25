@@ -64,12 +64,10 @@ class Cliente extends Equatable {
       }
     }
 
-    // Extraer y validar campos obligatorios
-    final id =
-        json['id'] is int ? json['id'] : int.parse(json['id'].toString());
-    final tipoDocumentoId = json['tipoDocumentoId'] is int
-        ? json['tipoDocumentoId']
-        : int.parse((json['tipoDocumentoId'] ?? '1').toString());
+    // Extraer y validar campos obligatorios de forma segura
+    final int id = _parseInt(json['id']);
+    final int tipoDocumentoId =
+        _parseInt(json['tipoDocumentoId'], defaultValue: 1);
     final String nombre = json['nombre']?.toString() ?? 'DOCUMENTO SIN TIPO';
     final String numeroDocumento = json['numeroDocumento']?.toString() ?? '';
     final String denominacion =
@@ -141,5 +139,22 @@ class Cliente extends Equatable {
       fechaCreacion: fechaCreacion ?? this.fechaCreacion,
       fechaActualizacion: fechaActualizacion ?? this.fechaActualizacion,
     );
+  }
+
+  /// Helper para parsear enteros de forma segura
+  static int _parseInt(value, {int defaultValue = 0}) {
+    if (value == null) {
+      return defaultValue;
+    }
+    if (value is int) {
+      return value;
+    }
+    if (value is double) {
+      return value.toInt();
+    }
+    if (value is String) {
+      return int.tryParse(value) ?? defaultValue;
+    }
+    return defaultValue;
   }
 }

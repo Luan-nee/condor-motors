@@ -1,4 +1,5 @@
-import 'package:condorsmotors/api/index.api.dart';
+import 'package:condorsmotors/api/index.api.dart' as api_index;
+import 'package:condorsmotors/api/protected/transferencias.api.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/transferencias.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
@@ -23,7 +24,7 @@ class TransferenciaRepository implements BaseRepository {
   TransferenciaRepository._internal() {
     try {
       // Utilizamos la API global inicializada en index.api.dart
-      _transferenciasApi = api.transferencias;
+      _transferenciasApi = api_index.api.transferencias;
     } catch (e) {
       debugPrint('Error al obtener TransferenciasInventarioApi: $e');
       // Si hay un error al acceder a la API global, lanzamos una excepción
@@ -33,11 +34,11 @@ class TransferenciaRepository implements BaseRepository {
 
   @override
   Future<Map<String, dynamic>?> getUserData() =>
-      AuthRepository.instance.getUserData();
+      api_index.AuthManager.getUserData();
 
   @override
   Future<String?> getCurrentSucursalId() =>
-      AuthRepository.instance.getCurrentSucursalId();
+      api_index.AuthManager.getCurrentSucursalId();
 
   /// Invalida la caché de transferencias
   void invalidateCache([String? sucursalId]) {

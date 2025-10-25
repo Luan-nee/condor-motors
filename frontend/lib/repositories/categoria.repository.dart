@@ -1,4 +1,5 @@
-import 'package:condorsmotors/api/index.api.dart';
+import 'package:condorsmotors/api/index.api.dart' as api_index;
+import 'package:condorsmotors/api/protected/categorias.api.dart';
 import 'package:condorsmotors/models/categoria.model.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
@@ -22,7 +23,7 @@ class CategoriaRepository implements BaseRepository {
   CategoriaRepository._internal() {
     try {
       // Utilizamos la API global inicializada en index.api.dart
-      _categoriasApi = api.categorias;
+      _categoriasApi = api_index.api.categorias;
     } catch (e) {
       debugPrint('Error al obtener CategoriasApi: $e');
       // Si hay un error al acceder a la API global, lanzamos una excepción
@@ -35,14 +36,14 @@ class CategoriaRepository implements BaseRepository {
   /// Ayuda a los providers a acceder a la información del usuario autenticado
   @override
   Future<Map<String, dynamic>?> getUserData() =>
-      AuthRepository.instance.getUserData();
+      api_index.AuthManager.getUserData();
 
   /// Obtiene el ID de la sucursal del usuario actual
   ///
   /// Útil para operaciones que requieren el ID de sucursal automáticamente
   @override
   Future<String?> getCurrentSucursalId() =>
-      AuthRepository.instance.getCurrentSucursalId();
+      api_index.AuthManager.getCurrentSucursalId();
 
   /// Obtiene todas las categorías como objetos
   ///

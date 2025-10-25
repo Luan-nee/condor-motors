@@ -122,10 +122,11 @@ class LoginProvider extends ChangeNotifier {
 
       final AuthUser usuario = await _authRepository.login(username, password);
 
-      // Validar que el usuario tenga un rol válido
-      if (usuario.rolCuentaEmpleadoCodigo.isEmpty) {
+      // Usar validaciones del modelo AuthUser
+      final String? validationError = AuthUserValidation.validateUser(usuario);
+      if (validationError != null) {
         throw ApiException(
-          message: 'El usuario no tiene un rol asignado',
+          message: validationError,
           errorCode: ApiConstants.errorCodes[401] ?? ApiConstants.unknownError,
           statusCode: 401,
         );
@@ -198,7 +199,7 @@ class LoginProvider extends ChangeNotifier {
 
   Future<void> logout() async {
     try {
-      await _authRepository.clearSession();
+      await _authRepository.clearTokens();
       _status = LoginStatus.initial;
       _errorMessage = '';
       notifyListeners();

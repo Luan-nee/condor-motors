@@ -126,7 +126,8 @@ class Logger {
   }
 
   /// Registra una petición HTTP
-  static void http(String method, String endpoint, [int? statusCode]) {
+  static void http(String method, String endpoint,
+      [int? statusCode, int? responseTime]) {
     if (level.index <= LogLevel.debug.index) {
       final String methodColor = ConsoleColor.getHttpMethodColor(method);
 
@@ -148,6 +149,22 @@ class Logger {
             : (statusCode >= 300 ? ConsoleColor.yellow : ConsoleColor.green);
         message +=
             ' ${ConsoleColor.colorize('[${statusCode.toString()}]', statusColor)}';
+      }
+
+      // Agregar tiempo de respuesta si está disponible (estilo Postman)
+      if (responseTime != null) {
+        String timeText;
+        if (responseTime >= 1000) {
+          // Convertir a segundos con 2 decimales si es >= 1 segundo
+          final double seconds = responseTime / 1000.0;
+          timeText = '(${seconds.toStringAsFixed(2)}s)';
+        } else {
+          // Mostrar en milisegundos si es < 1 segundo
+          timeText = '(${responseTime}ms)';
+        }
+
+        // Usar color gris como Postman
+        message += ' ${ConsoleColor.colorize(timeText, ConsoleColor.dim)}';
       }
 
       _rawLog(message);
@@ -226,8 +243,9 @@ void logNavigation(String message) {
 }
 
 /// Registra una petición HTTP
-void logHttp(String method, String endpoint, [int? statusCode]) {
-  Logger.http(method, endpoint, statusCode);
+void logHttp(String method, String endpoint,
+    [int? statusCode, int? responseTime]) {
+  Logger.http(method, endpoint, statusCode, responseTime);
 }
 
 /// Registra mensajes personalizados con un prefijo específico
@@ -267,4 +285,26 @@ void logJson(String label, jsonData) {
 /// Registra un mensaje destacado para eventos de refresh token
 void logRefresh(String message) {
   Logger.info(ConsoleColor.colorize(message, ConsoleColor.brightMagenta));
+}
+
+/// Registra información de rendimiento de HTTP con estilo Postman
+void logPerformance(String endpoint, int responseTime) {
+  if (kDebugMode) {
+    String timeText;
+    if (responseTime >= 1000) {
+      // Convertir a segundos con 2 decimales si es >= 1 segundo
+      final double seconds = responseTime / 1000.0;
+      timeText = '${seconds.toStringAsFixed(2)}s';
+    } else {
+      // Mostrar en milisegundos si es < 1 segundo
+      timeText = '${responseTime}ms';
+    }
+
+    final String performanceMessage = ConsoleColor.colorize(
+        'PERFORMANCE: $endpoint - $timeText',
+        ConsoleColor.dim // Color gris como Postman
+        );
+
+    debugPrint(performanceMessage);
+  }
 }

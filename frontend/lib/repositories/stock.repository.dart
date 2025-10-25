@@ -1,4 +1,4 @@
-import 'package:condorsmotors/api/index.api.dart';
+import 'package:condorsmotors/api/index.api.dart' as api_index;
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
@@ -26,8 +26,8 @@ class StockRepository implements BaseRepository {
   StockRepository._internal() {
     try {
       // Utilizamos la API global inicializada en index.api.dart
-      _productosApi = api.productos;
-      _stocksApi = api.stocks;
+      _productosApi = api_index.api.productos;
+      _stocksApi = api_index.api.stocks;
     } catch (e) {
       debugPrint('Error al obtener APIs: $e');
       // Si hay un error al acceder a la API global, lanzamos una excepción
@@ -40,21 +40,21 @@ class StockRepository implements BaseRepository {
   /// Ayuda a los providers a acceder a la información del usuario autenticado
   @override
   Future<Map<String, dynamic>?> getUserData() =>
-      AuthRepository.instance.getUserData();
+      api_index.AuthManager.getUserData();
 
   /// Obtiene el ID de la sucursal del usuario actual
   ///
   /// Útil para operaciones que requieren el ID de sucursal automáticamente
   @override
   Future<String?> getCurrentSucursalId() =>
-      AuthRepository.instance.getCurrentSucursalId();
+      api_index.AuthManager.getCurrentSucursalId();
 
   /// Obtiene todas las sucursales disponibles
   ///
   /// Útil para mostrar el selector de sucursales en la interfaz
   Future<List<Sucursal>> getSucursales() async {
     try {
-      return await api.sucursales.getSucursales();
+      return await api_index.api.sucursales.getSucursales();
     } catch (e) {
       debugPrint('Error en StockRepository.getSucursales: $e');
       rethrow;

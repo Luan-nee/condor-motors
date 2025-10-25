@@ -1,4 +1,5 @@
-import 'package:condorsmotors/api/index.api.dart';
+import 'package:condorsmotors/api/index.api.dart' as api_index;
+import 'package:condorsmotors/api/protected/ventas.api.dart';
 import 'package:condorsmotors/models/ventas.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:flutter/foundation.dart';
@@ -21,7 +22,7 @@ class VentaRepository implements BaseRepository {
   VentaRepository._internal() {
     try {
       // Utilizamos la API global inicializada en index.api.dart
-      _ventasApi = api.ventas;
+      _ventasApi = api_index.api.ventas;
     } catch (e) {
       debugPrint('Error al obtener VentasApi: $e');
       // Si hay un error al acceder a la API global, lanzamos una excepción
@@ -34,14 +35,14 @@ class VentaRepository implements BaseRepository {
   /// Ayuda a los providers a acceder a la información del usuario autenticado
   @override
   Future<Map<String, dynamic>?> getUserData() =>
-      AuthRepository.instance.getUserData();
+      api_index.AuthManager.getUserData();
 
   /// Obtiene el ID de la sucursal del usuario actual
   ///
   /// Útil para operaciones que requieren el ID de sucursal automáticamente
   @override
   Future<String?> getCurrentSucursalId() =>
-      AuthRepository.instance.getCurrentSucursalId();
+      api_index.AuthManager.getCurrentSucursalId();
 
   /// Obtiene las ventas de una sucursal con filtros y paginación
   ///

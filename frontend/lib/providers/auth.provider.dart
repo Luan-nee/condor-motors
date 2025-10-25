@@ -1,14 +1,13 @@
 import 'dart:async';
 
+import 'package:condorsmotors/api/index.api.dart' as api_index;
 import 'package:condorsmotors/models/auth.model.dart';
-import 'package:condorsmotors/repositories/auth.repository.dart';
 import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:condorsmotors/utils/secure_storage_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthProvider extends ChangeNotifier {
-  final AuthRepository _authRepository;
   AuthState _state = AuthState.initial();
 
   // Getters
@@ -32,7 +31,7 @@ class AuthProvider extends ChangeNotifier {
   // Flags y estado para auto-login
   bool get isAutoLoggingIn => _state.isLoading;
 
-  AuthProvider(this._authRepository) {
+  AuthProvider() {
     debugPrint('[AuthProvider] Constructor ejecutado');
     _init();
   }
@@ -43,9 +42,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       // Inicializaciones en paralelo (fácil de extender)
       final results = await Future.wait([
-        _authRepository.getUserData(),
-        // Aquí puedes agregar más inicializaciones en paralelo si lo necesitas
-        // Por ejemplo: _loadPreferences(), _authRepository.verificarToken(), etc.
+        api_index.AuthManager.getUserData(),
       ]);
       final userData = results[0];
       if (userData != null) {
@@ -69,12 +66,20 @@ class AuthProvider extends ChangeNotifier {
       _state = AuthState.loading();
       notifyListeners();
 
-      final usuario = await _authRepository.login(username, password,
+      // Usar AuthManager directamente
+      final userData = await api_index.AuthManager.login(username, password,
           saveAutoLogin: saveAutoLogin);
 
+      if (userData == null) {
+        _state = AuthState.error('Credenciales inválidas');
+        notifyListeners();
+        return false;
+      }
+
+      final usuario = AuthUser.fromJson(userData);
       _state = AuthState.authenticated(
         usuario,
-        usuario.toMap()['token'] ?? '',
+        userData['token'] ?? '',
       );
       notifyListeners();
 
@@ -93,7 +98,8 @@ class AuthProvider extends ChangeNotifier {
 
       debugPrint('Iniciando proceso de cierre de sesión...');
 
-      await _authRepository.logout();
+      // Usar AuthManager directamente
+      await api_index.AuthManager.logout();
 
       _state = AuthState.initial();
       notifyListeners();
@@ -144,7 +150,8 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> checkAuthStatus() async {
     try {
-      final userData = await _authRepository.getUserData();
+      // Usar AuthManager directamente
+      final userData = await api_index.AuthManager.getUserData();
       if (userData == null) {
         await logout();
       }
@@ -177,7 +184,14 @@ class AuthProvider extends ChangeNotifier {
   // Refrescar token
   Future<void> refreshToken() async {
     try {
-      await _authRepository.refreshToken();
+      // Usar RefreshTokenManager directamente para evitar cadena innecesaria
+      final success = await api_index.RefreshTokenManager.refreshToken(
+        baseUrl: api_index.getCurrentBaseUrl(),
+      );
+      if (!success) {
+        await logout();
+        return;
+      }
       await checkAuthStatus();
     } catch (e) {
       debugPrint('Error al refrescar token: $e');
@@ -188,7 +202,8 @@ class AuthProvider extends ChangeNotifier {
   // Guardar datos del usuario (si se requiere en la UI)
   Future<void> saveUserData(AuthUser usuario) async {
     try {
-      await _authRepository.saveUserData(usuario);
+      // Usar AuthManager directamente
+      await api_index.AuthManager.saveUserData(usuario.toMap());
       // Actualizar estado local si es necesario
       _state = _state.copyWith(user: usuario);
       notifyListeners();
@@ -210,7 +225,8 @@ class AuthProvider extends ChangeNotifier {
     _isVerifying = true;
     _verifyCompleter = Completer<bool>();
     try {
-      final isValid = await _authRepository.verificarToken();
+      // Usar AuthManager directamente
+      final isValid = await api_index.AuthManager.verificarToken();
       _lastVerifyResult = isValid;
       _hasVerified = true;
       if (!_verifyCompleter!.isCompleted) {
@@ -267,14 +283,18 @@ class AuthProvider extends ChangeNotifier {
       }
       debugPrint(
           '[AuthProvider] autoLogin: Intentando iniciar sesión automáticamente con usuario: $username');
-      final usuario = await _authRepository.login(username, password);
+      final userData = await api_index.AuthManager.login(username, password);
+      if (userData == null) {
+        throw Exception('Credenciales inválidas');
+      }
+      final usuario = AuthUser.fromJson(userData);
       _state = AuthState.authenticated(
         usuario,
         usuario.toMap()['token'] ?? '',
       );
       notifyListeners();
       try {
-        await _authRepository.saveUserData(usuario);
+        await api_index.AuthManager.saveUserData(usuario.toMap());
         debugPrint(
             '[AuthProvider] autoLogin: Datos de usuario guardados correctamente en el servicio global');
       } catch (e) {

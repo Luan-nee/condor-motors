@@ -1,4 +1,5 @@
-import 'package:condorsmotors/api/index.api.dart';
+import 'package:condorsmotors/api/index.api.dart' as api_index;
+import 'package:condorsmotors/api/protected/clientes.api.dart';
 import 'package:condorsmotors/models/cliente.model.dart';
 import 'package:flutter/foundation.dart';
 
@@ -7,7 +8,8 @@ class ClienteRepository {
 
   ClienteRepository(this._api);
 
-  static final ClienteRepository instance = ClienteRepository(api.clientes);
+  static final ClienteRepository instance =
+      ClienteRepository(api_index.api.clientes);
 
   /// Busca datos de un cliente por su número de documento
   Future<Map<String, dynamic>?> buscarClientePorDoc(

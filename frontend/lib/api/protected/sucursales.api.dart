@@ -339,27 +339,7 @@ class SucursalesApi {
       logCache(
           'SucursalesApi: Creando nueva sucursal: ${sucursalData['nombre']}');
 
-      // Validar campos requeridos
-      if (!sucursalData.containsKey('nombre') ||
-          !sucursalData.containsKey('sucursalCentral')) {
-        throw Exception('Nombre y sucursalCentral son campos requeridos');
-      }
-
-      // Validar formato de series y números usando los métodos del modelo
-      Sucursal.validarSerieFactura(sucursalData['serieFactura']?.toString());
-      Sucursal.validarSerieBoleta(sucursalData['serieBoleta']?.toString());
-      Sucursal.validarCodigoEstablecimiento(
-          sucursalData['codigoEstablecimiento']?.toString());
-      Sucursal.validarNumeroInicial(
-          sucursalData['numeroFacturaInicial'] != null
-              ? int.tryParse(sucursalData['numeroFacturaInicial'].toString())
-              : null,
-          'factura');
-      Sucursal.validarNumeroInicial(
-          sucursalData['numeroBoletaInicial'] != null
-              ? int.tryParse(sucursalData['numeroBoletaInicial'].toString())
-              : null,
-          'boleta');
+      // Las validaciones de negocio deben estar en el Repository, no en la API
 
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/sucursales',
@@ -384,21 +364,7 @@ class SucursalesApi {
     try {
       logCache('SucursalesApi: Actualizando sucursal con ID: $sucursalId');
 
-      // Validar formato de series y números usando los métodos del modelo
-      Sucursal.validarSerieFactura(sucursalData['serieFactura']?.toString());
-      Sucursal.validarSerieBoleta(sucursalData['serieBoleta']?.toString());
-      Sucursal.validarCodigoEstablecimiento(
-          sucursalData['codigoEstablecimiento']?.toString());
-      Sucursal.validarNumeroInicial(
-          sucursalData['numeroFacturaInicial'] != null
-              ? int.tryParse(sucursalData['numeroFacturaInicial'].toString())
-              : null,
-          'factura');
-      Sucursal.validarNumeroInicial(
-          sucursalData['numeroBoletaInicial'] != null
-              ? int.tryParse(sucursalData['numeroBoletaInicial'].toString())
-              : null,
-          'boleta');
+      // Las validaciones de negocio deben estar en el Repository, no en la API
 
       final Map<String, dynamic> response = await _api.authenticatedRequest(
         endpoint: '/sucursales/$sucursalId',

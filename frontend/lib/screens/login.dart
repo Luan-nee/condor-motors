@@ -923,9 +923,9 @@ class _LoginScreenState extends State<LoginScreen>
         debugPrint('[LoginScreen] Login fallido');
         // No guardar credenciales si el login falla
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error al iniciar sesión')),
-          );
+          setState(() {
+            _errorMessage = 'Credenciales inválidas o usuario desactivado';
+          });
         }
       }
     } catch (e) {
@@ -938,6 +938,10 @@ class _LoginScreenState extends State<LoginScreen>
         if (e.toString().contains('usuario o contraseña incorrectos') ||
             e.toString().toLowerCase().contains('incorrect')) {
           _errorMessage = 'Usuario o contraseña incorrectos';
+        } else if (e.toString().contains('desactivado') ||
+            e.toString().toLowerCase().contains('inactive')) {
+          _errorMessage =
+              'El usuario está desactivado. Contacte al administrador.';
         } else {
           _errorMessage = 'Error al iniciar sesión: $e';
         }

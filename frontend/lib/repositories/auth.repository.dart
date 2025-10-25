@@ -1,122 +1,86 @@
-import 'package:condorsmotors/api/index.api.dart';
+import 'package:condorsmotors/api/index.api.dart' as api_index;
 import 'package:condorsmotors/models/auth.model.dart';
-import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:flutter/foundation.dart';
 
-/// Repositorio para gestionar la autenticación
-///
-/// Esta clase encapsula la lógica de negocio relacionada con la autenticación,
-/// actuando como una capa intermedia entre la UI y la API
-class AuthRepository implements BaseRepository {
+/// Repositorio de autenticación simplificado
+class AuthRepository {
   /// Instancia singleton del repositorio
   static final AuthRepository _instance = AuthRepository._internal();
-
-  /// Getter para la instancia singleton
   static AuthRepository get instance => _instance;
 
-  /// API de autenticación
-  late final dynamic _authApi;
-
-  /// Constructor privado para el patrón singleton
-  AuthRepository._internal() {
-    try {
-      _authApi = api.auth;
-    } catch (e) {
-      debugPrint('Error al obtener API de autenticación: $e');
-      throw Exception('No se pudo inicializar AuthRepository: $e');
-    }
-  }
-
-  /// Obtiene datos del usuario desde la API centralizada
-  @override
-  Future<Map<String, dynamic>?> getUserData() async {
-    try {
-      return await _authApi.getUserData();
-    } catch (e) {
-      debugPrint('Error en AuthRepository.getUserData: $e');
-      return null;
-    }
-  }
-
-  /// Obtiene el ID de la sucursal del usuario actual
-  @override
-  Future<String?> getCurrentSucursalId() async {
-    try {
-      final userData = await getUserData();
-      return userData?['sucursalId']?.toString();
-    } catch (e) {
-      debugPrint('Error en AuthRepository.getCurrentSucursalId: $e');
-      return null;
-    }
-  }
+  AuthRepository._internal();
 
   /// Inicia sesión con usuario y contraseña
-  Future<AuthUser> login(String usuario, String clave,
+  Future<AuthUser> login(String username, String password,
       {bool saveAutoLogin = false}) async {
     try {
-      return await _authApi.login(usuario, clave, saveAutoLogin: saveAutoLogin);
+      // Usar AuthManager directamente
+      final userData = await api_index.AuthManager.login(username, password,
+          saveAutoLogin: saveAutoLogin);
+
+      if (userData == null) {
+        throw Exception('Credenciales inválidas');
+      }
+
+      return AuthUser.fromJson(userData);
     } catch (e) {
       debugPrint('Error en AuthRepository.login: $e');
       rethrow;
     }
   }
 
-  /// Cierra la sesión del usuario
+  /// Cierra la sesión
   Future<void> logout() async {
     try {
-      debugPrint('AuthRepository: Iniciando proceso de logout');
-      await _authApi.logout();
-      debugPrint('AuthRepository: Logout en servidor exitoso');
+      // Usar AuthManager directamente
+      await api_index.AuthManager.logout();
     } catch (e) {
-      debugPrint('AuthRepository: Error al hacer logout: $e');
+      debugPrint('Error en AuthRepository.logout: $e');
       rethrow;
     }
   }
 
-  /// Refresca el token de acceso
-  Future<void> refreshToken() async {
-    try {
-      await _authApi.refreshToken();
-    } catch (e) {
-      debugPrint('Error en AuthRepository.refreshToken: $e');
-      rethrow;
-    }
-  }
-
-  /// Verifica si el token actual es válido con el backend
+  /// Verifica si el token es válido
   Future<bool> verificarToken() async {
     try {
-      return await _authApi.verificarToken();
+      // Usar AuthManager directamente
+      return await api_index.AuthManager.verificarToken();
     } catch (e) {
       debugPrint('Error en AuthRepository.verificarToken: $e');
       return false;
     }
   }
 
-  /// Guarda los datos del usuario
+  /// Obtiene datos del usuario
+  Future<Map<String, dynamic>?> getUserData() async {
+    try {
+      // Usar AuthManager directamente
+      return await api_index.AuthManager.getUserData();
+    } catch (e) {
+      debugPrint('Error en AuthRepository.getUserData: $e');
+      return null;
+    }
+  }
+
+  /// Guarda datos del usuario
   Future<void> saveUserData(AuthUser usuario) async {
     try {
-      await _authApi.saveUserData(usuario.toMap());
+      // Usar AuthManager directamente
+      await api_index.AuthManager.saveUserData(usuario.toMap());
     } catch (e) {
       debugPrint('Error en AuthRepository.saveUserData: $e');
       rethrow;
     }
   }
 
-  /// Limpieza profunda de sesión (tokens, datos, preferencias)
-  Future<void> clearSession() async {
+  /// Limpia todos los tokens
+  Future<void> clearTokens() async {
     try {
-      await _authApi.clearTokens();
-      debugPrint('AuthRepository: Sesión completamente limpiada');
+      // Usar AuthManager directamente
+      await api_index.AuthManager.clearTokens();
     } catch (e) {
-      debugPrint('AuthRepository: Error en clearSession: $e');
-      // Intentar limpieza de emergencia
-      try {
-        await _authApi.clearTokens();
-      } catch (cleanupError) {
-        debugPrint(
-            'AuthRepository: Error adicional en limpieza: $cleanupError');
-      }
+      debugPrint('Error en AuthRepository.clearTokens: $e');
+      rethrow;
     }
   }
 }

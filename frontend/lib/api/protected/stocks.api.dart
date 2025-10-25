@@ -19,11 +19,7 @@ class StocksApi {
     bool? stockBajo,
   }) async {
     try {
-      // Validar el ID de sucursal
-      if (sucursalId.isEmpty) {
-        Logger.error('Se requiere un ID de sucursal válido');
-        throw Exception('ID de sucursal no válido');
-      }
+      // Las validaciones de parámetros deben estar en el Repository, no en la API
 
       Logger.debug('Obteniendo productos para sucursal $sucursalId');
 
@@ -91,9 +87,7 @@ class StocksApi {
       String sucursalId, String productoId) async {
     try {
       // Validar parámetros
-      if (sucursalId.isEmpty || productoId.isEmpty) {
-        throw Exception('Se requieren IDs de sucursal y producto válidos');
-      }
+      // Las validaciones de parámetros deben estar en el Repository, no en la API
 
       Logger.debug(
           'Obteniendo stock del producto $productoId en sucursal $sucursalId');

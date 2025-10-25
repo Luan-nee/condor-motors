@@ -1,6 +1,7 @@
 import 'dart:io';
 
-import 'package:condorsmotors/api/index.api.dart';
+import 'package:condorsmotors/api/index.api.dart' as api_index;
+import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/models/empleado.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
@@ -31,9 +32,10 @@ class EmpleadoRepository implements BaseRepository {
   EmpleadoRepository._internal() {
     try {
       // Utilizamos la API global inicializada en index.api.dart
-      _empleadosApi = api.empleados;
-      _cuentasEmpleadosApi = api.cuentasEmpleados;
-      _sucursalesApi = api.sucursales;
+      _empleadosApi = api_index.api.empleados;
+      _cuentasEmpleadosApi =
+          api_index.api.empleados; // Usar empleados API para cuentas
+      _sucursalesApi = api_index.api.sucursales;
     } catch (e) {
       debugPrint('Error al obtener API de empleados: $e');
       // Si hay un error al acceder a la API global, lanzamos una excepción
@@ -46,14 +48,14 @@ class EmpleadoRepository implements BaseRepository {
   /// Ayuda a los providers a acceder a la información del usuario autenticado
   @override
   Future<Map<String, dynamic>?> getUserData() =>
-      AuthRepository.instance.getUserData();
+      api_index.AuthManager.getUserData();
 
   /// Obtiene el ID de la sucursal del usuario actual
   ///
   /// Útil para operaciones que requieren el ID de sucursal automáticamente
   @override
   Future<String?> getCurrentSucursalId() =>
-      AuthRepository.instance.getCurrentSucursalId();
+      api_index.AuthManager.getCurrentSucursalId();
 
   /// Obtiene la lista de empleados
   ///

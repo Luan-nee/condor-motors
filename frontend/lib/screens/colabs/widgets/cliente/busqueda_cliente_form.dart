@@ -1,4 +1,3 @@
-import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/models/cliente.model.dart';
 import 'package:condorsmotors/repositories/cliente.repository.dart';
 import 'package:flutter/foundation.dart';
@@ -61,7 +60,7 @@ class _BusquedaClienteFormState extends State<BusquedaClienteForm> {
   @override
   void initState() {
     super.initState();
-    _repository = ClienteRepository(api.clientes);
+    _repository = ClienteRepository.instance;
   }
 
   @override

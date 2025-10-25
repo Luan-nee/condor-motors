@@ -164,47 +164,100 @@ class Sucursal extends Equatable {
     return 'Sucursal(id: $id, nombre: $nombre, central: $sucursalCentral)';
   }
 
-  /// Valida si una serie de factura es válida
-  static void validarSerieFactura(String? serie) {
+  /// Valida los datos de la sucursal antes de crear/actualizar
+  static String? validateSucursalData(Map<String, dynamic> data) {
+    // Validar nombre
+    if (data['nombre']?.toString().trim().isEmpty ?? true) {
+      return 'El nombre de la sucursal es requerido';
+    }
+
+    // Validar serie de factura si se proporciona
+    if (data['serieFactura'] != null &&
+        data['serieFactura'].toString().isNotEmpty) {
+      final String? error = validarSerieFactura(data['serieFactura']);
+      if (error != null) {
+        return error;
+      }
+    }
+
+    // Validar serie de boleta si se proporciona
+    if (data['serieBoleta'] != null &&
+        data['serieBoleta'].toString().isNotEmpty) {
+      final String? error = validarSerieBoleta(data['serieBoleta']);
+      if (error != null) {
+        return error;
+      }
+    }
+
+    // Validar código de establecimiento si se proporciona
+    if (data['codigoEstablecimiento'] != null &&
+        data['codigoEstablecimiento'].toString().isNotEmpty) {
+      final String? error =
+          validarCodigoEstablecimiento(data['codigoEstablecimiento']);
+      if (error != null) {
+        return error;
+      }
+    }
+
+    return null; // Sin errores
+  }
+
+  /// Valida si una serie de factura es válida (retorna String de error o null)
+  static String? validarSerieFactura(String? serie) {
     if (serie != null) {
       if (serie.length != 4 || !serie.startsWith('F')) {
-        throw FormatException(
-          'Serie de factura debe tener 4 caracteres y empezar con F',
-          serie,
-        );
+        return 'Serie de factura debe tener 4 caracteres y empezar con F';
       }
     }
+    return null;
   }
 
-  /// Valida si una serie de boleta es válida
-  static void validarSerieBoleta(String? serie) {
+  /// Valida si una serie de boleta es válida (retorna String de error o null)
+  static String? validarSerieBoleta(String? serie) {
     if (serie != null) {
       if (serie.length != 4 || !serie.startsWith('B')) {
-        throw FormatException(
-          'Serie de boleta debe tener 4 caracteres y empezar con B',
-          serie,
-        );
+        return 'Serie de boleta debe tener 4 caracteres y empezar con B';
       }
     }
+    return null;
   }
 
-  /// Valida si un código de establecimiento es válido
-  static void validarCodigoEstablecimiento(String? codigo) {
+  /// Valida si un código de establecimiento es válido (retorna String de error o null)
+  static String? validarCodigoEstablecimiento(String? codigo) {
     if (codigo != null && codigo.length != 4) {
-      throw FormatException(
-        'Código de establecimiento debe tener 4 caracteres',
-        codigo,
-      );
+      return 'Código de establecimiento debe tener 4 caracteres';
     }
+    return null;
   }
 
-  /// Valida si un número inicial es válido
-  static void validarNumeroInicial(int? numero, String tipo) {
+  /// Valida si un número inicial es válido (retorna String de error o null)
+  static String? validarNumeroInicial(int? numero, String tipo) {
     if (numero != null && numero <= 0) {
-      throw FormatException(
-        'Número inicial de $tipo debe ser positivo',
-        numero.toString(),
-      );
+      return 'Número inicial de $tipo debe ser positivo';
     }
+    return null;
+  }
+
+  /// Valida si una serie de factura está disponible (para uso en providers)
+  static bool isSerieFacturaDisponible(String serie, List<Sucursal> sucursales,
+      {String? excludeId}) {
+    return !sucursales.any((s) =>
+        s.serieFactura == serie && (excludeId == null || s.id != excludeId));
+  }
+
+  /// Valida si una serie de boleta está disponible (para uso en providers)
+  static bool isSerieBoletaDisponible(String serie, List<Sucursal> sucursales,
+      {String? excludeId}) {
+    return !sucursales.any((s) =>
+        s.serieBoleta == serie && (excludeId == null || s.id != excludeId));
+  }
+
+  /// Valida si un código de establecimiento está disponible (para uso en providers)
+  static bool isCodigoEstablecimientoDisponible(
+      String codigo, List<Sucursal> sucursales,
+      {String? excludeId}) {
+    return !sucursales.any((s) =>
+        s.codigoEstablecimiento == codigo &&
+        (excludeId == null || s.id != excludeId));
   }
 }

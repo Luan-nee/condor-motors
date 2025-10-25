@@ -17,9 +17,16 @@ class TransferenciaNotificacion {
     const AndroidInitializationSettings androidInit =
         AndroidInitializationSettings('ic_stat_notify');
     const DarwinInitializationSettings iosInit = DarwinInitializationSettings();
+    const WindowsInitializationSettings windowsInit =
+        WindowsInitializationSettings(
+      appName: 'CondorMotors',
+      appUserModelId: 'condor_motors_app',
+      guid: 'condor-motors-transferencias',
+    );
     const InitializationSettings initSettings = InitializationSettings(
       android: androidInit,
       iOS: iosInit,
+      windows: windowsInit,
     );
     await _notificationsPlugin.initialize(
       initSettings,

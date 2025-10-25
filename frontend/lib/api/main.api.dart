@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io'; // Necesario para HttpHeaders
 import 'dart:math';
 
-import 'package:condorsmotors/api/index.api.dart' show getCurrentBaseUrl;
+import 'package:condorsmotors/api/index.api.dart' as api_index;
 import 'package:condorsmotors/utils/logger.dart';
 import 'package:condorsmotors/utils/secure_storage_utils.dart';
 import 'package:dio/dio.dart';
@@ -181,6 +181,9 @@ class ApiClient {
   Interceptor _createLogInterceptor() {
     return InterceptorsWrapper(
       onRequest: (options, handler) {
+        // Agregar timestamp de inicio para medición de tiempo
+        options.extra['startTime'] = DateTime.now().millisecondsSinceEpoch;
+
         // Construir URL completa incluyendo query parameters
         String fullUrl = '${options.baseUrl}${options.path}';
         if (options.queryParameters.isNotEmpty) {
@@ -211,6 +214,12 @@ class ApiClient {
         return handler.next(options);
       },
       onResponse: (response, handler) {
+        // Calcular tiempo de respuesta en milisegundos
+        final int? startTime = response.requestOptions.extra['startTime'];
+        final int responseTime = startTime != null
+            ? DateTime.now().millisecondsSinceEpoch - startTime
+            : 0;
+
         // Construir URL completa incluyendo query parameters para la respuesta
         String fullUrl =
             '${response.requestOptions.baseUrl}${response.requestOptions.path}';
@@ -223,6 +232,7 @@ class ApiClient {
           response.requestOptions.method,
           fullUrl,
           response.statusCode,
+          responseTime,
         );
 
         if (response.data != null) {
@@ -247,8 +257,14 @@ class ApiClient {
         return handler.next(response);
       },
       onError: (error, handler) {
+        // Calcular tiempo de respuesta en milisegundos para errores también
+        final int? startTime = error.requestOptions.extra['startTime'];
+        final int responseTime = startTime != null
+            ? DateTime.now().millisecondsSinceEpoch - startTime
+            : 0;
+
         logError(
-          'Error en solicitud HTTP: ${error.message}',
+          'Error en solicitud HTTP: ${error.message} (${responseTime}ms)',
           error,
           error.stackTrace,
         );
@@ -275,8 +291,8 @@ class ApiClient {
   Interceptor _createAuthInterceptor() {
     return InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final token = await RefreshTokenManager.getAccessToken(
-            baseUrl: getCurrentBaseUrl());
+        final token = await api_index.RefreshTokenManager.getAccessToken(
+            baseUrl: api_index.getCurrentBaseUrl());
         logDebug(
             'Interceptor onRequest: accessToken=${token != null ? token.substring(0, min(10, token.length)) : 'null'}');
         if (token != null) {
@@ -301,9 +317,10 @@ class ApiClient {
             !path.contains('/auth/refresh') &&
             !path.contains('/logout') &&
             queryParams['x-no-retry-on-401'] != 'true') {
-          final currentBaseUrl = getCurrentBaseUrl();
+          final currentBaseUrl = api_index.getCurrentBaseUrl();
           final accessToken =
-              await RefreshTokenManager.getAccessToken(baseUrl: currentBaseUrl);
+              await api_index.RefreshTokenManager.getAccessToken(
+                  baseUrl: currentBaseUrl);
           if (currentBaseUrl.isEmpty) {
             logError(
                 'AuthInterceptor: No se puede intentar refresh porque baseUrl es nulo o vacío.');
@@ -319,11 +336,12 @@ class ApiClient {
 
           try {
             final refreshResult =
-                await RefreshTokenManager.refreshToken(baseUrl: currentBaseUrl);
+                await api_index.RefreshTokenManager.refreshToken(
+                    baseUrl: currentBaseUrl);
             if (!refreshResult) {
               // Si el refresh falla, limpiar tokens y forzar logout
-              await RefreshTokenManager.clearAccessToken();
-              await RefreshTokenManager.clearRefreshToken();
+              await api_index.RefreshTokenManager.clearAccessToken();
+              await api_index.RefreshTokenManager.clearRefreshToken();
               Logger.error('REFRESH TOKEN FALLÓ. Se eliminaron los tokens.');
               return handler.next(error);
             }
@@ -335,8 +353,8 @@ class ApiClient {
             // Si el backend responde 401 tras el refresh, limpiar tokens y forzar logout
             if (newResponse.statusCode == 401 ||
                 newResponse.statusCode == 403) {
-              await RefreshTokenManager.clearAccessToken();
-              await RefreshTokenManager.clearRefreshToken();
+              await api_index.RefreshTokenManager.clearAccessToken();
+              await api_index.RefreshTokenManager.clearRefreshToken();
               Logger.error(
                   'BACKEND RESPONDIÓ 401/403 TRAS REFRESH. Se eliminaron los tokens.');
               return handler.next(error);
@@ -346,8 +364,8 @@ class ApiClient {
             // Si el refresh falla, el provider hará logout y la UI reaccionará
             Logger.error(
                 'ERROR EN REFRESH TOKEN: ${e.toString()}. Se procederá con logout.');
-            await RefreshTokenManager.clearAccessToken();
-            await RefreshTokenManager.clearRefreshToken();
+            await api_index.RefreshTokenManager.clearAccessToken();
+            await api_index.RefreshTokenManager.clearRefreshToken();
             return handler.next(error);
           }
         } else {
@@ -376,7 +394,7 @@ class ApiClient {
     );
 
     final newAccessToken =
-        await RefreshTokenManager.getAccessToken(baseUrl: baseUrl);
+        await api_index.RefreshTokenManager.getAccessToken(baseUrl: baseUrl);
     if (newAccessToken != null) {
       newOptions.headers![HttpHeaders.authorizationHeader] =
           'Bearer $newAccessToken';
@@ -458,8 +476,7 @@ class ApiClient {
       if (authHeader != null && authHeader.startsWith('Bearer ')) {
         final String token = authHeader.substring(7);
         // En lugar de guardarlo directamente, usar TokenManager si centraliza la lógica de tokens
-        await RefreshTokenManager.setAccessToken(
-            baseUrl: baseUrl, token: token);
+        await api_index.RefreshTokenManager.setAccessToken(token: token);
         logDebug(
             'Access token actualizado desde headers de respuesta: ${token.substring(0, min(10, token.length))}...');
       }
@@ -547,7 +564,7 @@ class ApiClient {
   }) async {
     try {
       final String? token =
-          await RefreshTokenManager.getAccessToken(baseUrl: baseUrl);
+          await api_index.RefreshTokenManager.getAccessToken(baseUrl: baseUrl);
 
       final Options options = Options(
         method: method,
@@ -633,138 +650,8 @@ class ApiClient {
   /// Refresca el token de acceso usando la clase centralizada.
   /// Retorna true si el refresh fue exitoso, false si falló (por ejemplo, refresh token inválido).
   Future<bool> refreshToken() {
-    return RefreshTokenManager.refreshToken(baseUrl: baseUrl);
+    return api_index.RefreshTokenManager.refreshToken(baseUrl: baseUrl);
   }
 }
 
-class RefreshTokenManager {
-  static const String _refreshTokenKey = 'refresh_token';
-  static const String _accessTokenKey = 'access_token';
-  static bool _isRefreshing = false;
-  static Completer<bool>? _refreshCompleter;
-
-  /// Lee el refresh token desde almacenamiento seguro
-  static Future<String?> getRefreshToken() {
-    return SecureStorageUtils.read(_refreshTokenKey);
-  }
-
-  /// Guarda o actualiza el refresh token en almacenamiento seguro
-  static Future<void> setRefreshToken(String token) async {
-    await SecureStorageUtils.write(_refreshTokenKey, token);
-  }
-
-  /// Elimina el refresh token del almacenamiento seguro
-  static Future<void> clearRefreshToken() async {
-    await SecureStorageUtils.delete(_refreshTokenKey);
-  }
-
-  /// Elimina el access token del almacenamiento seguro
-  static Future<void> clearAccessToken() async {
-    await SecureStorageUtils.delete(_accessTokenKey);
-  }
-
-  /// Lee el access token desde almacenamiento seguro
-  static Future<String?> getAccessToken({String? baseUrl}) async {
-    final token = await SecureStorageUtils.read(_accessTokenKey);
-    logDebug('[getAccessToken] Token leído: '
-        '${token != null ? token.substring(0, token.length > 10 ? 10 : token.length) : 'null'}');
-    return token;
-  }
-
-  /// Guarda o actualiza el access token en almacenamiento seguro
-  static Future<void> setAccessToken(
-      {String? baseUrl, required String token}) async {
-    await SecureStorageUtils.write(_accessTokenKey, token);
-  }
-
-  /// Refresca el access token usando el refresh token actual
-  /// Devuelve true si el refresh fue exitoso, false si falló
-  static Future<bool> refreshToken({required String baseUrl}) async {
-    if (baseUrl.isEmpty) {
-      logError(
-          'RefreshTokenManager: baseUrl no puede estar vacío al refrescar el token.');
-      return false;
-    }
-    if (_isRefreshing) {
-      // Esperar a que termine el refresh en curso
-      return _refreshCompleter?.future ?? false;
-    }
-    _isRefreshing = true;
-    _refreshCompleter = Completer<bool>();
-    try {
-      final refreshTokenValue = await getRefreshToken();
-      if (refreshTokenValue == null || refreshTokenValue.isEmpty) {
-        logError('RefreshTokenManager: No hay refresh token disponible.');
-        await clearAccessToken();
-        await clearRefreshToken();
-        _isRefreshing = false;
-        _refreshCompleter?.complete(false);
-        _refreshCompleter = null;
-        return false;
-      }
-      final Dio dio = Dio(BaseOptions(
-        baseUrl: baseUrl,
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 30),
-        sendTimeout: const Duration(seconds: 30),
-      ));
-      final response = await dio.post(
-        '/auth/refresh',
-        options: Options(
-          headers: {
-            'Cookie': '$_refreshTokenKey=$refreshTokenValue',
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-        ),
-      );
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final authHeader = response.headers.value('authorization');
-        logDebug(
-            '[refreshToken] Header authorization recibido: ${authHeader ?? 'null'}');
-        if (authHeader != null && authHeader.startsWith('Bearer ')) {
-          final newAccessToken = authHeader.substring(7);
-          logDebug('[refreshToken] Nuevo access token extraído: '
-              '${newAccessToken.substring(0, newAccessToken.length > 10 ? 10 : newAccessToken.length)}');
-          if (newAccessToken.isNotEmpty) {
-            await setAccessToken(token: newAccessToken);
-            logDebug('[refreshToken] Nuevo access token guardado.');
-            // Leer inmediatamente después de guardar para verificar
-            final checkToken = await getAccessToken();
-            logDebug('[refreshToken] Token leído tras guardar: '
-                '${checkToken != null ? checkToken.substring(0, checkToken.length > 10 ? 10 : checkToken.length) : 'null'}');
-            _isRefreshing = false;
-            _refreshCompleter?.complete(true);
-            _refreshCompleter = null;
-            return true;
-          }
-        }
-        logError(
-            'RefreshTokenManager: No se pudo extraer el nuevo access token.');
-        await clearAccessToken();
-        await clearRefreshToken();
-        _isRefreshing = false;
-        _refreshCompleter?.complete(false);
-        _refreshCompleter = null;
-        return false;
-      } else {
-        logError(
-            'RefreshTokenManager: Error al refrescar token. Status: ${response.statusCode}');
-        await clearAccessToken();
-        await clearRefreshToken();
-        _isRefreshing = false;
-        _refreshCompleter?.complete(false);
-        _refreshCompleter = null;
-        return false;
-      }
-    } catch (e) {
-      logError('RefreshTokenManager: Excepción durante el refresh', e);
-      await clearAccessToken();
-      await clearRefreshToken();
-      _isRefreshing = false;
-      _refreshCompleter?.complete(false);
-      _refreshCompleter = null;
-      return false;
-    }
-  }
-}
+// RefreshTokenManager movido a index.api.dart para evitar duplicación

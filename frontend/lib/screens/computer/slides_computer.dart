@@ -2,7 +2,6 @@ import 'package:condorsmotors/providers/auth.provider.dart';
 import 'package:condorsmotors/providers/computer/dash.computer.provider.dart';
 import 'package:condorsmotors/providers/computer/proforma.computer.provider.dart';
 import 'package:condorsmotors/providers/computer/ventas.computer.provider.dart';
-import 'package:condorsmotors/repositories/auth.repository.dart';
 import 'package:condorsmotors/screens/computer/dashboard_computer.dart';
 import 'package:condorsmotors/screens/computer/proforma_computer.dart';
 import 'package:condorsmotors/screens/computer/settings_computer.dart';
@@ -183,7 +182,7 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
       providers: [
         ChangeNotifierProvider(create: (_) => DashboardComputerProvider()),
         ChangeNotifierProvider(
-          create: (_) => AuthProvider(AuthRepository.instance),
+          create: (_) => AuthProvider(),
         ),
         ChangeNotifierProvider(create: (_) => VentasComputerProvider()),
         ChangeNotifierProvider(

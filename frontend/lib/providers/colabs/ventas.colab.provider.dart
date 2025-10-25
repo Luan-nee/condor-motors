@@ -1,18 +1,21 @@
 import 'package:collection/collection.dart';
 import 'package:condorsmotors/api/index.api.dart';
+import 'package:condorsmotors/api/protected/clientes.api.dart';
+import 'package:condorsmotors/api/protected/productos.api.dart';
+import 'package:condorsmotors/api/protected/proforma.api.dart' as api_proforma;
 import 'package:condorsmotors/models/cliente.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
-import 'package:condorsmotors/models/proforma.model.dart' hide DetalleProforma;
+import 'package:condorsmotors/models/proforma.model.dart';
 import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:flutter/material.dart';
 
 /// Provider para gestionar ventas en el módulo de colaboradores
 ///
-/// REF: Ahora toda la lógica de productos usa List<Producto> (no Maps). La carga de productos se hace usando ProductoRepository.
+/// REF: Ahora toda la lógica de productos usa `List<Producto>` (no Maps). La carga de productos se hace usando ProductoRepository.
 class VentasColabProvider extends ChangeNotifier {
   // APIs
   final ProductosApi _productosApi = api.productos;
-  final ProformaVentaApi _proformasApi = api.proformas;
+  final api_proforma.ProformaVentaApi _proformasApi = api.proformas;
   final ClientesApi _clientesApi = api.clientes;
 
   // Estado general
@@ -271,7 +274,16 @@ class VentasColabProvider extends ChangeNotifier {
         loading: true, message: 'Verificando disponibilidad de stock...');
 
     try {
-      // Verificar stock de cada producto
+      // Usar validaciones del modelo Producto
+      final List<String> errors =
+          Producto.validateProductsForSale(_productosVenta, _cantidades);
+      if (errors.isNotEmpty) {
+        setLoading(loading: false);
+        debugPrint('Errores de validación de stock: ${errors.join(', ')}');
+        return false;
+      }
+
+      // Verificar stock de cada producto (validación adicional con API)
       for (final Producto producto in _productosVenta) {
         // Validar ID de producto
         final dynamic productoIdDynamic = producto.id;
@@ -328,13 +340,13 @@ class VentasColabProvider extends ChangeNotifier {
       setLoading(loading: true, message: 'Preparando detalles de la venta...');
 
       // Convertir los productos de la venta al formato esperado por la API
-      final List<DetalleProforma> detalles =
+      final List<api_proforma.DetalleProforma> detalles =
           _productosVenta.map((Producto producto) {
         final double precioUnitario =
             producto.getPrecioConDescuento(_cantidades[producto.id]);
         final double subtotal = precioUnitario * _cantidades[producto.id];
 
-        return DetalleProforma(
+        return api_proforma.DetalleProforma(
           productoId: producto.id,
           nombre: producto.nombre,
           cantidad: _cantidades[producto.id],

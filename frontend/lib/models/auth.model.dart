@@ -208,3 +208,54 @@ class AuthState extends Equatable {
   List<Object?> get props =>
       [isAuthenticated, isLoading, error, user, token, tokenExpiry];
 }
+
+/// Validaciones para AuthUser
+extension AuthUserValidation on AuthUser {
+  /// Valida que el usuario tenga un rol válido
+  static String? validateUserRole(AuthUser user) {
+    if (user.rolCuentaEmpleadoCodigo.isEmpty) {
+      return 'El usuario no tiene un rol asignado';
+    }
+    return null;
+  }
+
+  /// Valida que el usuario esté activo
+  static String? validateUserActive(AuthUser user) {
+    // Verificar si el empleado está activo
+    final bool empleadoActivo = user.empleado['activo'] as bool? ?? true;
+    if (!empleadoActivo) {
+      return 'El usuario está desactivado. Contacte al administrador.';
+    }
+
+    // Aquí podrías agregar validaciones adicionales como:
+    // - Verificar si la cuenta no está bloqueada
+    // - Verificar fecha de expiración
+    // - etc.
+    return null;
+  }
+
+  /// Valida que el usuario tenga permisos para la sucursal
+  static String? validateUserSucursal(AuthUser user, int sucursalId) {
+    if (user.sucursalId != sucursalId) {
+      return 'El usuario no tiene permisos para esta sucursal';
+    }
+    return null;
+  }
+
+  /// Valida todos los aspectos del usuario
+  static String? validateUser(AuthUser user) {
+    // Validar rol
+    final String? roleError = validateUserRole(user);
+    if (roleError != null) {
+      return roleError;
+    }
+
+    // Validar usuario activo
+    final String? activeError = validateUserActive(user);
+    if (activeError != null) {
+      return activeError;
+    }
+
+    return null; // Sin errores
+  }
+}

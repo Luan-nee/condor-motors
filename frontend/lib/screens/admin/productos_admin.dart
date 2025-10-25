@@ -13,6 +13,7 @@ import 'package:condorsmotors/screens/admin/widgets/producto/productos_form.dart
 import 'package:condorsmotors/screens/admin/widgets/producto/productos_table.dart';
 import 'package:condorsmotors/screens/admin/widgets/slide_sucursal.dart';
 import 'package:condorsmotors/widgets/paginador.dart';
+import 'package:condorsmotors/widgets/toast_manager.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -44,7 +45,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
 
   // Estado local de paginación
   int _currentPage = 1;
-  int _pageSize = 10;
+  int _pageSize = 100; // Máximo permitido por el backend
   String _sortBy = 'nombre';
   final String _order = 'asc';
   Paginacion _paginacion = Paginacion.emptyPagination;
@@ -387,13 +388,11 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   // pero no se pueden eliminar completamente del sistema
 
   Future<void> _exportarProductos() async {
-    final currentContext = context;
-    ScaffoldMessenger.of(currentContext).showSnackBar(
-      const SnackBar(
-        content: Text('Exportando productos...'),
-        backgroundColor: Colors.blue,
-      ),
-    );
+    if (!mounted) {
+      return;
+    }
+
+    context.showInfoToast('Exportando productos...');
 
     // Generar exportación local de productos
     final List<int>? excelBytes = await _generarExportacionProductos();
@@ -405,12 +404,10 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
           // Para web, usamos la API html para descargar
           base64Encode(excelBytes);
 
-          ScaffoldMessenger.of(currentContext).showSnackBar(
-            const SnackBar(
-              content: Text('Reporte de productos descargado exitosamente'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          if (mounted) {
+            context.showSuccessToast(
+                'Reporte de productos descargado exitosamente');
+          }
         } else {
           // En dispositivos Windows/Desktop/Mobile, guardamos el archivo localmente
           try {
@@ -430,31 +427,19 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
 
             // Construir la ruta completa del archivo
             if (mounted) {
-              ScaffoldMessenger.of(currentContext).showSnackBar(
-                const SnackBar(
-                  content: Text('Reporte de productos guardado exitosamente'),
-                  backgroundColor: Colors.green,
-                ),
-              );
+              context.showSuccessToast(
+                  'Reporte de productos guardado exitosamente');
             }
           } catch (e) {
             if (mounted) {
-              ScaffoldMessenger.of(currentContext).showSnackBar(
-                SnackBar(
-                  content: Text('Error al guardar archivo: $e'),
-                  backgroundColor: Colors.red,
-                ),
-              );
+              context.showErrorToast('Error al guardar archivo: $e');
             }
           }
         }
       } else {
-        ScaffoldMessenger.of(currentContext).showSnackBar(
-          SnackBar(
-            content: Text(_errorMessage),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (mounted) {
+          context.showErrorToast(_errorMessage);
+        }
       }
     }
   }
@@ -558,7 +543,7 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                                       });
 
                                       if (mounted) {
-                                        ScaffoldMessenger.of(currentContext)
+                                        ScaffoldMessenger.of(context)
                                             .showSnackBar(
                                           const SnackBar(
                                             content: Text(
@@ -617,80 +602,107 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
   }
 
   Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        border: Border(
-          bottom: BorderSide(
-            color: Colors.white.withValues(alpha: 0.1),
-          ),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: <Widget>[
-          Expanded(
-            child: Row(
-              children: <Widget>[
-                const FaIcon(
-                  FontAwesomeIcons.boxesStacked,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  'PRODUCTOS',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                if (_selectedSucursal != null) ...<Widget>[
-                  const Text(
-                    ' / ',
-                    style: TextStyle(
-                      fontSize: 20,
-                      color: Colors.white54,
-                    ),
-                  ),
-                  Flexible(
-                    child: Text(
-                      _selectedSucursal!.nombre,
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: Colors.white.withValues(alpha: 0.7),
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ],
+    return RepaintBoundary(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          border: Border(
+            bottom: BorderSide(
+              color: Colors.white.withValues(alpha: 0.1),
             ),
           ),
-          Row(
-            children: <Widget>[
-              if (_selectedSucursal != null) ...<Widget>[
-                ElevatedButton.icon(
-                  icon: _isLoadingProductos
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const FaIcon(
-                          FontAwesomeIcons.arrowsRotate,
-                          size: 16,
-                          color: Colors.white,
-                        ),
-                  label: Text(
-                    _isLoadingProductos ? 'Recargando...' : 'Recargar',
-                    style: const TextStyle(color: Colors.white),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: <Widget>[
+            Expanded(
+              child: Row(
+                children: <Widget>[
+                  const FaIcon(
+                    FontAwesomeIcons.boxesStacked,
+                    color: Colors.white,
+                    size: 20,
                   ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'PRODUCTOS',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  if (_selectedSucursal != null) ...<Widget>[
+                    const Text(
+                      ' / ',
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: Colors.white54,
+                      ),
+                    ),
+                    Flexible(
+                      child: Text(
+                        _selectedSucursal!.nombre,
+                        style: TextStyle(
+                          fontSize: 20,
+                          color: Colors.white.withValues(alpha: 0.7),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Row(
+              children: <Widget>[
+                if (_selectedSucursal != null) ...<Widget>[
+                  ElevatedButton.icon(
+                    icon: _isLoadingProductos
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const FaIcon(
+                            FontAwesomeIcons.arrowsRotate,
+                            size: 16,
+                            color: Colors.white,
+                          ),
+                    label: Text(
+                      _isLoadingProductos ? 'Recargando...' : 'Recargar',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2D2D2D),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                    onPressed: _isLoadingProductos
+                        ? null
+                        : () async {
+                            await _recargarDatos();
+                            if (mounted) {
+                              setState(() {
+                                _productosKey.value =
+                                    'productos_${_selectedSucursal?.id}_refresh_${DateTime.now().millisecondsSinceEpoch}';
+                              });
+                            }
+                          },
+                  ),
+                  const SizedBox(width: 12),
+                ],
+                ElevatedButton.icon(
+                  icon: const FaIcon(FontAwesomeIcons.fileExcel,
+                      size: 16, color: Colors.white),
+                  label: const Text('Exportar'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2D2D2D),
                     foregroundColor: Colors.white,
@@ -699,155 +711,132 @@ class _ProductosAdminScreenState extends State<ProductosAdminScreen> {
                       vertical: 12,
                     ),
                   ),
-                  onPressed: _isLoadingProductos
+                  onPressed: _selectedSucursal == null
                       ? null
                       : () async {
-                          await _recargarDatos();
-                          if (mounted) {
-                            setState(() {
-                              _productosKey.value =
-                                  'productos_${_selectedSucursal?.id}_refresh_${DateTime.now().millisecondsSinceEpoch}';
-                            });
-                          }
+                          await _exportarProductos();
                         },
                 ),
                 const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  icon: const FaIcon(FontAwesomeIcons.plus,
+                      size: 16, color: Colors.white),
+                  label: const Text('Nuevo Producto'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE31E24),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
+                  ),
+                  onPressed: _selectedSucursal == null
+                      ? null
+                      : () {
+                          _showProductDialog(null);
+                        },
+                ),
               ],
-              ElevatedButton.icon(
-                icon: const FaIcon(FontAwesomeIcons.fileExcel,
-                    size: 16, color: Colors.white),
-                label: const Text('Exportar'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2D2D2D),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                ),
-                onPressed: _selectedSucursal == null
-                    ? null
-                    : () async {
-                        await _exportarProductos();
-                      },
-              ),
-              const SizedBox(width: 12),
-              ElevatedButton.icon(
-                icon: const FaIcon(FontAwesomeIcons.plus,
-                    size: 16, color: Colors.white),
-                label: const Text('Nuevo Producto'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE31E24),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 16,
-                  ),
-                ),
-                onPressed: _selectedSucursal == null
-                    ? null
-                    : () {
-                        _showProductDialog(null);
-                      },
-              ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildSearchBar() {
-    return AnimatedOpacity(
-      opacity: _selectedSucursal == null ? 0.5 : 1.0,
-      duration: const Duration(milliseconds: 300),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        color: const Color(0xFF222222),
-        child: Row(
-          children: <Widget>[
-            Expanded(
-              child: TextField(
-                enabled: _selectedSucursal != null,
-                decoration: InputDecoration(
-                  labelText: 'Buscar productos',
-                  labelStyle:
-                      TextStyle(color: Colors.white.withValues(alpha: 0.7)),
-                  prefixIcon: const Icon(Icons.search, color: Colors.white54),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide:
-                        BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+    return RepaintBoundary(
+      child: AnimatedOpacity(
+        opacity: _selectedSucursal == null ? 0.5 : 1.0,
+        duration: const Duration(milliseconds: 300),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          color: const Color(0xFF222222),
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: TextField(
+                  enabled: _selectedSucursal != null,
+                  decoration: InputDecoration(
+                    labelText: 'Buscar productos',
+                    labelStyle:
+                        TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+                    prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.3)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.3)),
+                    ),
+                    focusedBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFE31E24)),
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFF2D2D2D),
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide:
-                        BorderSide(color: Colors.white.withValues(alpha: 0.3)),
-                  ),
-                  focusedBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFE31E24)),
-                  ),
-                  filled: true,
-                  fillColor: const Color(0xFF2D2D2D),
-                ),
-                style: const TextStyle(color: Colors.white),
-                onChanged: _actualizarBusqueda,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2D2D2D),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.3),
+                  style: const TextStyle(color: Colors.white),
+                  onChanged: _actualizarBusqueda,
                 ),
               ),
-              child: _isLoadingCategorias
-                  ? const SizedBox(
-                      width: 100,
-                      child: Center(
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Color(0xFFE31E24),
-                            strokeWidth: 2,
+              const SizedBox(width: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2D2D2D),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: _isLoadingCategorias
+                    ? const SizedBox(
+                        width: 100,
+                        child: Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Color(0xFFE31E24),
+                              strokeWidth: 2,
+                            ),
                           ),
                         ),
+                      )
+                    : DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _selectedCategory,
+                          items: _categorias
+                              .map((c) => c.nombre)
+                              .toList()
+                              .map((String category) {
+                            return DropdownMenuItem(
+                              value: category,
+                              child: Text(
+                                category,
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: _selectedSucursal == null
+                              ? null
+                              : (String? value) {
+                                  if (value != null) {
+                                    _actualizarCategoria(value);
+                                  }
+                                },
+                          dropdownColor: const Color(0xFF2D2D2D),
+                          icon: const Icon(Icons.arrow_drop_down,
+                              color: Colors.white54),
+                          style: const TextStyle(color: Colors.white),
+                        ),
                       ),
-                    )
-                  : DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _selectedCategory,
-                        items: _categorias
-                            .map((c) => c.nombre)
-                            .toList()
-                            .map((String category) {
-                          return DropdownMenuItem(
-                            value: category,
-                            child: Text(
-                              category,
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: _selectedSucursal == null
-                            ? null
-                            : (String? value) {
-                                if (value != null) {
-                                  _actualizarCategoria(value);
-                                }
-                              },
-                        dropdownColor: const Color(0xFF2D2D2D),
-                        icon: const Icon(Icons.arrow_drop_down,
-                            color: Colors.white54),
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    ),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );

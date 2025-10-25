@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:math' show min;
 
-import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/repositories/cliente.repository.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:condorsmotors/utils/logger.dart';
 import 'package:flutter/material.dart';
@@ -241,8 +241,8 @@ class ProformaConversionManager {
                   detalleMap['cantidadTotal'] ??
                   1,
               'tipoTaxId': tipoTaxId, // Usar el ID obtenido del servidor
-              'aplicarOferta': detalleMap['descuento'] != null &&
-                  detalleMap['descuento'] > 0
+              'aplicarOferta':
+                  detalleMap['descuento'] != null && detalleMap['descuento'] > 0
             });
 
             Logger.debug('Detalle transformado: ${detallesTransformados.last}');
@@ -276,7 +276,7 @@ class ProformaConversionManager {
 
         try {
           // Intentar obtener una lista de clientes
-          final clientes = await api.clientes.getClientes(
+          final clientes = await ClienteRepository.instance.getClientes(
             pageSize: 1, // Solo necesitamos uno
           );
 
@@ -310,8 +310,7 @@ class ProformaConversionManager {
         else if (clienteInfo != null &&
             clienteInfo is Map &&
             clienteInfo.containsKey('id')) {
-          clienteIdNumerico =
-              int.tryParse(clienteInfo['id'].toString());
+          clienteIdNumerico = int.tryParse(clienteInfo['id'].toString());
         }
 
         // Solo sobrescribir clienteId si tenemos un valor numérico válido
@@ -336,7 +335,7 @@ class ProformaConversionManager {
         try {
           Logger.debug(
               'Obteniendo información del empleado asociado a la cuenta...');
-          final userData = await api.auth.getUserData();
+          final userData = await AuthRepository.instance.getUserData();
 
           if (userData == null) {
             Logger.error('No se pudo obtener información del usuario actual');
@@ -349,10 +348,9 @@ class ProformaConversionManager {
           }
 
           // Verificar que sucursalId coincida con el de la operación
-          final String userSucursalId =
-              userData.containsKey('sucursalId')
-                  ? userData['sucursalId']?.toString() ?? ''
-                  : '';
+          final String userSucursalId = userData.containsKey('sucursalId')
+              ? userData['sucursalId']?.toString() ?? ''
+              : '';
           if (userSucursalId.isNotEmpty && userSucursalId != sucursalId) {
             Logger.warn(
                 'ADVERTENCIA: El sucursalId del usuario ($userSucursalId) es diferente al de la operación ($sucursalId)');
@@ -374,8 +372,8 @@ class ProformaConversionManager {
             final String sucursalIdStr = sucursalId.toString();
 
             // Usar el método específico para obtener empleados por sucursal
-            final empleadosSucursal =
-                await api.empleados.getEmpleadosPorSucursal(sucursalIdStr);
+            final empleadosSucursal = await EmpleadoRepository.instance
+                .getEmpleadosPorSucursal(sucursalIdStr);
 
             if (empleadosSucursal.empleados.isNotEmpty) {
               // Preferir empleado asociado al usuario si existe
@@ -460,7 +458,7 @@ class ProformaConversionManager {
           final String sucursalIdStr = sucursalId.toString();
 
           final Map<String, dynamic> ventaResponse =
-              await api.ventas.createVenta(
+              await VentaRepository.instance.createVenta(
             ventaData,
             sucursalId: sucursalIdStr,
           );
@@ -498,7 +496,7 @@ class ProformaConversionManager {
                 Logger.debug('Intentando recuperar con otro cliente...');
                 try {
                   // Intentar obtener una lista más grande de clientes para buscar alternativas
-                  final clientes = await api.clientes.getClientes(
+                  final clientes = await ClienteRepository.instance.getClientes(
                     pageSize: 5, // Buscar más clientes
                   );
 
@@ -533,7 +531,8 @@ class ProformaConversionManager {
                     ventaData['clienteId'] = otroClienteId;
 
                     // Reintentar creación con nuevo cliente
-                    final nuevoResponse = await api.ventas.createVenta(
+                    final nuevoResponse =
+                        await VentaRepository.instance.createVenta(
                       ventaData,
                       sucursalId: sucursalIdStr,
                     );
@@ -872,8 +871,8 @@ class ProformaConversionManager {
       if (ventaResponse.containsKey('data') &&
           ventaResponse['data'] is Map<String, dynamic> &&
           (ventaResponse['data'] as Map<String, dynamic>).containsKey('id')) {
-        ventaId =
-            int.tryParse((ventaResponse['data'] as Map<String, dynamic>)['id'].toString());
+        ventaId = int.tryParse(
+            (ventaResponse['data'] as Map<String, dynamic>)['id'].toString());
       }
 
       if (ventaId == null) {

@@ -242,13 +242,7 @@ class ProductosApi {
     int? pageSize,
     bool useCache = true,
   }) {
-    if (nombre.isEmpty) {
-      throw ApiException(
-        statusCode: 400,
-        message: 'El término de búsqueda no puede estar vacío',
-        errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
-      );
-    }
+    // Las validaciones de parámetros deben estar en el Repository, no en la API
 
     return getProductos(
       sucursalId: sucursalId,
@@ -417,22 +411,7 @@ class ProductosApi {
     File? fotoFile,
   }) async {
     try {
-      // Validaciones
-      if (sucursalId.isEmpty) {
-        throw ApiException(
-          statusCode: 400,
-          message: 'ID de sucursal no puede estar vacío',
-          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
-        );
-      }
-
-      if (productoId <= 0) {
-        throw ApiException(
-          statusCode: 400,
-          message: 'ID de producto inválido: $productoId',
-          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
-        );
-      }
+      // Las validaciones de parámetros deben estar en el Repository, no en la API
 
       // Eliminar el ID del producto de los datos para evitar conflictos
       final Map<String, dynamic> dataToSend =

@@ -1,4 +1,4 @@
-import 'package:condorsmotors/api/index.api.dart';
+import 'package:condorsmotors/api/index.api.dart' as api_index;
 import 'package:condorsmotors/models/pedido.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:flutter/foundation.dart';
@@ -19,14 +19,14 @@ class PedidoRepository implements BaseRepository {
   /// Obtiene datos del usuario desde la API centralizada
   @override
   Future<Map<String, dynamic>?> getUserData() =>
-      AuthRepository.instance.getUserData();
+      api_index.AuthManager.getUserData();
 
   /// Obtiene el ID de la sucursal del usuario actual
   ///
   /// Útil para operaciones que requieren el ID de sucursal automáticamente
   @override
   Future<String?> getCurrentSucursalId() =>
-      AuthRepository.instance.getCurrentSucursalId();
+      api_index.AuthManager.getCurrentSucursalId();
 
   /// Obtiene todos los pedidos exclusivos
   ///
@@ -34,7 +34,8 @@ class PedidoRepository implements BaseRepository {
   Future<List<PedidoExclusivo>> getPedidosExclusivos(
       {String? filtroEstado}) async {
     try {
-      final pedidos = await api.pedidos.exclusivos.getPedidosExclusivos();
+      final pedidos =
+          await api_index.api.pedidos.exclusivos.getPedidosExclusivos();
       return pedidos;
     } catch (e) {
       debugPrint('Error en PedidoRepository.getPedidosExclusivos: $e');
@@ -47,7 +48,7 @@ class PedidoRepository implements BaseRepository {
   /// [id] ID del pedido a obtener
   Future<PedidoExclusivo> getPedidoExclusivo(int id) async {
     try {
-      return await api.pedidos.exclusivos.getPedidoExclusivo(id);
+      return await api_index.api.pedidos.exclusivos.getPedidoExclusivo(id);
     } catch (e) {
       debugPrint('Error en PedidoRepository.getPedidoExclusivo: $e');
       rethrow;
@@ -59,7 +60,8 @@ class PedidoRepository implements BaseRepository {
   /// [pedido] Datos del pedido a crear
   Future<PedidoExclusivo> createPedidoExclusivo(PedidoExclusivo pedido) async {
     try {
-      return await api.pedidos.exclusivos.createPedidoExclusivo(pedido);
+      return await api_index.api.pedidos.exclusivos
+          .createPedidoExclusivo(pedido);
     } catch (e) {
       debugPrint('Error en PedidoRepository.createPedidoExclusivo: $e');
       rethrow;
@@ -73,7 +75,8 @@ class PedidoRepository implements BaseRepository {
   Future<PedidoExclusivo> updatePedidoExclusivo(
       int id, PedidoExclusivo pedido) async {
     try {
-      return await api.pedidos.exclusivos.updatePedidoExclusivo(id, pedido);
+      return await api_index.api.pedidos.exclusivos
+          .updatePedidoExclusivo(id, pedido);
     } catch (e) {
       debugPrint('Error en PedidoRepository.updatePedidoExclusivo: $e');
       rethrow;
@@ -85,7 +88,7 @@ class PedidoRepository implements BaseRepository {
   /// [id] ID del pedido a eliminar
   Future<bool> deletePedidoExclusivo(int id) async {
     try {
-      return await api.pedidos.exclusivos.deletePedidoExclusivo(id);
+      return await api_index.api.pedidos.exclusivos.deletePedidoExclusivo(id);
     } catch (e) {
       debugPrint('Error en PedidoRepository.deletePedidoExclusivo: $e');
       rethrow;

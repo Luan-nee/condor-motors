@@ -107,15 +107,6 @@ class ClientesApi {
   /// [useCache] Indica si se debe usar el caché (default: true)
   Future<Cliente> getCliente(String clienteId, {bool useCache = true}) async {
     try {
-      // Validar que clienteId no sea nulo o vacío
-      if (clienteId.isEmpty) {
-        throw ApiException(
-          statusCode: 400,
-          message: 'ID de cliente no puede estar vacío',
-          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
-        );
-      }
-
       // Clave para caché
       final String cacheKey = 'cliente_$clienteId';
 
@@ -178,14 +169,7 @@ class ClientesApi {
   Future<Cliente?> getClienteByDoc(String numeroDocumento,
       {bool useCache = true}) async {
     try {
-      // Validar que numeroDocumento no sea nulo o vacío
-      if (numeroDocumento.isEmpty) {
-        throw ApiException(
-          statusCode: 400,
-          message: 'Número de documento no puede estar vacío',
-          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
-        );
-      }
+      // Las validaciones de parámetros deben estar en el Repository, no en la API
 
       // Clave para caché
       final String cacheKey = 'cliente_doc_$numeroDocumento';
@@ -300,16 +284,7 @@ class ClientesApi {
   /// Crea un nuevo cliente
   Future<Cliente> createCliente(Map<String, dynamic> clienteData) async {
     try {
-      // Validar datos mínimos requeridos
-      if (!clienteData.containsKey('denominacion') ||
-          !clienteData.containsKey('numeroDocumento')) {
-        throw ApiException(
-          statusCode: 400,
-          message:
-              'Denominación y número de documento son requeridos para crear cliente',
-          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
-        );
-      }
+      // Las validaciones de negocio deben estar en el Repository, no en la API
 
       // Limpiar datos antes de enviar (remover campos vacíos)
       final Map<String, dynamic> datosLimpios = Map.from(clienteData)
@@ -372,14 +347,7 @@ class ClientesApi {
   Future<Cliente> updateCliente(
       String clienteId, Map<String, dynamic> clienteData) async {
     try {
-      // Validar que clienteId no sea nulo o vacío
-      if (clienteId.isEmpty) {
-        throw ApiException(
-          statusCode: 400,
-          message: 'ID de cliente no puede estar vacío',
-          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
-        );
-      }
+      // Las validaciones de parámetros deben estar en el Repository, no en la API
 
       debugPrint('ClientesApi: Actualizando cliente con ID: $clienteId');
       final Map<String, dynamic> response = await _api.authenticatedRequest(
