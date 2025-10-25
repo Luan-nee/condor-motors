@@ -1,38 +1,38 @@
 {
-  "name": "condor-motors",
-  "private": true,
-  "version": "1.0.0",
-  "description": "Sistema de gestión de empleados, inventario y facturación.",
-  "scripts": {
-    "dev:admin-app": "npm run dev --workspace admin-app",
-    "build:admin-app": "npm run build --workspace admin-app",
-    "preview:admin-app": "npm run preview --workspace admin-app",
-    "astro:admin-app": "npm run astro --workspace admin-app",
-    "dev:server": "npm run dev --workspace server",
-    "build:server": "npm run build --workspace server",
-    "start:server": "npm run start --workspace server",
-    "type-check:server": "npm run type-check --workspace server",
-    "init:server": "npm run init --workspace server",
-    "lint:server": "npm run lint --workspace server",
-    "format:server": "npm run format --workspace server",
-    "check:server": "npm run check --workspace server",
-    "db:generate": "npm run db:generate --workspace server",
-    "db:migrate": "npm run db:migrate --workspace server",
-    "db:push": "npm run db:push --workspace server",
-    "db:seed": "npm run db:seed --workspace server",
-    "db:reset": "npm run db:reset --workspace server",
-    "db:populate": "npm run db:populate --workspace server",
-    "db:studio": "npm run db:studio --workspace server",
-    "build": "npm run build --workspace server",
-    "start": "npm run start --workspace server"
-  },
-  "author": "",
-  "license": "ISC",
-  "workspaces": [
-    "server",
-    "admin-app"
-  ],
-  "dependencies": {
-    "drizzle-orm": "^0.39.3"
-  }
+	"name": "condor-motors",
+	"private": true,
+	"version": "1.0.0",
+	"description": "Sistema de gestión de empleados, inventario y facturación.",
+	"scripts": {
+		"dev:admin-app": "npm run dev --workspace admin-app",
+		"build:admin-app": "npm run build --workspace admin-app",
+		"preview:admin-app": "npm run preview --workspace admin-app",
+		"astro:admin-app": "npm run astro --workspace admin-app",
+		"dev:server": "npm run dev --workspace server",
+		"build:server": "npm run build --workspace server",
+		"start:server": "npm run start --workspace server",
+		"type-check:server": "npm run type-check --workspace server",
+		"init:server": "npm run init --workspace server",
+		"lint:server": "npm run lint --workspace server",
+		"format:server": "npm run format --workspace server",
+		"check:server": "npm run check --workspace server",
+		"db:generate": "npm run db:generate --workspace server",
+		"db:migrate": "npm run db:migrate --workspace server",
+		"db:push": "npm run db:push --workspace server",
+		"db:seed": "npm run db:seed --workspace server",
+		"db:reset": "npm run db:reset --workspace server",
+		"db:populate": "npm run db:populate --workspace server",
+		"db:studio": "npm run db:studio --workspace server",
+		"build": "npm run build --workspace server",
+		"start": "npm run start --workspace server"
+	},
+	"author": "",
+	"license": "ISC",
+	"workspaces": [
+		"server",
+		"admin-app"
+	],
+	"dependencies": {
+		"drizzle-orm": "^0.44.7"
+	}
 }
