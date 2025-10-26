@@ -15,11 +15,10 @@ export class CompararTransferenciaInvDtoValidator {
     const result = compararTransferenciaInvSchema.safeParse(props)
 
     if (!result.success) {
-      const {
-        error: { errors }
-      } = result
-      const messages = errors.map((error) => error.message)
-      return [messages, undefined] as const
+      const { error } = result
+      const validationErrors = z.treeifyError(error)
+
+      return [validationErrors.errors, undefined] as const
     }
 
     return [undefined, result.data] as const
