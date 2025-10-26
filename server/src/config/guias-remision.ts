@@ -1,6 +1,6 @@
 import { envs } from '@/config/envs'
 import { CustomError } from '@/core/errors/custom.error'
-import { logger } from './logger'
+// import { logger } from './logger'
 
 const { GUIA_REMISION_API_BASE_URL, TOKEN_GUIA_REMISION, TOKEN_FACTURACION } =
   envs
@@ -28,36 +28,43 @@ export class ServicioGuiaRemision {
     }
   }
 
-  private async formatResponse(res: Response) {
-    if (res.status === 401) {
-      throw CustomError.serviceUnavailable('Token de facturación inválido')
-    }
-    if (res.status >= 500) {
-      throw CustomError.serviceUnavailable(
-        'El servicio de facturación no se encuentra activo en este momento'
-      )
-    }
+  // private async formatResponse(res: Response) {
+  //   if (res.status === 401) {
+  //     throw CustomError.serviceUnavailable('Token de facturación inválido')
+  //   }
 
-    try {
-      const jsonResponse = await res.json()
+  //   if (res.status >= 500) {
+  //     throw CustomError.serviceUnavailable(
+  //       'El servicio de facturación no se encuentra activo en este momento'
+  //     )
+  //   }
 
-      if (jsonResponse.success !== true) {
-        return { data: null, error: jsonResponse }
-      }
+  //   try {
+  //     const jsonResponse = await res.json()
 
-      return { data: jsonResponse, error: null }
-    } catch (e: unknown) {
-      logger.error({
-        message: 'Unexpected error on ServicioGuiaRemision',
-        context: { error: e }
-      })
+  //     if (jsonResponse.success !== true) {
+  //       return { data: null, error: jsonResponse }
+  //     }
 
-      const error = {
-        message:
-          'La respuesta obtenida del servicio de facturación se encuentra en un formato inesperado',
-        success: false
-      }
-      return { data: null, error }
-    }
+  //     return { data: jsonResponse, error: null }
+  //   } catch (e: unknown) {
+  //     logger.error({
+  //       message: 'Unexpected error on ServicioGuiaRemision',
+  //       context: { error: e }
+  //     })
+
+  //     const error = {
+  //       message:
+  //         'La respuesta obtenida del servicio de facturación se encuentra en un formato inesperado',
+  //       success: false
+  //     }
+  //     return { data: null, error }
+  //   }
+  // }
+
+  public trasladoEntreEstablecimientos(_args: any) {
+    this.checkAvailability()
+
+    throw CustomError.notImplemented()
   }
 }

@@ -5,6 +5,7 @@ import type {
   consultDocumentType,
   sendDocumentType
 } from '@/types/config'
+import { logger } from './logger'
 
 const { TOKEN_FACTURACION, FACTURACION_API_BASE_URL } = envs
 
@@ -42,6 +43,11 @@ export class ServicioFacturacion {
 
       return { data: jsonResponse, error: null }
     } catch (e) {
+      logger.error({
+        message: 'Unexpected error on ServicioFacturacion',
+        context: { error: e }
+      })
+
       const error = {
         message:
           'La respuesta obtenida del servicio de facturación se encuentra en un formato inesperado',

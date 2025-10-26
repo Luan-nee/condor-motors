@@ -2,6 +2,7 @@ import { envs } from '@/config/envs'
 import { CustomError } from '@/core/errors/custom.error'
 import { Validator } from '@/domain/validators/validator'
 import type { searchClientType } from '@/types/config'
+import { logger } from './logger'
 
 const { TOKEN_CONSULTA, CONSULTA_API_BASE_URL } = envs
 
@@ -37,6 +38,11 @@ export class ServicioConsulta {
 
       return { data: jsonResponse, error: null }
     } catch (e) {
+      logger.error({
+        message: 'Unexpected error on ServicioConsulta',
+        context: { error: e }
+      })
+
       return {
         data: null,
         error: {
@@ -77,6 +83,11 @@ export class ServicioConsulta {
 
       return response
     } catch (error) {
+      logger.error({
+        message: 'Unexpected error on ServicioConsulta',
+        context: { error }
+      })
+
       return {
         data: null,
         error: {
