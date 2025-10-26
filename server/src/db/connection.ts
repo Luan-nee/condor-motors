@@ -1,4 +1,5 @@
 import { envs } from '@/config/envs'
+import { logger } from '@/config/logger'
 import { databaseEnableSSL, isProduction } from '@/consts'
 import * as schema from '@db/schema'
 import { drizzle } from 'drizzle-orm/node-postgres'
@@ -23,6 +24,5 @@ export const db = drizzle({
 
 export const testDatabaseConnection = async () => {
   await pool.query('SELECT 1')
-  // eslint-disable-next-line no-console
-  console.log('Connected to the database')
+  logger.info('Connected to the database')
 }

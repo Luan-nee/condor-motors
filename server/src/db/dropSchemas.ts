@@ -1,5 +1,5 @@
-/* eslint-disable no-console */
 import { envs } from '@/config/envs'
+import { logger } from '@/config/logger'
 import { isProduction } from '@/consts'
 import { db } from '@db/connection'
 import { sql } from 'drizzle-orm'
@@ -44,14 +44,14 @@ const { NODE_ENV: nodeEnv } = envs
 if (!isProduction) {
   dropSchema(dbSchemas)
     .then(() => {
-      console.log(message)
+      logger.info(message)
       exit()
     })
     .catch((error: unknown) => {
-      console.error(error)
+      logger.error({ message: 'Unexpected error', context: { error } })
       exit(1)
     })
 } else {
-  console.log(`Database not modified`)
-  console.log(`You are in ${nodeEnv} enviroment`)
+  logger.info('Database not modified')
+  logger.info(`You are in ${nodeEnv} enviroment`)
 }

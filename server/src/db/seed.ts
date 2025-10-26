@@ -13,7 +13,6 @@ import {
 } from '@/core/lib/utils'
 import { db } from '@db/connection'
 import * as schema from '@db/schema'
-import { faker } from '@faker-js/faker'
 import { exit } from 'process'
 import {
   adminPermissions,
@@ -47,8 +46,39 @@ const insertInBatches = async (
   return returningFields !== undefined ? results : undefined
 }
 
-const sucursalesValues = Array.from({ length: seedConfig.sucursalesCount }).map(
-  (_, i) => {
+const rolesValues = seedConfig.rolesDefault.map((rol) => ({
+  codigo: formatCode(rol),
+  nombre: rol
+}))
+
+const categoriasValues = seedConfig.categoriasDefault.map((categoria) => ({
+  nombre: categoria,
+  descripcion: 'Descripción de la categoría'
+}))
+
+const marcasValues = seedConfig.marcasDefault.map((marca) => ({
+  nombre: marca,
+  descripcion: 'Descripción de la marca'
+}))
+
+const coloresValues = seedConfig.coloresDefault.map((color) => ({
+  nombre: color.nombre,
+  hex: color.hex
+}))
+
+const { cuentas } = seedConfig
+const {
+  admin: adminAccount,
+  vendedor: vendedorAccount,
+  computadora: computadoraAccount
+} = cuentas
+
+const seedDatabase = async () => {
+  const { faker } = await import('@faker-js/faker')
+
+  const sucursalesValues = Array.from({
+    length: seedConfig.sucursalesCount
+  }).map((_, i) => {
     const id = (i + 1).toString()
     const sucursal = {
       nombre: faker.company.name() + i.toString(),
@@ -68,37 +98,8 @@ const sucursalesValues = Array.from({ length: seedConfig.sucursalesCount }).map(
     }
 
     return sucursal
-  }
-)
+  })
 
-const rolesValues = seedConfig.rolesDefault.map((rol) => ({
-  codigo: formatCode(rol),
-  nombre: rol
-}))
-
-const categoriasValues = seedConfig.categoriasDefault.map((categoria) => ({
-  nombre: categoria,
-  descripcion: faker.lorem.words({ min: 10, max: 20 })
-}))
-
-const marcasValues = seedConfig.marcasDefault.map((marca) => ({
-  nombre: marca,
-  descripcion: faker.lorem.words({ min: 10, max: 20 })
-}))
-
-const coloresValues = seedConfig.coloresDefault.map((color) => ({
-  nombre: color.nombre,
-  hex: color.hex
-}))
-
-const { cuentas } = seedConfig
-const {
-  admin: adminAccount,
-  vendedor: vendedorAccount,
-  computadora: computadoraAccount
-} = cuentas
-
-const seedDatabase = async () => {
   const hashedAdminPassword = await BcryptAdapter.hash(adminAccount.clave)
   const hashedVendedorPassword = await BcryptAdapter.hash(vendedorAccount.clave)
   const hashedComputadoraPassword = await BcryptAdapter.hash(

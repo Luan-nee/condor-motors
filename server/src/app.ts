@@ -10,25 +10,20 @@ const main = async () => {
     PRIVATE_STORAGE_PATH: privateStoragePath,
     PUBLIC_STORAGE_PATH: publicStoragePath
   } = envs
+
   const { routes } = AppRoutes
 
-  try {
-    await testDatabaseConnection()
+  await testDatabaseConnection()
 
-    const server = new Server({
-      port,
-      host,
-      routes,
-      privateStoragePath,
-      publicStoragePath
-    })
+  const server = new Server({
+    port,
+    host,
+    routes,
+    privateStoragePath,
+    publicStoragePath
+  })
 
-    server.start()
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Error starting the server:', error)
-    process.exit(1)
-  }
+  server.start()
 }
 
 void main()

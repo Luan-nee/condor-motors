@@ -22,6 +22,8 @@ export const envs = {
   TOKEN_CONSULTA: get('TOKEN_CONSULTA').asString(),
   FACTURACION_API_BASE_URL: get('FACTURACION_API_BASE_URL').asString(),
   TOKEN_FACTURACION: get('TOKEN_FACTURACION').asString(),
+  GUIA_REMISION_API_BASE_URL: get('GUIA_REMISION_API_BASE_URL').asString(),
+  TOKEN_GUIA_REMISION: get('TOKEN_GUIA_REMISION').asString(),
   LOGS: get('LOGS').default('console').asString(),
   MAX_UPLOAD_FILE_SIZE_MB: get('MAX_UPLOAD_FILE_SIZE_MB')
     .default(150)
@@ -32,5 +34,6 @@ export const envs = {
   PUBLIC_STORAGE_PATH: get('PUBLIC_STORAGE_PATH')
     .default('storage/public')
     .asString(),
-  SERVE_PUBLIC_STORAGE: get('SERVE_PUBLIC_STORAGE').default('true').asBool()
+  SERVE_PUBLIC_STORAGE: get('SERVE_PUBLIC_STORAGE').default('true').asBool(),
+  LOG_LEVEL: get('LOG_LEVEL').default('info').asString()
 }

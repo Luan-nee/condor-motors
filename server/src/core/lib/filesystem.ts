@@ -1,3 +1,4 @@
+import { logger } from '@/config/logger'
 import { access, constants, mkdir } from 'node:fs/promises'
 import path from 'node:path'
 
@@ -12,8 +13,10 @@ export const createDirIfNotExists = async (...dirPaths: string[]) => {
       return
     }
 
-    // eslint-disable-next-line no-console
-    console.error(`Error al verificar o crear el directorio ${dirPath}:`, error)
+    logger.error({
+      message: `Error al verificar o crear el directorio ${dirPath}:`,
+      context: { error }
+    })
 
     if (error instanceof Error) {
       throw error

@@ -1,143 +1,82 @@
-/* eslint-disable no-console */
-import { isProduction, logsDestination } from '@/consts'
-import fs from 'fs'
-import path from 'path'
+import pino, { type Logger } from 'pino'
 import { envs } from './envs'
-import { access, constants, mkdir } from 'fs/promises'
 
-enum LogLevel {
-  DEBUG = 'DEBUG',
-  INFO = 'INFO',
-  WARN = 'WARN',
-  ERROR = 'ERROR',
-  FATAL = 'FATAL'
+interface MessageWithContext {
+  message: string
+  context?: Record<string, unknown>
 }
 
-interface Logger {
-  debug: (message: string, ...meta: any[]) => void
-  info: (message: string, ...meta: any[]) => void
-  warn: (message: string, ...meta: any[]) => void
-  error: (message: string, ...meta: any[]) => void
-  fatal: (message: string, ...meta: any[]) => void
+type SimpleMessage = string
+
+export type Message = SimpleMessage | MessageWithContext
+
+export interface ILogger {
+  debug: (message: Message) => void
+  info: (message: Message) => void
+  warn: (message: Message) => void
+  error: (message: Message) => void
+  fatal: (message: Message) => void
 }
 
-class BaseLogger {
-  protected formatLog(level: LogLevel, message: string, meta: any[]): string {
-    const timestamp = new Date().toISOString()
-    const metaString = meta.length > 0 ? JSON.stringify(meta) : ''
-    return `[${timestamp}] [${level}] ${message} ${metaString}\n`
-  }
-}
+export class PinoLoggerAdapter implements ILogger {
+  private readonly logger: Logger
 
-class ConsoleLogger extends BaseLogger implements Logger {
-  debug(message: string, ...meta: any[]): void {
-    if (!isProduction) {
-      console.debug(this.formatLog(LogLevel.DEBUG, message, meta))
-    }
-  }
-
-  info(message: string, ...meta: any[]): void {
-    console.info(this.formatLog(LogLevel.INFO, message, meta))
-  }
-
-  warn(message: string, ...meta: any[]): void {
-    console.warn(this.formatLog(LogLevel.WARN, message, meta))
-  }
-
-  error(message: string, ...meta: any[]): void {
-    console.error(this.formatLog(LogLevel.ERROR, message, meta))
-  }
-
-  fatal(message: string, ...meta: any[]): void {
-    console.error(this.formatLog(LogLevel.FATAL, message, meta))
-  }
-}
-
-class FileLogger extends BaseLogger implements Logger {
-  private readonly logFilePath: string
-  private readonly errorLogFilePath: string
-
-  private async checkDirectory(dirPath: string) {
-    try {
-      await access(dirPath, constants.R_OK | constants.W_OK)
-    } catch (error: any) {
-      if (error?.code === 'ENOENT') {
-        await mkdir(dirPath, { recursive: true })
-        return
-      }
-
-      console.error(
-        `Error al verificar o crear el directorio ${dirPath}:`,
-        error
-      )
-
-      if (error instanceof Error) {
-        throw error
-      }
-    }
-  }
-
-  constructor(logFileName: string, errorLogFileName: string) {
-    super()
-
-    const logsDir = path.join(process.cwd(), 'logs/')
-
-    this.checkDirectory(logsDir)
-      .then()
-      .catch((error: unknown) => {
-        if (error instanceof Error) {
-          throw error
-        }
-
-        console.error(error)
-        throw new Error('Unexpected error')
-      })
-
-    this.logFilePath = path.join(logsDir, logFileName)
-    this.errorLogFilePath = path.join(logsDir, errorLogFileName)
-  }
-
-  private writeLog(
-    level: LogLevel,
-    message: string,
-    meta: any[],
-    filePath: string
-  ) {
-    const logMessage = this.formatLog(level, message, meta)
-    fs.appendFile(filePath, logMessage, { encoding: 'utf-8' }, (err) => {
-      if (err != null) {
-        console.error("Couldn't save the log to file:", err)
-      }
+  constructor(options?: pino.LoggerOptions) {
+    this.logger = pino({
+      level: envs.LOG_LEVEL,
+      transport:
+        envs.NODE_ENV === 'development'
+          ? {
+              target: 'pino-pretty',
+              options: {
+                colorize: true,
+                translateTime: 'HH:MM:ss Z',
+                ignore: 'pid,hostname'
+              }
+            }
+          : undefined,
+      ...options
     })
   }
 
-  debug(message: string, ...meta: any[]): void {
-    this.writeLog(LogLevel.DEBUG, message, meta, this.logFilePath)
+  private formatMessage(message: Message): {
+    msg: string
+    context?: Record<string, unknown>
+  } {
+    if (typeof message === 'string') {
+      return { msg: message }
+    }
+    return { msg: message.message, context: message.context }
   }
 
-  info(message: string, ...meta: any[]): void {
-    this.writeLog(LogLevel.INFO, message, meta, this.logFilePath)
+  debug(message: Message): void {
+    const { msg, context } = this.formatMessage(message)
+    this.logger.debug(context, msg)
   }
 
-  warn(message: string, ...meta: any[]): void {
-    this.writeLog(LogLevel.WARN, message, meta, this.logFilePath)
+  info(message: Message): void {
+    const { msg, context } = this.formatMessage(message)
+    this.logger.info(context, msg)
   }
 
-  error(message: string, ...meta: any[]): void {
-    this.writeLog(LogLevel.ERROR, message, meta, this.errorLogFilePath)
+  warn(message: Message): void {
+    const { msg, context } = this.formatMessage(message)
+    this.logger.warn(context, msg)
   }
 
-  fatal(message: string, ...meta: any[]): void {
-    this.writeLog(LogLevel.FATAL, message, meta, this.errorLogFilePath)
+  error(message: Message): void {
+    const { msg, context } = this.formatMessage(message)
+    this.logger.error(context, msg)
+  }
+
+  fatal(message: Message): void {
+    const { msg, context } = this.formatMessage(message)
+    this.logger.fatal(context, msg)
+  }
+
+  getPinoInstance(): Logger {
+    return this.logger
   }
 }
 
-const createLogger = (type: string): Logger => {
-  if (type === logsDestination.filesystem) {
-    return new FileLogger('app.log', 'errors.log')
-  }
-
-  return new ConsoleLogger()
-}
-
-export const CustomLogger = createLogger(envs.LOGS)
+export const logger = new PinoLoggerAdapter()

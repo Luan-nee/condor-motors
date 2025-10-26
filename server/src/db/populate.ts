@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { BcryptAdapter } from '@/config/bcrypt'
 import { JwtAdapter } from '@/config/jwt'
 import { db } from '@db/connection'
@@ -28,6 +27,7 @@ import {
   vendedorPermisssions
 } from '@db/config/populate.config'
 import { formatCode } from '@/core/lib/format-values'
+import { logger } from '@/config/logger'
 
 const populateDatabase = async (
   config: PopulateConfig,
@@ -149,11 +149,19 @@ const permissions = adminPermissions
 
 populateDatabase(populateConfig, permissions)
   .then((administrador) => {
-    console.log('Database has been initialized correctly!')
-    console.log('user credentials:', administrador)
+    logger.info('Database has been initialized correctly!')
+    logger.info({
+      message: 'user credentials:',
+      context: {
+        administrador
+      }
+    })
     exit()
   })
   .catch((error: unknown) => {
-    console.error(error)
+    logger.error({
+      message: 'Unexpected error',
+      context: { error }
+    })
     exit(1)
   })

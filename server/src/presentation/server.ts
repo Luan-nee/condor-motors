@@ -1,10 +1,10 @@
-/* eslint-disable no-console */
 import { ErrorMiddleware } from '@presentation/middlewares/error.middleware'
 import express, { type Router } from 'express'
 import { CookieMiddleware } from './middlewares/cookie-parser.middleware'
 import { LoggerMiddleware } from './middlewares/logger.middleware'
 import { CorsMiddleware } from './middlewares/cors.middleware'
 import { access, constants, mkdir } from 'node:fs/promises'
+import { logger } from '@/config/logger'
 
 interface ServerOptions {
   host?: string
@@ -47,10 +47,10 @@ export class Server {
         return
       }
 
-      console.error(
-        `Error al verificar o crear el directorio ${dirPath}:`,
-        error
-      )
+      logger.error({
+        message: `Error al verificar o crear el directorio ${dirPath}:`,
+        context: { error }
+      })
 
       if (error instanceof Error) {
         throw error
@@ -64,6 +64,8 @@ export class Server {
   }
 
   start() {
+    const start = process.hrtime.bigint()
+
     this.app.use(express.json())
     this.app.disable('x-powered-by')
     this.app.use(CookieMiddleware.requests)
@@ -74,10 +76,6 @@ export class Server {
 
     this.app.use(ErrorMiddleware.requests)
 
-    this.app.listen(this.port, this.host, () => {
-      console.log(`Server running on port: http://${this.host}:${this.port}`)
-    })
-
     this.setupStorage()
       .then()
       .catch((error: unknown) => {
@@ -85,8 +83,21 @@ export class Server {
           throw error
         }
 
-        console.error(error)
+        logger.error({
+          message: 'Unexpected error',
+          context: { error }
+        })
         throw new Error('Unexpected error')
       })
+
+    this.app.listen(this.port, this.host, () => {
+      const end = process.hrtime.bigint()
+      const duration = Number(end - start) / 1_000_000
+
+      logger.info({
+        message: `Server running on port: http://${this.host}:${this.port}`,
+        context: { duration }
+      })
+    })
   }
 }
