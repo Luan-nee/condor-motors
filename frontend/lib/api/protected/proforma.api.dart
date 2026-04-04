@@ -24,7 +24,7 @@ class DetalleProforma {
   factory DetalleProforma.fromJson(Map<String, dynamic> json) {
     // Mostrar los datos en la consola para depuración
     Logger.debug(
-        '🧾 [ProformaApi] Procesando DetalleProforma: ${json.toString()}');
+        '[ProformaApi] Procesando DetalleProforma: ${json.toString()}');
 
     // Procesar la cantidad según la disponibilidad de campos
     int cantidad = 0;
@@ -34,7 +34,7 @@ class DetalleProforma {
       cantidad = (json['cantidadTotal'] is int)
           ? json['cantidadTotal']
           : int.tryParse(json['cantidadTotal'].toString()) ?? 0;
-      Logger.debug('🧾 Usando cantidadTotal: $cantidad');
+      Logger.debug('Usando cantidadTotal: $cantidad');
     }
     // Si no existe, verificar cantidadPagada
     else if (json.containsKey('cantidadPagada') &&
@@ -42,14 +42,14 @@ class DetalleProforma {
       cantidad = (json['cantidadPagada'] is int)
           ? json['cantidadPagada']
           : int.tryParse(json['cantidadPagada'].toString()) ?? 0;
-      Logger.debug('🧾 Usando cantidadPagada: $cantidad');
+      Logger.debug('Usando cantidadPagada: $cantidad');
     }
     // En último caso, usar cantidad tradicional
     else if (json.containsKey('cantidad') && json['cantidad'] != null) {
       cantidad = (json['cantidad'] is int)
           ? json['cantidad']
           : int.tryParse(json['cantidad'].toString()) ?? 0;
-      Logger.debug('🧾 Usando cantidad: $cantidad');
+      Logger.debug('Usando cantidad: $cantidad');
     }
 
     // Procesar el precio unitario y el subtotal
@@ -84,7 +84,7 @@ class DetalleProforma {
 
     if (cantidadGratis != null && cantidadGratis > 0) {
       Logger.debug(
-          '🎁 Producto con unidades gratis: ${json['nombre']} - $cantidadGratis unidades');
+          'Producto con unidades gratis: ${json['nombre']} - $cantidadGratis unidades');
     }
 
     return DetalleProforma(
@@ -263,7 +263,7 @@ class ProformaVentaApi {
       // Guardar en caché
       if (useCache) {
         _cache.set(cacheKey, response);
-        logCache('💾 Guardadas proformas en caché para sucursal $sucursalId');
+        logCache('Guardadas proformas en caché para sucursal $sucursalId');
       }
 
       return response;
@@ -348,7 +348,7 @@ class ProformaVentaApi {
       if (useCache) {
         _cache.set(cacheKey, response);
         logCache(
-            '💾 [ProformaVentaApi] Guardada proforma en caché: $sucursalId/$proformaId');
+            '[ProformaVentaApi] Guardada proforma en caché: $sucursalId/$proformaId');
       }
 
       return response;

@@ -893,7 +893,6 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
               const CircularProgressIndicator(
                 strokeWidth: 2,
                 color: AppTheme.primaryColor,
-                value: null, // Indeterminado
               ),
               const SizedBox(height: 4),
               Text(

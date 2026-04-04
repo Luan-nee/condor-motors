@@ -903,7 +903,7 @@ class _TransferenciaFormListColabState
         });
       });
 
-      debugPrint('📦 Productos cargados:');
+      debugPrint('Productos cargados:');
       debugPrint('- Stock bajo: ${_productosBajoStock.length}');
       debugPrint('- Normales: ${_productosNormales.length}');
       debugPrint('- Filtros aplicados: $filtros');

@@ -74,9 +74,9 @@ class StockRepository implements BaseRepository {
     String? sortBy,
   }) async {
     try {
-      debugPrint('🌐 [StockRepository] Solicitando productos con stock bajo');
+      debugPrint('[StockRepository] Solicitando productos con stock bajo');
       debugPrint(
-          '🌐 Parámetros: sucursalId=$sucursalId, page=$page, pageSize=$pageSize, sortBy=$sortBy');
+          'Parámetros: sucursalId=$sucursalId, page=$page, pageSize=$pageSize, sortBy=$sortBy');
 
       // Usar el endpoint con stockBajo=true
       return await _productosApi.getProductos(
@@ -106,9 +106,9 @@ class StockRepository implements BaseRepository {
     String? sortBy,
   }) async {
     try {
-      debugPrint('🌐 [StockRepository] Solicitando productos agotados');
+      debugPrint('[StockRepository] Solicitando productos agotados');
       debugPrint(
-          '🌐 Parámetros: sucursalId=$sucursalId, page=$page, pageSize=$pageSize, sortBy=$sortBy');
+          'Parámetros: sucursalId=$sucursalId, page=$page, pageSize=$pageSize, sortBy=$sortBy');
 
       // Usar el endpoint con stock=0
       return await _productosApi.getProductos(
@@ -138,9 +138,9 @@ class StockRepository implements BaseRepository {
     String? sortBy,
   }) async {
     try {
-      debugPrint('🌐 [StockRepository] Solicitando productos disponibles');
+      debugPrint('[StockRepository] Solicitando productos disponibles');
       debugPrint(
-          '🌐 Parámetros: sucursalId=$sucursalId, page=$page, pageSize=$pageSize, sortBy=$sortBy');
+          'Parámetros: sucursalId=$sucursalId, page=$page, pageSize=$pageSize, sortBy=$sortBy');
 
       // Usar el endpoint con stock>=1 para obtener todos los productos con al menos 1 unidad
       return await _productosApi.getProductos(
@@ -179,9 +179,9 @@ class StockRepository implements BaseRepository {
     bool forceRefresh = false,
   }) async {
     try {
-      debugPrint('🌐 [StockRepository] Solicitando productos');
+      debugPrint('[StockRepository] Solicitando productos');
       debugPrint(
-          '🌐 Parámetros: sucursalId=$sucursalId, page=$page, pageSize=$pageSize, search=$search, sortBy=$sortBy, order=$order, stockBajo=$stockBajo, stock=$stock');
+          'Parámetros: sucursalId=$sucursalId, page=$page, pageSize=$pageSize, search=$search, sortBy=$sortBy, order=$order, stockBajo=$stockBajo, stock=$stock');
 
       return await _productosApi.getProductos(
         sucursalId: sucursalId,
@@ -231,7 +231,7 @@ class StockRepository implements BaseRepository {
   /// Método para invalidar la caché de productos
   void invalidateCache(String? sucursalId) {
     debugPrint(
-        '🌐 [StockRepository] Invalidando caché para sucursal: $sucursalId');
+        '[StockRepository] Invalidando caché para sucursal: $sucursalId');
     _productosApi.invalidateCache(sucursalId);
   }
 
@@ -412,8 +412,8 @@ class StockRepository implements BaseRepository {
         'filterType': filterType,
       };
 
-      debugPrint('🌐 [StockRepository] Solicitando productos por stock');
-      debugPrint('🌐 Filtro de stock: $stock');
+      debugPrint('[StockRepository] Solicitando productos por stock');
+      debugPrint('Filtro de stock: $stock');
 
       // Usar el método general de obtención de productos con el filtro de stock
       return await getProductos(

@@ -311,7 +311,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
 
   // Nuevo método para verificar y agregar producto
   void _agregarProductoConVerificacion(Producto producto) {
-    debugPrint('🛒 Intentando agregar producto: ${producto.nombre}');
+    debugPrint('Intentando agregar producto: ${producto.nombre}');
 
     // Verificar stock disponible
     final int stockDisponible = producto.stock;
@@ -1113,7 +1113,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
                                   ? null
                                   : () {
                                       provider.limpiarVenta();
-                                      debugPrint('🧹 Carrito limpiado');
+                                      debugPrint('Carrito limpiado');
                                     },
                             ),
                           ),

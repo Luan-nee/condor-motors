@@ -60,7 +60,7 @@ class DashboardComputerProvider extends ChangeNotifier {
         throw Exception('No se encontraron datos del usuario autenticado');
       }
 
-      debugPrint('👤 Datos de usuario obtenidos: ${userData.toString()}');
+      debugPrint('Datos de usuario obtenidos: ${userData.toString()}');
 
       // Extraer ID de sucursal del usuario y convertirlo a int
       final dynamic rawSucursalId = userData['sucursalId'];
@@ -92,7 +92,7 @@ class DashboardComputerProvider extends ChangeNotifier {
       }
 
       debugPrint(
-          '🏢 Sucursal configurada: $_nombreSucursal (ID: $_sucursalId)');
+          'Sucursal configurada: $_nombreSucursal (ID: $_sucursalId)');
 
       // Cargar datos iniciales
       await cargarDatos();

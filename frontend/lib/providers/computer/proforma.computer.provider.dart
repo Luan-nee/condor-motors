@@ -369,7 +369,7 @@ class ProformaComputerProvider extends ChangeNotifier {
       String? pdfUrl;
       if (_ventasProvider.imprimirFormatoTicket) {
         pdfUrl = ventaCompleta.documentoFacturacion!.linkPdfTicket;
-        Logger.debug('🎫 Usando formato ticket para impresión');
+        Logger.debug('Usando formato ticket para impresión');
       } else {
         pdfUrl = ventaCompleta.documentoFacturacion!.linkPdfA4;
         Logger.debug('Usando formato A4 para impresión');
@@ -600,7 +600,7 @@ class ProformaComputerProvider extends ChangeNotifier {
 
     if (proformasNuevas.isNotEmpty) {
       Logger.info(
-          '🔔 Se detectaron ${proformasNuevas.length} nuevas proformas en tiempo real!');
+          'Se detectaron ${proformasNuevas.length} nuevas proformas en tiempo real!');
 
       // Mostrar notificación para cada nueva proforma
       for (var id in proformasNuevas) {
@@ -634,7 +634,7 @@ class ProformaComputerProvider extends ChangeNotifier {
           proforma.getNombreCliente(),
         );
         Logger.info(
-            '🔔 Notificación enviada para nueva proforma #${proforma.id}');
+            'Notificación enviada para nueva proforma #${proforma.id}');
       }
     } catch (e) {
       Logger.error('Error al enviar notificación: $e');

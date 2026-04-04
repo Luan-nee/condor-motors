@@ -337,7 +337,7 @@ class VentasComputerProvider extends ChangeNotifier {
         throw Exception('No se encontraron datos del usuario autenticado');
       }
 
-      debugPrint('👤 Datos de usuario obtenidos: ${userData.toString()}');
+      debugPrint('Datos de usuario obtenidos: ${userData.toString()}');
 
       // Extraer ID de sucursal del usuario
       final sucursalId = userData['sucursalId'];
@@ -345,7 +345,7 @@ class VentasComputerProvider extends ChangeNotifier {
         throw Exception('El usuario no tiene una sucursal asignada');
       }
 
-      debugPrint('🏢 ID de sucursal del usuario: $sucursalId');
+      debugPrint('ID de sucursal del usuario: $sucursalId');
 
       // Establecer la sucursal del usuario
       await establecerSucursalPorId(sucursalId);

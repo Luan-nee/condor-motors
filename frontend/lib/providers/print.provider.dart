@@ -592,7 +592,7 @@ Procesando impresión:
       }
       final Uint8List bytes = Uint8List.fromList(bytesBuilder);
 
-      debugPrint('📥 PDF descargado: ${bytes.length} bytes');
+      debugPrint('PDF descargado: ${bytes.length} bytes');
 
       // Cerrar el cliente HTTP
       httpClient.close();

@@ -1142,7 +1142,7 @@ URL: $localPdfLink
                     }
 
                     debugPrint(
-                        '📋 Resultado impresión: ${result ? "Exitoso" : "Fallido"}');
+                        'Resultado impresión: ${result ? "Exitoso" : "Fallido"}');
                   } catch (e) {
                     debugPrint('Error durante impresión: $e');
 

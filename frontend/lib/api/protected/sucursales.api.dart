@@ -82,7 +82,7 @@ class SucursalesApi {
       // Guardar en caché
       if (useCache) {
         _cache.set(cacheKey, sucursal);
-        logCache('💾 Guardados datos de sucursal en caché: $sucursalId');
+        logCache('Guardados datos de sucursal en caché: $sucursalId');
       }
 
       return sucursal;
@@ -189,7 +189,7 @@ class SucursalesApi {
       // Guardar en caché
       if (useCache) {
         _cache.set(cacheKey, proformas);
-        logCache('💾 Guardadas proformas en caché para sucursal $sucursalId');
+        logCache('Guardadas proformas en caché para sucursal $sucursalId');
       }
 
       return proformas;
@@ -294,7 +294,7 @@ class SucursalesApi {
       if (useCache) {
         _cache.set(cacheKey, notificaciones);
         logCache(
-            '💾 Guardadas notificaciones en caché para sucursal $sucursalId');
+            'Guardadas notificaciones en caché para sucursal $sucursalId');
       }
 
       return notificaciones;

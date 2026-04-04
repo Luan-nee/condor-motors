@@ -49,7 +49,7 @@ class ProformaNotification {
 
         if (initialized) {
           Logger.info(
-              '🔔 Sistema de notificaciones para proformas inicializado correctamente');
+              'Sistema de notificaciones para proformas inicializado correctamente');
         } else {
           Logger.warn('No se pudo inicializar el sistema de notificaciones');
           _notificationsEnabled = false;
@@ -113,12 +113,12 @@ class ProformaNotification {
   bool _puedeNotificar(int proformaId, {bool aplicarLimitacion = true}) {
     if (_fueNotificadaRecientemente(proformaId)) {
       Logger.debug(
-          '🔔 Notificación duplicada omitida para proforma #$proformaId');
+          'Notificación duplicada omitida para proforma #$proformaId');
       return false;
     }
     if (aplicarLimitacion && _deberiaLimitarNotificaciones()) {
       Logger.debug(
-          '🔔 Notificación limitada por frecuencia para proforma #$proformaId');
+          'Notificación limitada por frecuencia para proforma #$proformaId');
       return false;
     }
     return true;
@@ -139,7 +139,7 @@ class ProformaNotification {
         tag: '$tagPrefix${proforma.id}',
       );
       _registrarProformaNotificada(proforma.id);
-      Logger.info('🔔 Notificación enviada: $logMessage #${proforma.id}');
+      Logger.info('Notificación enviada: $logMessage #${proforma.id}');
     } catch (e) {
       Logger.error(
           'Error al mostrar notificación ($logMessage #${proforma.id}): $e');
@@ -203,7 +203,7 @@ class ProformaNotification {
   void limpiarHistorialNotificaciones() {
     _recentlyNotifiedProformaIds.clear();
     _lastNotificationTime = null;
-    Logger.debug('🧹 Historial de notificaciones limpiado');
+    Logger.debug('Historial de notificaciones limpiado');
   }
 
   /// Muestra una notificación en Windows usando win_toast
@@ -240,7 +240,7 @@ class ProformaNotification {
       // Mostrar notificación usando el método de XML personalizado
       await WinToast.instance().showCustomToast(xml: xmlContent);
 
-      Logger.debug('🔔 Notificación Windows mostrada: $title');
+      Logger.debug('Notificación Windows mostrada: $title');
     } catch (e) {
       Logger.error('Error interno mostrando notificación de Windows: $e');
       throw Exception('Error al mostrar la notificación de Windows: $e');

@@ -39,7 +39,7 @@ class ClienteRepository {
   /// Crea un nuevo cliente
   Future<Cliente> crearCliente(Map<String, dynamic> clienteData) async {
     try {
-      debugPrint('➕ Creando nuevo cliente: ${clienteData['denominacion']}');
+      debugPrint('Creando nuevo cliente: ${clienteData['denominacion']}');
       return await _api.createCliente(clienteData);
     } catch (e) {
       debugPrint('Error al crear cliente: $e');
