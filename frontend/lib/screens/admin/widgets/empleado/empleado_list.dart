@@ -388,7 +388,8 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                                 ? Colors.amber
                                 : const Color(0xFFB9FF3A)),
                       ),
-                                              onPressed: () => widget.onEditCuenta?.call(widget.empleado),
+                      onPressed: () =>
+                          widget.onEditCuenta?.call(widget.empleado),
                       tooltip: widget.empleado.cuentaEmpleadoUsuario != null
                           ? 'Editar cuenta de usuario'
                           : 'Crear cuenta de usuario',

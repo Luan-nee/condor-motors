@@ -67,10 +67,8 @@ class VentasPendientesUtils {
         _procesarProductosProforma(proforma);
 
     // Incluir información sobre promociones en la proforma
-    final List<model_proforma.DetalleProforma> detallesConPromociones = proforma
-        .detalles
-        .where(tienePromocion)
-        .toList();
+    final List<model_proforma.DetalleProforma> detallesConPromociones =
+        proforma.detalles.where(tienePromocion).toList();
 
     // Generar un resumen de promociones para mostrar en la UI
     final Map<String, dynamic> promociones = <String, dynamic>{

@@ -263,8 +263,7 @@ class TransferenciaCompararColab extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         // Lista de productos
-        ...comparacion.productos
-            .map(_buildProductoItem),
+        ...comparacion.productos.map(_buildProductoItem),
       ],
     );
   }

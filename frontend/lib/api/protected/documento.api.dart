@@ -243,8 +243,7 @@ class DocumentoApi {
 
   /// Obtiene el ID para el tipo de documento según su nombre
   /// [tipoDocumento] - Nombre del tipo de documento ('BOLETA' o 'FACTURA')
-  Future<int> getTipoDocumentoId(
-      String sucursalId, String tipoDocumento) {
+  Future<int> getTipoDocumentoId(String sucursalId, String tipoDocumento) {
     if (tipoDocumento.toUpperCase() == 'BOLETA') {
       return getBoletaId(sucursalId);
     } else if (tipoDocumento.toUpperCase() == 'FACTURA') {

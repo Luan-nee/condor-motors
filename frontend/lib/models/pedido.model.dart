@@ -73,7 +73,16 @@ class PedidoExclusivo extends Equatable {
   final DateTime? fechaActualizacion;
 
   const PedidoExclusivo({
-    required this.descripcion, required this.detallesReserva, required this.montoAdelantado, required this.fechaRecojo, required this.denominacion, required this.clienteId, required this.sucursalId, required this.nombre, required this.fechaCreacion, this.id,
+    required this.descripcion,
+    required this.detallesReserva,
+    required this.montoAdelantado,
+    required this.fechaRecojo,
+    required this.denominacion,
+    required this.clienteId,
+    required this.sucursalId,
+    required this.nombre,
+    required this.fechaCreacion,
+    this.id,
     this.fechaActualizacion,
   });
 

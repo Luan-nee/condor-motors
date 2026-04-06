@@ -4,15 +4,18 @@ import 'package:flutter/foundation.dart';
 /// Servicio para manejar la transferencia de ventas entre el colaborador y la computadora
 class VentasTransferService {
   // Singleton pattern
-  static final VentasTransferService _instance = VentasTransferService._internal();
+  static final VentasTransferService _instance =
+      VentasTransferService._internal();
   factory VentasTransferService() => _instance;
   VentasTransferService._internal();
 
   // Stream controller para las ventas pendientes
-  final StreamController<Map<String, dynamic>> _ventasPendientesController = StreamController<Map<String, dynamic>>.broadcast();
+  final StreamController<Map<String, dynamic>> _ventasPendientesController =
+      StreamController<Map<String, dynamic>>.broadcast();
 
   // Stream para escuchar las ventas pendientes
-  Stream<Map<String, dynamic>> get ventasPendientes => _ventasPendientesController.stream;
+  Stream<Map<String, dynamic>> get ventasPendientes =>
+      _ventasPendientesController.stream;
 
   // Método para enviar una venta a la computadora
   Future<bool> enviarVentaAComputadora(Map<String, dynamic> ventaData) async {
@@ -26,13 +29,13 @@ class VentasTransferService {
 
       // En un entorno real, aquí se implementaría la lógica para enviar los datos
       // a través de WebSockets, API REST, o algún otro método de comunicación
-      
+
       // Para fines de demostración, simplemente emitimos la venta en el stream
       _ventasPendientesController.add(ventaConId);
-      
+
       // Guardar la venta en almacenamiento local para persistencia
       await _guardarVentaPendiente(ventaConId);
-      
+
       return true;
     } catch (e) {
       debugPrint('Error al enviar venta a computadora: $e');
@@ -44,7 +47,7 @@ class VentasTransferService {
   Future<List<Map<String, dynamic>>> obtenerVentasPendientes() async {
     // En un entorno real, aquí se implementaría la lógica para obtener las ventas pendientes
     // desde un almacenamiento local o remoto
-    
+
     // Para fines de demostración, retornamos una lista vacía
     return <Map<String, dynamic>>[];
   }
@@ -54,7 +57,7 @@ class VentasTransferService {
     try {
       // En un entorno real, aquí se implementaría la lógica para marcar la venta como procesada
       // en un almacenamiento local o remoto
-      
+
       return true;
     } catch (e) {
       debugPrint('Error al marcar venta como procesada: $e');
@@ -72,4 +75,4 @@ class VentasTransferService {
   void dispose() {
     _ventasPendientesController.close();
   }
-} 
+}

@@ -1,10 +1,10 @@
 import 'package:condorsmotors/models/estadisticas.model.dart';
-import 'package:condorsmotors/providers/admin/dashboard.admin.provider.dart';
+import 'package:condorsmotors/providers/admin/dashboard.admin.riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 
 // Un modelo básico para el widget de estadísticas del Dashboard
 class DashboardItemInfo {
@@ -23,15 +23,15 @@ class DashboardItemInfo {
   });
 }
 
-class DashboardAdminScreen extends StatefulWidget {
+class DashboardAdminScreen extends ConsumerStatefulWidget {
   const DashboardAdminScreen({super.key});
 
   @override
-  State<DashboardAdminScreen> createState() => _DashboardAdminScreenState();
+  ConsumerState<DashboardAdminScreen> createState() =>
+      _DashboardAdminScreenState();
 }
 
-class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
-  late DashboardProvider _dashboardProvider;
+class _DashboardAdminScreenState extends ConsumerState<DashboardAdminScreen> {
   bool _isInitialized = false;
   final NumberFormat _formatoMoneda = NumberFormat.currency(
     locale: 'es_PE',
@@ -42,19 +42,15 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   @override
   void initState() {
     super.initState();
-    debugPrint('[DashboardAdminScreen] initState');
-    _dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    debugPrint('[DashboardAdminScreen] didChangeDependencies');
     if (!_isInitialized) {
       // Usar addPostFrameCallback para evitar errores de "setState during build"
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          debugPrint('[DashboardAdminScreen] Llamando _initializeData');
           _initializeData();
         }
       });
@@ -63,87 +59,78 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   }
 
   Future<void> _initializeData() async {
-    debugPrint('[DashboardAdminScreen] _initializeData INICIO');
-    await _dashboardProvider.inicializar();
-    debugPrint('[DashboardAdminScreen] _initializeData FIN');
+    await ref.read(dashboardAdminProvider.notifier).inicializar();
   }
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('[DashboardAdminScreen] build ejecutado');
-    return Selector<DashboardProvider, bool>(
-      selector: (context, provider) => provider.isLoading,
-      builder: (context, isLoading, child) {
-        debugPrint(
-            '[DashboardAdminScreen] Selector ejecutado, isLoading: $isLoading');
-        final dashboardProvider =
-            Provider.of<DashboardProvider>(context, listen: false);
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text(
-              'Dashboard de Administración',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            backgroundColor: const Color(0xFF222222),
-            actions: <Widget>[
-              IconButton(
-                icon: const FaIcon(FontAwesomeIcons.rotate),
-                onPressed: dashboardProvider.recargarDatos,
-                tooltip: 'Recargar datos',
-              ),
-              const SizedBox(width: 8),
-            ],
+    final isLoading =
+        ref.watch(dashboardAdminProvider.select((s) => s.isLoading));
+    final state = ref.watch(dashboardAdminProvider);
+    final notifier = ref.read(dashboardAdminProvider.notifier);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Dashboard de Administración',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: const Color(0xFF222222),
+        actions: <Widget>[
+          IconButton(
+            icon: const FaIcon(FontAwesomeIcons.rotate),
+            onPressed: notifier.recargarDatos,
+            tooltip: 'Recargar datos',
           ),
-          body: isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(
-                    color: Color(0xFFE31E24),
-                  ),
-                )
-              : ColoredBox(
-                  color: const Color(0xFF111111),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFFE31E24),
+              ),
+            )
+          : ColoredBox(
+              color: const Color(0xFF111111),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSummaryCards(state),
+                    const SizedBox(height: 24),
+                    _buildCharts(state),
+                    const SizedBox(height: 24),
+                    Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildSummaryCards(dashboardProvider),
-                        const SizedBox(height: 24),
-                        _buildCharts(dashboardProvider),
-                        const SizedBox(height: 24),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: _buildRecentSales(dashboardProvider),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: _buildStockBajoSection(dashboardProvider),
-                            ),
-                          ],
+                        Expanded(
+                          child: _buildRecentSales(state),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildStockBajoSection(state),
                         ),
                       ],
                     ),
-                  ),
+                  ],
                 ),
-        );
-      },
+              ),
+            ),
     );
   }
 
-  Widget _buildSummaryCards(DashboardProvider provider) {
-    debugPrint('[DashboardAdminScreen] _buildSummaryCards ejecutado');
+  Widget _buildSummaryCards(DashboardAdminState state) {
     // Obtener valores de ventas desde el provider
     final ventasHoy =
-        provider.resumenEstadisticas?.ventas.getVentasValue('hoy') ?? 0;
+        state.resumenEstadisticas?.ventas.getVentasValue('hoy') ?? 0;
     final ventasEsteMes =
-        provider.resumenEstadisticas?.ventas.getVentasValue('esteMes') ?? 0;
+        state.resumenEstadisticas?.ventas.getVentasValue('esteMes') ?? 0;
     final totalVentasHoy =
-        provider.resumenEstadisticas?.ventas.getTotalVentasValue('hoy') ?? 0;
+        state.resumenEstadisticas?.ventas.getTotalVentasValue('hoy') ?? 0;
     final totalVentasEsteMes =
-        provider.resumenEstadisticas?.ventas.getTotalVentasValue('esteMes') ??
-            0;
+        state.resumenEstadisticas?.ventas.getTotalVentasValue('esteMes') ?? 0;
 
     return Row(
       children: [
@@ -183,7 +170,6 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   }
 
   Widget _buildSummaryCard(String title, String value, Widget icon) {
-    debugPrint('[DashboardAdminScreen] _buildSummaryCard ejecutado: $title');
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -223,8 +209,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
     );
   }
 
-  Widget _buildCharts(DashboardProvider provider) {
-    debugPrint('[DashboardAdminScreen] _buildCharts ejecutado');
+  Widget _buildCharts(DashboardAdminState state) {
     final titlesData = FlTitlesData(
       leftTitles: AxisTitles(
         sideTitles: SideTitles(
@@ -254,7 +239,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
         sideTitles: SideTitles(
           showTitles: true,
           getTitlesWidget: (value, meta) =>
-              _getBottomTitles(value, meta, provider),
+              _getBottomTitles(value, meta, state),
         ),
       ),
     );
@@ -292,7 +277,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
           const SizedBox(height: 20),
           SizedBox(
             height: 300,
-            child: (provider.resumenEstadisticas?.ventas.sucursales.isEmpty ??
+            child: (state.resumenEstadisticas?.ventas.sucursales.isEmpty ??
                     true)
                 ? const Center(
                     child: Text(
@@ -303,13 +288,13 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                 : BarChart(
                     BarChartData(
                       alignment: BarChartAlignment.spaceAround,
-                      maxY: _getMaxChartValue(provider),
+                      maxY: _getMaxChartValue(state),
                       barTouchData: BarTouchData(
                         enabled: true,
                         touchTooltipData: BarTouchTooltipData(
                           getTooltipItem: (group, groupIndex, rod, rodIndex) {
                             final sucursalData =
-                                provider.resumenEstadisticas?.ventas.sucursales;
+                                state.resumenEstadisticas?.ventas.sucursales;
                             if (sucursalData == null ||
                                 sucursalData.isEmpty ||
                                 groupIndex >= sucursalData.length) {
@@ -348,7 +333,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                           ),
                         ),
                       ),
-                      barGroups: _createBarGroups(provider),
+                      barGroups: _createBarGroups(state),
                     ),
                   ),
           ),
@@ -357,9 +342,8 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
     );
   }
 
-  double _getMaxChartValue(DashboardProvider provider) {
-    final ventasSucursales =
-        provider.resumenEstadisticas?.ventas.sucursales ?? [];
+  double _getMaxChartValue(DashboardAdminState state) {
+    final ventasSucursales = state.resumenEstadisticas?.ventas.sucursales ?? [];
     if (ventasSucursales.isEmpty) {
       return 10; // Valor por defecto
     }
@@ -383,13 +367,13 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   }
 
   Widget _getBottomTitles(
-      double value, TitleMeta meta, DashboardProvider provider) {
+      double value, TitleMeta meta, DashboardAdminState state) {
     const style = TextStyle(
       color: Colors.grey,
       fontSize: 12,
     );
 
-    final sucursales = provider.resumenEstadisticas?.ventas.sucursales ?? [];
+    final sucursales = state.resumenEstadisticas?.ventas.sucursales ?? [];
     if (sucursales.isEmpty || value.toInt() >= sucursales.length) {
       return const SizedBox.shrink();
     }
@@ -406,14 +390,13 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
     );
   }
 
-  List<BarChartGroupData> _createBarGroups(DashboardProvider provider) {
+  List<BarChartGroupData> _createBarGroups(DashboardAdminState state) {
     // Obtener las sucursales con estadísticas de ventas desde el modelo
-    final ventasSucursales =
-        provider.resumenEstadisticas?.ventas.sucursales ?? [];
+    final ventasSucursales = state.resumenEstadisticas?.ventas.sucursales ?? [];
 
     // Si no hay datos, mostrar barras vacías para las sucursales disponibles
     if (ventasSucursales.isEmpty) {
-      return provider.sucursales.asMap().entries.map((entry) {
+      return state.sucursales.asMap().entries.map((entry) {
         final index = entry.key;
         return BarChartGroupData(
           x: index,
@@ -453,10 +436,9 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
     }).toList();
   }
 
-  Widget _buildStockBajoSection(DashboardProvider provider) {
-    debugPrint('[DashboardAdminScreen] _buildStockBajoSection ejecutado');
+  Widget _buildStockBajoSection(DashboardAdminState state) {
     // Verificar si tenemos datos de estadísticas
-    final estadisticasProductos = provider.resumenEstadisticas?.productos;
+    final estadisticasProductos = state.resumenEstadisticas?.productos;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -531,15 +513,14 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
             ],
           ),
           const SizedBox(height: 10),
-          _buildStockBajoContent(provider, estadisticasProductos),
+          _buildStockBajoContent(state, estadisticasProductos),
         ],
       ),
     );
   }
 
   Widget _buildStockBajoContent(
-      DashboardProvider provider, EstadisticasProductos? estadisticas) {
-    debugPrint('[DashboardAdminScreen] _buildStockBajoContent ejecutado');
+      DashboardAdminState state, EstadisticasProductos? estadisticas) {
     // Si tenemos datos de estadísticas, mostrar el resumen por sucursal
     if (estadisticas != null &&
         (estadisticas.stockBajo > 0 || estadisticas.liquidacion > 0) &&
@@ -576,7 +557,6 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
   }
 
   Widget _buildStockBajoSucursales(EstadisticasProductos estadisticas) {
-    debugPrint('[DashboardAdminScreen] _buildStockBajoSucursales ejecutado');
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: ConstrainedBox(
@@ -696,8 +676,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
     );
   }
 
-  Widget _buildRecentSales(DashboardProvider provider) {
-    debugPrint('[DashboardAdminScreen] _buildRecentSales ejecutado');
+  Widget _buildRecentSales(DashboardAdminState state) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -719,7 +698,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
           const SizedBox(height: 10),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            child: provider.ventasRecientes.isEmpty
+            child: state.ventasRecientes.isEmpty
                 ? const Center(
                     child: Padding(
                       padding: EdgeInsets.symmetric(vertical: 20.0),
@@ -762,7 +741,7 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                           ),
                         ),
                       ],
-                      rows: provider.ventasRecientes.take(5).map((venta) {
+                      rows: state.ventasRecientes.take(5).map((venta) {
                         return DataRow(
                           cells: [
                             DataCell(Text(

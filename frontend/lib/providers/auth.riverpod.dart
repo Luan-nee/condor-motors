@@ -1,23 +1,17 @@
-import 'dart:async';
+import 'dart:async'; // Analyzer trigger
 
 import 'package:condorsmotors/api/index.api.dart' as api_index;
 import 'package:condorsmotors/models/auth.model.dart';
 import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:condorsmotors/utils/secure_storage_utils.dart';
 import 'package:flutter/material.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class AuthProvider extends ChangeNotifier {
-  AuthState _state = AuthState.initial();
+part 'auth.riverpod.g.dart';
 
-  // Getters
-  AuthState get state => _state;
-  bool get isAuthenticated => _state.isAuthenticated;
-  bool get isLoading => _state.isLoading;
-  String? get error => _state.error;
-  AuthUser? get user => _state.user;
-  String? get token => _state.token;
-
+@Riverpod(keepAlive: true)
+class Auth extends _$Auth {
   // Flags para centralizar la verificación de sesión
   bool _isVerifying = false;
   bool _hasVerified = false;
@@ -29,97 +23,92 @@ class AuthProvider extends ChangeNotifier {
   bool get isInitializing => _isInitializing;
 
   // Flags y estado para auto-login
-  bool get isAutoLoggingIn => _state.isLoading;
+  bool get isAutoLoggingIn => state.isLoading;
 
-  AuthProvider() {
-    debugPrint('[AuthProvider] Constructor ejecutado');
-    _init();
+  bool get isAuthenticated => state.isAuthenticated;
+  bool get isLoading => state.isLoading;
+  String? get error => state.error;
+  AuthUser? get user => state.user;
+  String? get token => state.token;
+
+  @override
+  AuthState build() {
+    debugPrint('[Auth Riverpod] Constructor ejecutado');
+    // Como no podemos hacer llamadas asíncronas directamente en build() si retornamos de forma síncrona,
+    // disparamos _init() sin await y devolvemos el estado inicial.
+    Future.microtask(_init);
+    return AuthState.initial();
   }
 
   Future<void> _init() async {
     _isInitializing = true;
-    notifyListeners();
     try {
-      // Inicializaciones en paralelo (fácil de extender)
       final results = await Future.wait([
         api_index.AuthManager.getUserData(),
       ]);
       final userData = results[0];
       if (userData != null) {
-        _state = AuthState.authenticated(
+        state = AuthState.authenticated(
           AuthUser.fromJson(userData),
           userData['token'] ?? '',
         );
-        notifyListeners();
       }
     } catch (e) {
-      debugPrint('Error al inicializar AuthProvider: $e');
+      debugPrint('Error al inicializar Auth Riverpod: $e');
     } finally {
       _isInitializing = false;
-      notifyListeners();
     }
   }
 
   Future<bool> login(String username, String password,
       {bool saveAutoLogin = false}) async {
     try {
-      _state = AuthState.loading();
-      notifyListeners();
+      state = AuthState.loading();
 
-      // Usar AuthManager directamente
       final userData = await api_index.AuthManager.login(username, password,
           saveAutoLogin: saveAutoLogin);
 
       if (userData == null) {
-        _state = AuthState.error('Credenciales inválidas');
-        notifyListeners();
+        state = AuthState.error('Credenciales inválidas');
         return false;
       }
 
       final usuario = AuthUser.fromJson(userData);
-      _state = AuthState.authenticated(
+      state = AuthState.authenticated(
         usuario,
         userData['token'] ?? '',
       );
-      notifyListeners();
 
       return true;
     } catch (e) {
-      _state = AuthState.error(e.toString());
-      notifyListeners();
+      state = AuthState.error(e.toString());
       return false;
     }
   }
 
   Future<void> logout() async {
     try {
-      _state = AuthState.loading();
-      notifyListeners();
-
+      state = AuthState.loading();
       debugPrint('Iniciando proceso de cierre de sesión...');
 
-      // Usar AuthManager directamente
       await api_index.AuthManager.logout();
 
-      _state = AuthState.initial();
-      notifyListeners();
-
+      state = AuthState.initial();
       debugPrint('Sesión cerrada exitosamente');
-      resetSessionVerification(); // Limpiar flags al cerrar sesión
-      // Reinicializar para limpiar todo el estado y tokens
+
+      resetSessionVerification();
       await _init();
+
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('stay_logged_in', false);
     } catch (e) {
       debugPrint('Error durante proceso de logout: $e');
-      _state = AuthState.initial();
-      notifyListeners();
+      state = AuthState.initial();
       resetSessionVerification();
       await _init();
     }
   }
 
-  /// Centraliza el proceso de logout y navegación al login
   Future<void> logoutAndRedirectToLogin(BuildContext context,
       {String? errorMessage}) async {
     try {
@@ -150,7 +139,6 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> checkAuthStatus() async {
     try {
-      // Usar AuthManager directamente
       final userData = await api_index.AuthManager.getUserData();
       if (userData == null) {
         await logout();
@@ -161,30 +149,25 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // Actualizar datos del usuario
   void updateUserData(Map<String, dynamic> userData) {
-    if (_state.user != null) {
-      _state = _state.copyWith(
+    if (state.user != null) {
+      state = state.copyWith(
         user: AuthUser.fromJson(userData),
       );
-      notifyListeners();
     }
   }
 
-  // Verificar si el token está por expirar
   bool get isTokenExpiring {
-    if (_state.tokenExpiry == null) {
+    if (state.tokenExpiry == null) {
       return false;
     }
     final now = DateTime.now();
-    final difference = _state.tokenExpiry!.difference(now);
-    return difference.inMinutes < 5; // 5 minutos antes de expirar
+    final difference = state.tokenExpiry!.difference(now);
+    return difference.inMinutes < 5;
   }
 
-  // Refrescar token
   Future<void> refreshToken() async {
     try {
-      // Usar RefreshTokenManager directamente para evitar cadena innecesaria
       final success = await api_index.RefreshTokenManager.refreshToken(
         baseUrl: api_index.getCurrentBaseUrl(),
       );
@@ -199,33 +182,26 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // Guardar datos del usuario (si se requiere en la UI)
   Future<void> saveUserData(AuthUser usuario) async {
     try {
-      // Usar AuthManager directamente
       await api_index.AuthManager.saveUserData(usuario.toMap());
-      // Actualizar estado local si es necesario
-      _state = _state.copyWith(user: usuario);
-      notifyListeners();
+      state = state.copyWith(user: usuario);
     } catch (e) {
       debugPrint('Error al guardar datos de usuario: $e');
     }
   }
 
-  /// Verifica la sesión solo una vez por ciclo de arranque/cambio de servidor
-  /// Si ya está en curso, espera el resultado. Si ya se verificó, retorna el último resultado.
   Future<bool> verifySessionOnce() async {
     if (_hasVerified) {
       return _lastVerifyResult;
     }
     if (_isVerifying && _verifyCompleter != null) {
-      // Esperar a que termine la verificación en curso
       return _verifyCompleter!.future;
     }
+
     _isVerifying = true;
     _verifyCompleter = Completer<bool>();
     try {
-      // Usar AuthManager directamente
       final isValid = await api_index.AuthManager.verificarToken();
       _lastVerifyResult = isValid;
       _hasVerified = true;
@@ -245,7 +221,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // Resetear flags tras logout o cuando se requiera nueva verificación
   void resetSessionVerification() {
     _isVerifying = false;
     _hasVerified = false;
@@ -253,21 +228,13 @@ class AuthProvider extends ChangeNotifier {
     _verifyCompleter = null;
   }
 
-  /// Nuevo método determinista para auto-login
   Future<bool> autoLogin() async {
-    _state = AuthState.loading();
-    notifyListeners();
-
+    state = AuthState.loading();
     try {
       final prefs = await SharedPreferences.getInstance();
       final bool stayLoggedIn = prefs.getBool('stay_logged_in') ?? false;
-      debugPrint(
-          '[AuthProvider] autoLogin: Permanecer conectado está ${stayLoggedIn ? 'activado' : 'desactivado'}');
       if (!stayLoggedIn) {
-        debugPrint(
-            '[AuthProvider] autoLogin: No está activado "Permanecer conectado"');
-        _state = AuthState.initial();
-        notifyListeners();
+        state = AuthState.initial();
         return false;
       }
       final String? username = await SecureStorageUtils.read('username_auto');
@@ -276,44 +243,24 @@ class AuthProvider extends ChangeNotifier {
           password == null ||
           username.isEmpty ||
           password.isEmpty) {
-        debugPrint('[AuthProvider] autoLogin: No hay credenciales guardadas');
-        _state = AuthState.initial();
-        notifyListeners();
+        state = AuthState.initial();
         return false;
       }
-      debugPrint(
-          '[AuthProvider] autoLogin: Intentando iniciar sesión automáticamente con usuario: $username');
       final userData = await api_index.AuthManager.login(username, password);
       if (userData == null) {
         throw Exception('Credenciales inválidas');
       }
       final usuario = AuthUser.fromJson(userData);
-      _state = AuthState.authenticated(
-        usuario,
-        usuario.toMap()['token'] ?? '',
-      );
-      notifyListeners();
+      state = AuthState.authenticated(usuario, usuario.toMap()['token'] ?? '');
       try {
         await api_index.AuthManager.saveUserData(usuario.toMap());
-        debugPrint(
-            '[AuthProvider] autoLogin: Datos de usuario guardados correctamente en el servicio global');
       } catch (e) {
-        debugPrint(
-            '[AuthProvider] autoLogin: Error al guardar datos en el servicio global: $e');
+        debugPrint('[Auth Riverpod] Error al guardar datos: $e');
       }
       return true;
     } catch (e) {
-      debugPrint(
-          '[AuthProvider] autoLogin: Error durante el inicio de sesión automático: $e');
-      _state = AuthState.error(e.toString());
-      notifyListeners();
+      state = AuthState.error(e.toString());
       rethrow;
     }
-  }
-
-  @override
-  void notifyListeners() {
-    debugPrint('[AuthProvider] notifyListeners() llamado');
-    super.notifyListeners();
   }
 }

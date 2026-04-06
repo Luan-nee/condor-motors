@@ -1,11 +1,10 @@
-import 'package:condorsmotors/providers/computer/ventas.computer.provider.dart';
-import 'package:condorsmotors/providers/print.provider.dart';
+import 'package:condorsmotors/providers/print.riverpod.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:provider/provider.dart';
 
-class SettingsComputerScreen extends StatefulWidget {
+class SettingsComputerScreen extends ConsumerStatefulWidget {
   final int? sucursalId;
   final String nombreSucursal;
 
@@ -16,7 +15,8 @@ class SettingsComputerScreen extends StatefulWidget {
   });
 
   @override
-  State<SettingsComputerScreen> createState() => _SettingsComputerScreenState();
+  ConsumerState<SettingsComputerScreen> createState() =>
+      _SettingsComputerScreenState();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
@@ -27,44 +27,32 @@ class SettingsComputerScreen extends StatefulWidget {
   }
 }
 
-class _SettingsComputerScreenState extends State<SettingsComputerScreen> {
-  late VentasComputerProvider _ventasProvider;
-
+class _SettingsComputerScreenState
+    extends ConsumerState<SettingsComputerScreen> {
   @override
   void initState() {
     super.initState();
-    _ventasProvider =
-        Provider.of<VentasComputerProvider>(context, listen: false);
-    _cargarConfiguracion();
-  }
-
-  Future<void> _cargarConfiguracion() async {
-    await _ventasProvider.cargarConfiguracionImpresion();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Consumer<VentasComputerProvider>(
-        builder: (context, ventasProvider, child) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildImpresionSettings(),
-                    ],
-                  ),
-                ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader(),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildImpresionSettings(),
+                ],
               ),
-            ],
-          );
-        },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -114,8 +102,9 @@ class _SettingsComputerScreenState extends State<SettingsComputerScreen> {
   }
 
   Widget _buildImpresionSettings() {
-    // Usar PrintProvider directamente
-    final printProvider = PrintProvider.instance;
+    // Usar PrintConfig de Riverpod
+    ref.watch(printConfigProvider);
+    final printProvider = ref.read(printConfigProvider.notifier);
 
     return Card(
       color: const Color(0xFF1A1A1A),
@@ -334,8 +323,9 @@ class _SettingsComputerScreenState extends State<SettingsComputerScreen> {
   }
 
   Widget _buildAdvancedPrintConfig() {
-    // Usar PrintProvider directamente
-    final printProvider = PrintProvider.instance;
+    // Usar PrintConfig de Riverpod
+    ref.watch(printConfigProvider);
+    final printProvider = ref.read(printConfigProvider.notifier);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

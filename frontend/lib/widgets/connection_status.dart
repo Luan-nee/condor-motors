@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// y permite reintentar la conexión automáticamente
 class ConnectionStatusWidget extends StatefulWidget {
   final Widget child;
-  
+
   const ConnectionStatusWidget({
     super.key,
     required this.child,
@@ -23,35 +23,36 @@ class _ConnectionStatusWidgetState extends State<ConnectionStatusWidget> {
   Timer? _retryTimer;
   int _retryCount = 0;
   final int _maxRetries = 5;
-  
+
   @override
   void initState() {
     super.initState();
     _checkConnection();
   }
-  
+
   @override
   void dispose() {
     _retryTimer?.cancel();
     super.dispose();
   }
-  
+
   /// Verifica la conexión al servidor
   Future<void> _checkConnection() async {
     try {
       // Obtener la URL del servidor desde preferencias
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final String serverUrl = prefs.getString('server_url') ?? 'http://localhost:3000';
-      
+      final String serverUrl =
+          prefs.getString('server_url') ?? 'http://localhost:3000';
+
       // Hacer un ping simple al servidor
       final http.Response response = await http.get(
         Uri.parse(serverUrl),
         headers: <String, String>{'Accept': 'application/json'},
       ).timeout(const Duration(seconds: 5));
-      
+
       // Considerar conectado si obtenemos cualquier respuesta
       final bool isConnected = response.statusCode > 0;
-      
+
       if (!_isConnected && isConnected && mounted) {
         setState(() {
           _isConnected = true;
@@ -61,7 +62,7 @@ class _ConnectionStatusWidgetState extends State<ConnectionStatusWidget> {
       } else if (_isConnected && !isConnected && mounted) {
         setState(() {
           _isConnected = false;
-          
+
           // Si no estamos ya reintentando, iniciar el temporizador de reintento
           if (!_isRetrying) {
             _startRetryTimer();
@@ -72,7 +73,7 @@ class _ConnectionStatusWidgetState extends State<ConnectionStatusWidget> {
       if (mounted) {
         setState(() {
           _isConnected = false;
-          
+
           // Si no estamos ya reintentando, iniciar el temporizador de reintento
           if (!_isRetrying) {
             _startRetryTimer();
@@ -81,21 +82,21 @@ class _ConnectionStatusWidgetState extends State<ConnectionStatusWidget> {
       }
     }
   }
-  
+
   /// Inicia un temporizador para reintentar la conexión
   void _startRetryTimer() {
     setState(() {
       _isRetrying = true;
     });
-    
+
     // Cancelar el temporizador anterior si existe
     _retryTimer?.cancel();
-    
+
     // Crear un nuevo temporizador para reintentar cada 5 segundos
     _retryTimer = Timer.periodic(const Duration(seconds: 5), (Timer timer) {
       _retryCount++;
       _checkConnection();
-      
+
       // Si superamos el número máximo de reintentos, detener el temporizador
       if (_retryCount >= _maxRetries) {
         timer.cancel();
@@ -107,17 +108,17 @@ class _ConnectionStatusWidgetState extends State<ConnectionStatusWidget> {
       }
     });
   }
-  
+
   /// Maneja el reintento manual
   void _handleManualRetry() {
     setState(() {
       _isRetrying = true;
       _retryCount = 0;
     });
-    
+
     _checkConnection();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     // Usar Directionality para resolver el problema de dirección de texto
@@ -138,7 +139,8 @@ class _ConnectionStatusWidgetState extends State<ConnectionStatusWidget> {
                 color: Colors.transparent,
                 child: Container(
                   color: Colors.red.withValues(alpha: 0.8),
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                   child: Row(
                     children: <Widget>[
                       const Icon(
@@ -183,4 +185,4 @@ class _ConnectionStatusWidgetState extends State<ConnectionStatusWidget> {
       ),
     );
   }
-} 
+}

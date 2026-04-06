@@ -1,12 +1,12 @@
 import 'package:condorsmotors/models/proforma.model.dart';
-import 'package:condorsmotors/providers/computer/proforma.computer.provider.dart';
+import 'package:condorsmotors/providers/computer/proforma.computer.riverpod.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma/proforma_utils.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:provider/provider.dart';
 
 class ProcessingDialog extends StatelessWidget {
   final String documentType;
@@ -65,7 +65,7 @@ class ProcessingDialog extends StatelessWidget {
   }
 }
 
-class ProformaSaleDialog extends StatefulWidget {
+class ProformaSaleDialog extends ConsumerStatefulWidget {
   final Proforma proforma;
   final Function(Map<String, dynamic>) onConfirm;
   final VoidCallback onCancel;
@@ -78,7 +78,7 @@ class ProformaSaleDialog extends StatefulWidget {
   });
 
   @override
-  State<ProformaSaleDialog> createState() => _ProformaSaleDialogState();
+  ConsumerState<ProformaSaleDialog> createState() => _ProformaSaleDialogState();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
@@ -91,17 +91,14 @@ class ProformaSaleDialog extends StatefulWidget {
   }
 }
 
-class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
-  late final ProformaComputerProvider proformaProvider;
+class _ProformaSaleDialogState extends ConsumerState<ProformaSaleDialog> {
+  late final ProformaComputer proformaProvider;
   bool _procesando = false;
 
   @override
   void initState() {
     super.initState();
-    proformaProvider = Provider.of<ProformaComputerProvider>(
-      context,
-      listen: false,
-    );
+    proformaProvider = ref.read(proformaComputerProvider.notifier);
   }
 
   Future<void> _convertirProformaAVenta() async {
@@ -510,7 +507,7 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(DiagnosticsProperty<ProformaComputerProvider>(
+    properties.add(DiagnosticsProperty<ProformaComputer>(
         'proformaProvider', proformaProvider));
   }
 }

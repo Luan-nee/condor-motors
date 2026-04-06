@@ -1,16 +1,14 @@
 import 'dart:math' show min;
-
 import 'package:condorsmotors/models/ventas.model.dart';
-import 'package:condorsmotors/providers/computer/ventas.computer.provider.dart';
-import 'package:condorsmotors/providers/print.provider.dart';
+import 'package:condorsmotors/providers/print.riverpod.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 
-class VentaDetalleComputer extends StatefulWidget {
+class VentaDetalleComputer extends ConsumerStatefulWidget {
   final Venta? venta;
   final bool isLoadingFullData;
   final Function(String)? onDeclararPressed;
@@ -23,7 +21,8 @@ class VentaDetalleComputer extends StatefulWidget {
   });
 
   @override
-  State<VentaDetalleComputer> createState() => _VentaDetalleComputerState();
+  ConsumerState<VentaDetalleComputer> createState() =>
+      _VentaDetalleComputerState();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
@@ -36,7 +35,7 @@ class VentaDetalleComputer extends StatefulWidget {
   }
 }
 
-class _VentaDetalleComputerState extends State<VentaDetalleComputer>
+class _VentaDetalleComputerState extends ConsumerState<VentaDetalleComputer>
     with SingleTickerProviderStateMixin {
   final NumberFormat _formatoMoneda = NumberFormat.currency(
     symbol: 'S/ ',
@@ -272,9 +271,9 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
   // Builder para la cabecera del diálogo
   Widget _buildHeader(String serie, String numero, String idVenta,
       DateTime fechaCreacion, BuildContext context) {
-    // Obtener providers usando Provider.of
-    Provider.of<VentasComputerProvider>(context);
-    final printProvider = PrintProvider.instance;
+    // Obtener providers
+    final printState = ref.watch(printConfigProvider);
+    final printProvider = ref.read(printConfigProvider.notifier);
 
     // Usar VentasUtils para verificar disponibilidad de PDF
     final bool tienePdf =
@@ -282,7 +281,7 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
     final bool declarada = widget.venta?.declarada ?? false;
     final bool anulada = widget.venta?.anulada ?? false;
     final String? pdfLink = widget.venta != null
-        ? printProvider.imprimirFormatoTicket
+        ? printState.imprimirFormatoTicket
             ? VentasUtils.obtenerUrlPdf(widget.venta!, formatoTicket: true)
             : VentasUtils.obtenerUrlPdf(widget.venta!)
         : null;
@@ -1002,8 +1001,8 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
       return const SizedBox.shrink();
     }
 
-    // Obtener provider usando Provider.of
-    final ventasProvider = Provider.of<VentasComputerProvider>(context);
+    // Obtener printConfigProvider
+    final printState = ref.watch(printConfigProvider);
 
     // Obtener el ID de la venta
     final String idVenta = widget.venta!.id.toString();
@@ -1019,7 +1018,7 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
         VentasUtils.tienePdfTicketDisponible(widget.venta!);
 
     // Obtener URLs de PDFs según el formato seleccionado (sin logs)
-    final String? pdfLink = ventasProvider.imprimirFormatoTicket
+    final String? pdfLink = printState.imprimirFormatoTicket
         ? VentasUtils.obtenerUrlPdf(widget.venta!, formatoTicket: true)
         : VentasUtils.obtenerUrlPdf(widget.venta!);
 
@@ -1027,7 +1026,7 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
     final String nombreDocumento =
         VentasUtils.formatearNumeroDocumento(widget.venta!);
     final String formatoSufijo =
-        ventasProvider.imprimirFormatoTicket ? '_TICKET' : '_A4';
+        printState.imprimirFormatoTicket ? '_TICKET' : '_A4';
     final String nombreCompleto = '$nombreDocumento$formatoSufijo';
 
     return Row(
@@ -1089,7 +1088,7 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
                 FontAwesomeIcons.print,
                 size: 16,
               ),
-              label: Text(PrintProvider.instance.imprimirFormatoTicket
+              label: Text(ref.watch(printConfigProvider).imprimirFormatoTicket
                   ? 'Imprimir Ticket'
                   : 'Imprimir A4'),
               style: ElevatedButton.styleFrom(
@@ -1100,11 +1099,10 @@ class _VentaDetalleComputerState extends State<VentaDetalleComputer>
                 // Un solo log al iniciar impresión en lugar de debugPrint repetitivos
                 if (pdfLink != null) {
                   try {
-                    // Obtener directamente el PrintProvider
+                    // Obtener directamente el PrintProvider de Riverpod
                     final currentContext = context;
-                    final printProvider = PrintProvider.instance;
-                    Provider.of<VentasComputerProvider>(currentContext,
-                        listen: false);
+                    final printProvider =
+                        ref.read(printConfigProvider.notifier);
 
                     // Variables locales
                     final localPdfLink = pdfLink;
@@ -1120,19 +1118,15 @@ PDF disponible: $localTienePdf, Formato Ticket: $localTienePdfTicket
 URL: $localPdfLink
 ''');
 
-                    // Cargar la configuración más reciente
-                    await printProvider.cargarConfiguracion();
-
                     // Verificar que el widget sigue montado
                     if (!mounted) {
                       return;
                     }
 
-                    // Imprimir directamente usando PrintProvider
+                    // Imprimir directamente usando PrintProvider de Riverpod
                     final result = await printProvider.imprimirDocumentoPdf(
                       localPdfLink,
                       localNombreCompleto,
-                      // ignore: use_build_context_synchronously
                       currentContext,
                     );
 
@@ -1278,10 +1272,10 @@ URL: $localPdfLink
     Future.microtask(() {
       if (mounted) {
         // Usar PrintProvider para mostrar el mensaje de error
-        PrintProvider.instance.mostrarMensaje(
-          mensaje: 'Error al imprimir: $mensaje',
-          backgroundColor: Colors.red,
-        );
+        ref.read(printConfigProvider.notifier).mostrarMensaje(
+              mensaje: 'Error al imprimir: $mensaje',
+              backgroundColor: Colors.red,
+            );
       }
     });
   }

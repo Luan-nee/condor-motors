@@ -843,7 +843,9 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
       cacheHeight: (size * MediaQuery.of(context).devicePixelRatio).round(),
       // Animación suave
       frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-        if (wasSynchronouslyLoaded) return child;
+        if (wasSynchronouslyLoaded) {
+          return child;
+        }
         return AnimatedOpacity(
           opacity: frame == null ? 0 : 1,
           duration: const Duration(milliseconds: 200),

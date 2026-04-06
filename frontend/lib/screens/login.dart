@@ -2,15 +2,14 @@ import 'dart:async';
 
 import 'package:condorsmotors/api/index.api.dart'
     show updateBaseUrl, serverConfigs;
-import 'package:condorsmotors/providers/auth.provider.dart';
-import 'package:condorsmotors/providers/login.provider.dart';
+import 'package:condorsmotors/providers/auth.riverpod.dart';
 import 'package:condorsmotors/utils/role_utils.dart'
     as role_utils; // Importar utilidad de roles con alias
 import 'package:condorsmotors/widgets/background.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Importar para KeyboardListener
+import 'package:flutter_riverpod/flutter_riverpod.dart' hide Provider;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:provider/provider.dart';
 import 'package:restart_app/restart_app.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Importamos SharedPreferences
 
@@ -34,14 +33,14 @@ class LifecycleObserver extends WidgetsBindingObserver {
   }
 }
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
+class _LoginScreenState extends ConsumerState<LoginScreen>
     with SingleTickerProviderStateMixin {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _usernameController = TextEditingController();
@@ -357,7 +356,7 @@ class _LoginScreenState extends State<LoginScreen>
     final prefs = await SharedPreferences.getInstance();
     final stayLoggedIn = prefs.getBool('stay_logged_in') ?? false;
     if (stayLoggedIn && mounted) {
-      return Provider.of<AuthProvider>(context, listen: false).autoLogin();
+      return ref.read(authProvider.notifier).autoLogin();
     }
     return false; // No loading, muestra login directo
   }
@@ -445,8 +444,7 @@ class _LoginScreenState extends State<LoginScreen>
           if (!_hasNavigated) {
             _hasNavigated = true;
             WidgetsBinding.instance.addPostFrameCallback((_) async {
-              final user =
-                  Provider.of<AuthProvider>(context, listen: false).user;
+              final user = ref.read(authProvider).user;
               if (user != null) {
                 final result = role_utils.getRoleAndInitialRoute(user.toMap());
                 final String initialRoute = result['route']!;
@@ -859,8 +857,8 @@ class _LoginScreenState extends State<LoginScreen>
   Future<void> _handleLogin() async {
     debugPrint('[LoginScreen] Botón de login presionado');
     _loginTransitionStart = DateTime.now();
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (authProvider.isAutoLoggingIn) {
+    final authNotifier = ref.read(authProvider.notifier);
+    if (authNotifier.isAutoLoggingIn) {
       debugPrint('[LoginScreen] Ignorado: autoLogin en progreso');
       // Bloquear login manual mientras auto-login está en progreso
       return;
@@ -873,9 +871,8 @@ class _LoginScreenState extends State<LoginScreen>
       _isLoading = true;
     });
     try {
-      Provider.of<LoginProvider>(context, listen: false);
       debugPrint('[LoginScreen] Llamando a authProvider.login...');
-      final bool loginSuccess = await authProvider.login(
+      final bool loginSuccess = await authNotifier.login(
         _usernameController.text,
         _passwordController.text,
         saveAutoLogin: _stayLoggedIn,
@@ -886,7 +883,7 @@ class _LoginScreenState extends State<LoginScreen>
         return;
       }
       setState(() => _isLoading = false);
-      if (loginSuccess && !authProvider.isAutoLoggingIn) {
+      if (loginSuccess && !authNotifier.isAutoLoggingIn) {
         debugPrint('[LoginScreen] Login exitoso, procesando navegación');
         // Guardar credenciales solo si el login fue exitoso y recordar credenciales está activado
         if (_rememberMe) {
@@ -898,7 +895,7 @@ class _LoginScreenState extends State<LoginScreen>
           await storage.delete(key: 'username');
           await storage.delete(key: 'password');
         }
-        final user = authProvider.user;
+        final user = ref.read(authProvider).user;
         if (user != null) {
           final result = role_utils.getRoleAndInitialRoute(user.toMap());
           final String initialRoute = result['route']!;

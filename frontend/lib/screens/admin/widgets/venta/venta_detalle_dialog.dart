@@ -1,14 +1,15 @@
 import 'dart:math' show min;
 
 import 'package:condorsmotors/models/ventas.model.dart';
-import 'package:condorsmotors/providers/print.provider.dart';
+import 'package:condorsmotors/providers/print.riverpod.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' hide Consumer;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 
-class VentaDetalleDialog extends StatefulWidget {
+class VentaDetalleDialog extends ConsumerStatefulWidget {
   final Venta? venta;
   final bool isLoadingFullData;
   final Function(String)? onDeclararPressed;
@@ -21,7 +22,7 @@ class VentaDetalleDialog extends StatefulWidget {
   });
 
   @override
-  State<VentaDetalleDialog> createState() => _VentaDetalleDialogState();
+  ConsumerState<VentaDetalleDialog> createState() => _VentaDetalleDialogState();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
@@ -34,7 +35,7 @@ class VentaDetalleDialog extends StatefulWidget {
   }
 }
 
-class _VentaDetalleDialogState extends State<VentaDetalleDialog>
+class _VentaDetalleDialogState extends ConsumerState<VentaDetalleDialog>
     with SingleTickerProviderStateMixin {
   final NumberFormat _formatoMoneda = NumberFormat.currency(
     symbol: 'S/ ',
@@ -357,7 +358,9 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
                 ),
                 tooltip: 'Ver PDF',
                 onPressed: () => pdfLink != null
-                    ? PrintProvider.instance.abrirPdf(pdfLink, context)
+                    ? ref
+                        .read(printConfigProvider.notifier)
+                        .abrirPdf(pdfLink, context)
                     : null,
               ),
             IconButton(
@@ -1077,27 +1080,34 @@ class _VentaDetalleDialogState extends State<VentaDetalleDialog>
                     switch (value) {
                       case 'imprimir_a4':
                         if (pdfLinkA4 != null) {
-                          PrintProvider.instance.imprimirDocumentoPdf(
-                            pdfLinkA4,
-                            '${nombreDocumento}_A4',
-                            context,
-                          );
+                          ref
+                              .read(printConfigProvider.notifier)
+                              .imprimirDocumentoPdf(
+                                pdfLinkA4,
+                                '${nombreDocumento}_A4',
+                                context,
+                              );
                         }
                       case 'imprimir_ticket':
                         if (pdfLinkTicket != null) {
-                          PrintProvider.instance.imprimirDocumentoPdf(
-                            pdfLinkTicket,
-                            '${nombreDocumento}_Ticket',
-                            context,
-                          );
+                          ref
+                              .read(printConfigProvider.notifier)
+                              .imprimirDocumentoPdf(
+                                pdfLinkTicket,
+                                '${nombreDocumento}_Ticket',
+                                context,
+                              );
                         }
                       case 'abrir_a4':
                         if (pdfLinkA4 != null) {
-                          PrintProvider.instance.abrirPdf(pdfLinkA4, context);
+                          ref
+                              .read(printConfigProvider.notifier)
+                              .abrirPdf(pdfLinkA4, context);
                         }
                       case 'abrir_ticket':
                         if (pdfLinkTicket != null) {
-                          PrintProvider.instance
+                          ref
+                              .read(printConfigProvider.notifier)
                               .abrirPdf(pdfLinkTicket, context);
                         }
                     }

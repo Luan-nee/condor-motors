@@ -39,7 +39,8 @@ class DetalleProducto extends Equatable {
   const DetalleProducto({
     required this.id,
     required this.nombre,
-    required this.cantidad, this.codigo,
+    required this.cantidad,
+    this.codigo,
     this.stockOrigenActual,
     this.stockOrigenResultante,
     this.stockDestinoActual,
@@ -204,7 +205,10 @@ class TransferenciaInventario extends Equatable {
   const TransferenciaInventario({
     required this.id,
     required this.estado,
-    required this.nombreSucursalDestino, required this.sucursalDestinoId, required this.modificable, this.nombreSucursalOrigen,
+    required this.nombreSucursalDestino,
+    required this.sucursalDestinoId,
+    required this.modificable,
+    this.nombreSucursalOrigen,
     this.sucursalOrigenId,
     this.salidaOrigen,
     this.llegadaDestino,
@@ -508,7 +512,9 @@ class ComparacionProducto {
     required this.productoId,
     required this.nombre,
     required this.cantidadSolicitada,
-    required this.destino, required this.procesable, this.origen,
+    required this.destino,
+    required this.procesable,
+    this.origen,
   });
 
   factory ComparacionProducto.fromJson(Map<String, dynamic> json) {

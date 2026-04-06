@@ -1,37 +1,65 @@
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/repositories/empleado.repository.dart';
-// Importar los repositorios
 import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:condorsmotors/repositories/sucursal.repository.dart';
 import 'package:condorsmotors/repositories/venta.repository.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-class DashboardComputerProvider extends ChangeNotifier {
-  // Instancias de repositorios
+part 'dash.computer.riverpod.g.dart';
+
+class DashComputerState {
+  final bool isLoading;
+  final String errorMessage;
+  final List<dynamic> ultimasVentas;
+  final List<Map<String, dynamic>> productosStockBajo;
+  final int? sucursalId;
+  final String nombreSucursal;
+  final Paginacion paginacion;
+
+  const DashComputerState({
+    this.isLoading = false,
+    this.errorMessage = '',
+    this.ultimasVentas = const [],
+    this.productosStockBajo = const [],
+    this.sucursalId,
+    this.nombreSucursal = 'Sucursal',
+    this.paginacion = Paginacion.emptyPagination,
+  });
+
+  DashComputerState copyWith({
+    bool? isLoading,
+    String? errorMessage,
+    List<dynamic>? ultimasVentas,
+    List<Map<String, dynamic>>? productosStockBajo,
+    int? sucursalId,
+    String? nombreSucursal,
+    Paginacion? paginacion,
+  }) {
+    return DashComputerState(
+      isLoading: isLoading ?? this.isLoading,
+      errorMessage: errorMessage ?? this.errorMessage,
+      ultimasVentas: ultimasVentas ?? this.ultimasVentas,
+      productosStockBajo: productosStockBajo ?? this.productosStockBajo,
+      sucursalId: sucursalId ?? this.sucursalId,
+      nombreSucursal: nombreSucursal ?? this.nombreSucursal,
+      paginacion: paginacion ?? this.paginacion,
+    );
+  }
+}
+
+@Riverpod(keepAlive: true)
+class DashComputer extends _$DashComputer {
   final ProductoRepository _productoRepository = ProductoRepository.instance;
   final VentaRepository _ventaRepository = VentaRepository.instance;
   final EmpleadoRepository _empleadoRepository = EmpleadoRepository.instance;
   final SucursalRepository _sucursalRepository = SucursalRepository.instance;
 
-  bool _isLoading = false;
-  String _errorMessage = '';
-  List<dynamic> _ultimasVentas = [];
-  List<Map<String, dynamic>> _productosStockBajo = [];
-  int? _sucursalId;
-  String _nombreSucursal = 'Sucursal';
-
-  // Estado de paginación
-  Paginacion _paginacion = Paginacion.emptyPagination;
-
-  // Getters
-  bool get isLoading => _isLoading;
-  String get errorMessage => _errorMessage;
-  List<dynamic> get ultimasVentas => _ultimasVentas;
-  List<Map<String, dynamic>> get productosStockBajo => _productosStockBajo;
-  int? get sucursalId => _sucursalId;
-  String get nombreSucursal => _nombreSucursal;
-  Paginacion get paginacion => _paginacion;
+  @override
+  DashComputerState build() {
+    return const DashComputerState();
+  }
 
   Map<String, dynamic> _productoToMap(Producto producto) {
     return {
@@ -51,8 +79,8 @@ class DashboardComputerProvider extends ChangeNotifier {
   /// Inicializa el provider obteniendo los datos del usuario y su sucursal
   Future<void> inicializar() async {
     try {
-      _setLoading(true);
-      debugPrint('Inicializando DashboardComputerProvider...');
+      state = state.copyWith(isLoading: true, errorMessage: '');
+      debugPrint('Inicializando DashComputer...');
 
       // Obtener datos del usuario autenticado
       final userData = await _empleadoRepository.getUserData();
@@ -60,20 +88,18 @@ class DashboardComputerProvider extends ChangeNotifier {
         throw Exception('No se encontraron datos del usuario autenticado');
       }
 
-      debugPrint('Datos de usuario obtenidos: ${userData.toString()}');
-
       // Extraer ID de sucursal del usuario y convertirlo a int
       final dynamic rawSucursalId = userData['sucursalId'];
       if (rawSucursalId == null) {
         throw Exception('El usuario no tiene una sucursal asignada');
       }
 
-      // Convertir a int de manera segura
+      int? sucursalIdParsed;
       if (rawSucursalId is int) {
-        _sucursalId = rawSucursalId;
+        sucursalIdParsed = rawSucursalId;
       } else if (rawSucursalId is String) {
-        _sucursalId = int.tryParse(rawSucursalId);
-        if (_sucursalId == null) {
+        sucursalIdParsed = int.tryParse(rawSucursalId);
+        if (sucursalIdParsed == null) {
           throw Exception('ID de sucursal inválido: $rawSucursalId');
         }
       } else {
@@ -81,87 +107,91 @@ class DashboardComputerProvider extends ChangeNotifier {
             'Tipo de ID de sucursal no soportado: ${rawSucursalId.runtimeType}');
       }
 
+      String nombreSucursal = 'Sucursal';
       // Obtener nombre de la sucursal
       try {
-        final sucursalData =
-            await _sucursalRepository.getSucursalData(_sucursalId.toString());
-        _nombreSucursal = sucursalData.nombre;
+        final sucursalData = await _sucursalRepository
+            .getSucursalData(sucursalIdParsed.toString());
+        nombreSucursal = sucursalData.nombre;
       } catch (e) {
         debugPrint('No se pudo obtener el nombre de la sucursal: $e');
-        _nombreSucursal = 'Sucursal $_sucursalId';
+        nombreSucursal = 'Sucursal $sucursalIdParsed';
       }
 
-      debugPrint(
-          'Sucursal configurada: $_nombreSucursal (ID: $_sucursalId)');
+      state = state.copyWith(
+        sucursalId: sucursalIdParsed,
+        nombreSucursal: nombreSucursal,
+      );
 
       // Cargar datos iniciales
       await cargarDatos();
     } catch (e) {
       debugPrint('Error en inicialización: $e');
-      _errorMessage = 'Error al inicializar: $e';
-      notifyListeners();
-    } finally {
-      _setLoading(false);
+      state = state.copyWith(
+        errorMessage: 'Error al inicializar: $e',
+        isLoading: false,
+      );
     }
   }
 
   /// Carga los datos del dashboard
   Future<void> cargarDatos() async {
-    if (_sucursalId == null) {
-      _errorMessage = 'No hay una sucursal seleccionada';
-      notifyListeners();
+    if (state.sucursalId == null) {
+      state = state.copyWith(
+        errorMessage: 'No hay una sucursal seleccionada',
+      );
       return;
     }
 
     try {
-      _setLoading(true);
-      _errorMessage = '';
+      state = state.copyWith(isLoading: true, errorMessage: '');
 
       // Cargar últimas ventas usando la API de ventas
       final ventasResponse = await _ventaRepository.getVentas(
-        sucursalId: _sucursalId.toString(),
+        sucursalId: state.sucursalId.toString(),
         pageSize: 5,
         forceRefresh: true,
       );
 
+      List<dynamic> ultimasVentas = [];
+      Paginacion paginacion = Paginacion.emptyPagination;
+
       // Procesar la respuesta
       if (ventasResponse['data'] != null && ventasResponse['data'] is List) {
-        _ultimasVentas = ventasResponse['data'];
+        ultimasVentas = ventasResponse['data'];
       }
 
       // Actualizar paginación si existe
       if (ventasResponse['pagination'] != null) {
-        _paginacion = Paginacion.fromApiResponse(ventasResponse);
+        paginacion = Paginacion.fromApiResponse(ventasResponse);
       }
 
       // Cargar solo productos con stock bajo
+      List<Map<String, dynamic>> productosStockBajo = [];
       try {
         final productosResponse = await _productoRepository.getProductos(
-          sucursalId: _sucursalId.toString(),
+          sucursalId: state.sucursalId.toString(),
           stockBajo: true,
         );
 
-        _productosStockBajo =
+        productosStockBajo =
             productosResponse.items.map(_productoToMap).toList();
-        debugPrint(
-            'Productos con stock bajo cargados: ${_productosStockBajo.length}');
       } catch (e) {
         debugPrint('Error al cargar productos con stock bajo: $e');
-        _productosStockBajo = [];
       }
 
-      notifyListeners();
+      state = state.copyWith(
+        ultimasVentas: ultimasVentas,
+        paginacion: paginacion,
+        productosStockBajo: productosStockBajo,
+        isLoading: false,
+      );
     } catch (e) {
       debugPrint('Error al cargar datos: $e');
-      _errorMessage = e.toString();
-      notifyListeners();
-    } finally {
-      _setLoading(false);
+      state = state.copyWith(
+        errorMessage: e.toString(),
+        isLoading: false,
+      );
     }
-  }
-
-  void _setLoading(bool value) {
-    _isLoading = value;
-    notifyListeners();
   }
 }

@@ -22,9 +22,8 @@ dependencies:
   material_design_icons_flutter: ^7.0.7296
   intl: ^0.20.2
   msix: ^3.16.8
-  dart_code_metrics: ^4.19.2
+
   win_toast: ^0.4.0 # Notificaciones nativas en Windows 10/11
-  provider: ^6.1.4
   fl_chart: ^1.0.0
   url_launcher: ^6.3.1
   pdf: ^3.11.3
@@ -42,11 +41,15 @@ dependencies:
   equatable: ^2.0.5
 
   http: any
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.3
+  riverpod_generator: ^2.6.2
+  build_runner: ^2.4.13
 
 # Configuración de íconos en la raíz, no dentro de flutter:
 flutter_icons:

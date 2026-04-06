@@ -1375,33 +1375,40 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      FaIcon(
-                        icon,
-                        size: 14,
-                        color: isSelected ? color : Colors.white70,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: isSelected ? color : Colors.white,
-                        ),
-                      ),
-                    ],
+                  FaIcon(
+                    icon,
+                    size: 16,
+                    color: isSelected ? color : Colors.white70,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(width: 10),
                   Text(
-                    description,
+                    title,
                     style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: isSelected ? color : Colors.white,
+                    ),
+                  ),
+                  const Spacer(),
+                  Tooltip(
+                    message: description,
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
+                    textStyle: const TextStyle(
+                      color: Colors.white,
                       fontSize: 12,
-                      color: Colors.white.withValues(alpha: 0.7),
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A1A1A),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: Icon(
+                      Icons.help_outline,
+                      size: 18,
+                      color: Colors.white.withValues(alpha: 0.5),
                     ),
                   ),
                 ],

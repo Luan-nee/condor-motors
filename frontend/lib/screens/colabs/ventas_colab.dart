@@ -1,7 +1,7 @@
 import 'package:condorsmotors/models/cliente.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/proforma.model.dart';
-import 'package:condorsmotors/providers/colabs/ventas.colab.provider.dart';
+import 'package:condorsmotors/providers/colabs/ventas.colab.riverpod.dart';
 import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:condorsmotors/screens/colabs/barcode_colab.dart';
 import 'package:condorsmotors/screens/colabs/ventas/producto_venta_item.widget.dart';
@@ -9,20 +9,18 @@ import 'package:condorsmotors/screens/colabs/widgets/busqueda_producto.dart';
 import 'package:condorsmotors/screens/colabs/widgets/cliente/busqueda_cliente.dart';
 import 'package:condorsmotors/screens/colabs/widgets/cliente/busqueda_cliente_form.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:provider/provider.dart';
 
-class VentasColabScreen extends StatefulWidget {
+class VentasColabScreen extends ConsumerStatefulWidget {
   const VentasColabScreen({super.key});
 
   @override
-  State<VentasColabScreen> createState() => _VentasColabScreenState();
+  ConsumerState<VentasColabScreen> createState() => _VentasColabScreenState();
 }
 
-class _VentasColabScreenState extends State<VentasColabScreen>
+class _VentasColabScreenState extends ConsumerState<VentasColabScreen>
     with SingleTickerProviderStateMixin {
-  late final VentasColabProvider _provider;
-
   // Variables para la animación de promoción
   late AnimationController _animationController;
   bool _mostrarMensajePromocion = false;
@@ -35,22 +33,22 @@ class _VentasColabScreenState extends State<VentasColabScreen>
       TextEditingController();
 
   // Accesos directos a propiedades del provider con manejo de nulos
-  List<Producto> get _productos => _provider.productos;
-  List<Producto> get _productosVenta => _provider.productosVenta;
-  Cliente? get _clienteSeleccionado => _provider.clienteSeleccionado;
-  bool get _isLoading => _provider.isLoading;
-  String get _loadingMessage => _provider.loadingMessage;
-  bool get _productosLoaded => _provider.productosLoaded;
-  String get _sucursalId => _provider.sucursalId;
-  double get _totalVenta => _provider.totalVenta;
+  // Accesos directos a propiedades del provider con manejo de nulos
+  List<Producto> get _productos => ref.watch(ventasColabProvider).productos;
+  List<Producto> get _productosVenta =>
+      ref.watch(ventasColabProvider).productosVenta;
+  Cliente? get _clienteSeleccionado =>
+      ref.watch(ventasColabProvider).clienteSeleccionado;
+  bool get _isLoading => ref.watch(ventasColabProvider).isLoading;
+  String get _loadingMessage => ref.watch(ventasColabProvider).loadingMessage;
+  bool get _productosLoaded => ref.watch(ventasColabProvider).productosLoaded;
+  String get _sucursalId => ref.watch(ventasColabProvider).sucursalId;
+  double get _totalVenta => ref.watch(ventasColabProvider.notifier).totalVenta;
   // Los repositorios se acceden a través del provider
 
   @override
   void initState() {
     super.initState();
-
-    // Inicializar el provider inmediatamente
-    _provider = Provider.of<VentasColabProvider>(context, listen: false);
 
     // Inicializar el controlador de animación
     _animationController = AnimationController(
@@ -61,7 +59,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
     // Programar la inicialización del provider después del primer frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _provider.inicializar();
+        ref.read(ventasColabProvider.notifier).inicializar();
       }
     });
   }
@@ -76,9 +74,11 @@ class _VentasColabScreenState extends State<VentasColabScreen>
 
   // Mostrar diálogo para seleccionar cliente
   void _mostrarDialogoClientes() {
+    final notifier = ref.read(ventasColabProvider.notifier);
+    final state = ref.watch(ventasColabProvider);
     // Asegurarse de que los clientes estén cargados
-    if (!_provider.clientesLoaded) {
-      _provider.cargarClientes();
+    if (!state.clientesLoaded) {
+      notifier.cargarClientes();
     }
 
     showDialog(
@@ -130,9 +130,9 @@ class _VentasColabScreenState extends State<VentasColabScreen>
               // Widget de búsqueda de cliente
               Expanded(
                 child: BusquedaClienteWidget(
-                  clientes: _provider.clientes,
+                  clientes: state.clientes,
                   onClienteSeleccionado: (Cliente cliente) {
-                    _provider.seleccionarCliente(cliente);
+                    notifier.seleccionarCliente(cliente);
                     Navigator.pop(context);
                     // Mostrar mensaje de confirmación
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -149,7 +149,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
                     Navigator.pop(context);
                     _mostrarDialogoNuevoCliente();
                   },
-                  isLoading: _provider.isLoading && !_provider.clientesLoaded,
+                  isLoading: state.isLoading && !state.clientesLoaded,
                 ),
               ),
             ],
@@ -176,7 +176,9 @@ class _VentasColabScreenState extends State<VentasColabScreen>
               Navigator.pop(dialogContext);
 
               // Seleccionar automáticamente el cliente recién creado
-              _provider.seleccionarCliente(nuevoCliente);
+              ref
+                  .read(ventasColabProvider.notifier)
+                  .seleccionarCliente(nuevoCliente);
 
               // Mostrar mensaje de éxito
               ScaffoldMessenger.of(context).showSnackBar(
@@ -199,11 +201,13 @@ class _VentasColabScreenState extends State<VentasColabScreen>
 
   // Mostrar diálogo para buscar productos
   Future<void> _mostrarDialogoProductos() async {
+    final notifier = ref.read(ventasColabProvider.notifier);
+    final state = ref.read(ventasColabProvider);
     // Mostrar indicador de carga mientras se cargan los productos
-    if (!_productosLoaded) {
-      _provider.setLoading(loading: true, message: 'Cargando productos...');
+    if (!state.productosLoaded) {
+      notifier.setLoading(loading: true, message: 'Cargando productos...');
       try {
-        await _provider.cargarProductos();
+        await notifier.cargarProductos();
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -216,7 +220,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
         return;
       } finally {
         if (mounted) {
-          _provider.setLoading(loading: false);
+          notifier.setLoading(loading: false);
         }
       }
     }
@@ -225,8 +229,9 @@ class _VentasColabScreenState extends State<VentasColabScreen>
       return;
     }
 
+    final stateUpdated = ref.read(ventasColabProvider);
     // Verificar que tengamos productos para mostrar
-    if (_provider.productos.isEmpty) {
+    if (stateUpdated.productos.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('No hay productos disponibles'),
@@ -236,87 +241,86 @@ class _VentasColabScreenState extends State<VentasColabScreen>
       return;
     }
 
-    debugPrint(
-        '📦 Mostrando diálogo con ${_provider.productos.length} productos');
 
     await showDialog(
       context: context,
       builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 8,
-            vertical: 8,
-          ),
-          child: Container(
-            width: MediaQuery.of(context).size.width * 0.95,
-            height: MediaQuery.of(context).size.height * 0.95,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
+        // En un showDialog es probable que tengamos que usar Consumer o pasar el state si no cambia
+        // Usaremos el state capturado al inicio
+        return Consumer(builder: (context, ref, _) {
+          final dialogState = ref.watch(ventasColabProvider);
+          return Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 8,
               vertical: 8,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    const Text(
-                      'Buscar Producto',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.95,
+              height: MediaQuery.of(context).size.height * 0.95,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      const Text(
+                        'Buscar Producto',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close, size: 20),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minWidth: 32,
-                        minHeight: 32,
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 20),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
+                        onPressed: () => Navigator.pop(context),
                       ),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Expanded(
-                  child: BusquedaProductoWidget(
-                    productos: _provider.productos,
-                    categorias: _provider.categorias,
-                    isLoading: _provider.isLoadingProductos,
-                    sucursalId: _provider.sucursalId,
-                    onProductoSeleccionado: (Producto producto) {
-                      debugPrint('Producto seleccionado: ${producto.nombre}');
-                      _mostrarDetallesPromocion(producto);
-                    },
+                    ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  Expanded(
+                    child: BusquedaProductoWidget(
+                      productos: dialogState.productos,
+                      categorias: dialogState.categorias,
+                      isLoading: dialogState.isLoadingProductos,
+                      sucursalId: dialogState.sucursalId,
+                      onProductoSeleccionado: (Producto producto) {
+                        _mostrarDetallesPromocion(producto);
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
+          );
+        });
       },
     );
   }
 
   // Mostrar detalles de promoción
   void _mostrarDetallesPromocion(Producto producto) {
-    debugPrint('Verificando promociones para: ${producto.nombre}');
     Navigator.pop(context); // Cerrar diálogo de búsqueda
     _agregarProductoConVerificacion(producto);
   }
 
   // Nuevo método para verificar y agregar producto
   void _agregarProductoConVerificacion(Producto producto) {
-    debugPrint('Intentando agregar producto: ${producto.nombre}');
 
     // Verificar stock disponible
     final int stockDisponible = producto.stock;
     if (stockDisponible <= 0) {
-      debugPrint('Error: Producto sin stock disponible');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('${producto.nombre} no tiene stock disponible'),
@@ -330,7 +334,6 @@ class _VentasColabScreenState extends State<VentasColabScreen>
     final bool resultado = _agregarProducto(producto);
 
     if (resultado) {
-      debugPrint('Producto agregado exitosamente');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('${producto.nombre} agregado al carrito'),
@@ -338,7 +341,6 @@ class _VentasColabScreenState extends State<VentasColabScreen>
         ),
       );
     } else {
-      debugPrint('Error al agregar el producto');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Error al agregar el producto'),
@@ -350,14 +352,14 @@ class _VentasColabScreenState extends State<VentasColabScreen>
 
   // Métodos para delegar al provider
   bool _agregarProducto(Producto producto) {
-    debugPrint('Delegando agregar producto al provider: ${producto.nombre}');
-    final bool resultado = _provider.agregarProducto(producto);
+    final notifier = ref.read(ventasColabProvider.notifier);
+    final resultado = notifier.agregarProducto(producto);
+    final state = ref.read(ventasColabProvider);
     // Mostrar mensaje de promoción si existe
-    if (resultado && _provider.mensajePromocion.isNotEmpty) {
-      debugPrint('Mostrando mensaje de promoción');
+    if (resultado && state.mensajePromocion.isNotEmpty) {
       _mostrarMensajePromocionConAnimacion(
-        _provider.nombreProductoPromocion,
-        _provider.mensajePromocion,
+        state.nombreProductoPromocion,
+        state.mensajePromocion,
       );
     }
     return resultado;
@@ -393,7 +395,6 @@ class _VentasColabScreenState extends State<VentasColabScreen>
 
   // Método para finalizar venta (verificar stock y crear proforma)
   Future<void> _finalizarVenta() async {
-    debugPrint('Iniciando proceso de finalización de venta...');
 
     // Validar que haya productos y cliente seleccionado
     if (_productosVenta.isEmpty) {
@@ -418,18 +419,19 @@ class _VentasColabScreenState extends State<VentasColabScreen>
 
     // Verificar stock antes de finalizar
     try {
-      _provider.setLoading(
+      final notifier = ref.read(ventasColabProvider.notifier)
+      ..setLoading(
           loading: true, message: 'Verificando disponibilidad de stock...');
 
       // Verificar stock de cada producto
       for (int i = 0; i < _productosVenta.length; i++) {
         final producto = _productosVenta[i];
-        final cantidad = _provider.cantidades[i];
+        final cantidad = ref.read(ventasColabProvider).cantidades[i];
         // Validar ID de producto
         final int productoId = producto.id;
         // Actualizar mensaje de loading
         if (mounted) {
-          _provider.setLoading(
+          notifier.setLoading(
               loading: true,
               message: 'Verificando stock de ${producto.nombre}...');
         }
@@ -442,7 +444,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
         );
 
         if (productoActual == null) {
-          _provider.setLoading(loading: false);
+          notifier.setLoading(loading: false);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -457,7 +459,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
           return;
         }
         if (productoActual.stock < cantidad) {
-          _provider.setLoading(loading: false);
+          notifier.setLoading(loading: false);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -475,7 +477,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
       debugPrint('Error al verificar stock: $e');
 
       if (mounted) {
-        _provider.setLoading(loading: false);
+        ref.read(ventasColabProvider.notifier).setLoading(loading: false);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -489,16 +491,17 @@ class _VentasColabScreenState extends State<VentasColabScreen>
 
   // Método para crear proforma de venta
   Future<void> _crearProformaVenta() async {
-    debugPrint('Iniciando creación de proforma...');
+
+    final notifier = ref.read(ventasColabProvider.notifier)
 
     // Mostrar indicador de carga con más contexto para reducir ansiedad
-    _provider.setLoading(
+    ..setLoading(
         loading: true, message: 'Enviando datos al servidor...');
 
     try {
       // Actualizar mensaje para proporcionar retroalimentación del progreso
       if (mounted) {
-        _provider.setLoading(
+        notifier.setLoading(
             loading: true, message: 'Preparando detalles de la venta...');
       }
 
@@ -506,22 +509,22 @@ class _VentasColabScreenState extends State<VentasColabScreen>
 
       // Actualizar mensaje para proporcionar retroalimentación del progreso
       if (mounted) {
-        _provider.setLoading(
+        notifier.setLoading(
             loading: true, message: 'Comunicando con el servidor...');
       }
 
       // Crear proforma a través del provider (arquitectura correcta)
-      final Proforma? proformaCreada = await _provider.crearProformaVenta();
+      final Proforma? proformaCreada = await notifier.crearProformaVenta();
 
       if (!mounted) {
         return;
       }
 
       // Recargar productos para reflejar el stock actualizado por el backend
-      _provider.cargarProductos();
+      notifier.cargarProductos();
 
       if (mounted) {
-        _provider.setLoading(
+        notifier.setLoading(
             loading: true, message: 'Actualizando inventario...');
       }
 
@@ -530,7 +533,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
       }
 
       // Cambiar estado antes de mostrar el diálogo
-      _provider.setLoading(loading: false);
+      notifier.setLoading(loading: false);
 
       // Mostrar diálogo de confirmación
       await showDialog(
@@ -580,10 +583,8 @@ class _VentasColabScreenState extends State<VentasColabScreen>
           actions: <Widget>[
             TextButton(
               onPressed: () {
-                debugPrint(
-                    'Venta finalizada exitosamente. Limpiando carrito...');
                 Navigator.pop(dialogContext);
-                _provider
+                notifier
                     .limpiarVenta(); // Limpiar el carrito usando el provider
 
                 // Mostrar mensaje de éxito
@@ -607,7 +608,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
       }
 
       // Resetear estado de carga
-      _provider.setLoading(loading: false);
+      notifier.setLoading(loading: false);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -680,9 +681,10 @@ class _VentasColabScreenState extends State<VentasColabScreen>
 
   // Escanear producto con código de barras
   Future<void> _escanearProducto() async {
+    final notifier = ref.read(ventasColabProvider.notifier);
     // Asegurarse de que los productos estén cargados
     if (!_productosLoaded) {
-      _provider.setLoading(loading: true, message: 'Cargando productos...');
+      notifier.setLoading(loading: true, message: 'Cargando productos...');
       try {
         await _cargarProductos();
       } catch (e) {
@@ -697,7 +699,7 @@ class _VentasColabScreenState extends State<VentasColabScreen>
         return;
       } finally {
         if (mounted) {
-          _provider.setLoading(loading: false);
+          notifier.setLoading(loading: false);
         }
       }
     }
@@ -713,7 +715,6 @@ class _VentasColabScreenState extends State<VentasColabScreen>
         builder: (BuildContext context) => BarcodeColabScreen(
           productos: _productos,
           onProductoSeleccionado: (Producto producto) {
-            debugPrint('Producto escaneado: ${producto.nombre}');
             _agregarProductoConVerificacion(producto);
           },
           isLoading: _isLoading,
@@ -726,430 +727,418 @@ class _VentasColabScreenState extends State<VentasColabScreen>
     if (index < 0) {
       return;
     }
-    _provider.eliminarProducto(index);
+    ref.read(ventasColabProvider.notifier).eliminarProducto(index);
   }
 
   bool _cambiarCantidad(int index, int cantidad) {
-    final bool resultado = _provider.cambiarCantidad(index, cantidad);
-    if (_provider.mensajePromocion.isNotEmpty) {
+    final notifier = ref.read(ventasColabProvider.notifier);
+    final resultado = notifier.cambiarCantidad(index, cantidad);
+    final state = ref.read(ventasColabProvider);
+    if (state.mensajePromocion.isNotEmpty) {
       _mostrarMensajePromocionConAnimacion(
-        _provider.nombreProductoPromocion,
-        _provider.mensajePromocion,
+        state.nombreProductoPromocion,
+        state.mensajePromocion,
       );
     }
     return resultado;
   }
 
   Future<void> _cargarProductos() async {
-    await _provider.cargarProductos();
+    await ref.read(ventasColabProvider.notifier).cargarProductos();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<VentasColabProvider>(
-      builder:
-          (BuildContext context, VentasColabProvider provider, Widget? child) {
-        debugPrint(
-            'Reconstruyendo VentasColabScreen - Productos en carrito: ${provider.productosVenta.length}');
-        debugPrint(
-            '💰 Total actual: S/ ${provider.totalVenta.toStringAsFixed(2)}');
+    final state = ref.watch(ventasColabProvider);
+    final notifier = ref.read(ventasColabProvider.notifier);
 
-        return _buildLoadingOverlay(
-          Scaffold(
-            appBar: AppBar(
-              title: const Text('Ventas'),
-            ),
-            body: Column(
-              children: <Widget>[
-                // Sección de cliente
-                Card(
-                  margin: EdgeInsets.zero,
-                  shape: const RoundedRectangleBorder(),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 12, horizontal: 16),
-                    child: Row(
-                      children: <Widget>[
-                        // Icono o avatar del cliente
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: provider.clienteSeleccionado != null
-                                ? const Color(0xFF1976D2).withValues(alpha: 0.1)
-                                : Colors.grey.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: FaIcon(
-                              provider.clienteSeleccionado != null
-                                  ? FontAwesomeIcons.userCheck
-                                  : FontAwesomeIcons.userPlus,
-                              size: 16,
-                              color: provider.clienteSeleccionado != null
-                                  ? const Color(0xFF1976D2)
+
+    return _buildLoadingOverlay(
+      Scaffold(
+        appBar: AppBar(
+          title: const Text('Ventas'),
+        ),
+        body: Column(
+          children: <Widget>[
+            // Sección de cliente
+            Card(
+              margin: EdgeInsets.zero,
+              shape: const RoundedRectangleBorder(),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                child: Row(
+                  children: <Widget>[
+                    // Icono o avatar del cliente
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: state.clienteSeleccionado != null
+                            ? const Color(0xFF1976D2).withValues(alpha: 0.1)
+                            : Colors.grey.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: FaIcon(
+                          state.clienteSeleccionado != null
+                              ? FontAwesomeIcons.userCheck
+                              : FontAwesomeIcons.userPlus,
+                          size: 16,
+                          color: state.clienteSeleccionado != null
+                              ? const Color(0xFF1976D2)
+                              : Colors.grey,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Información del cliente
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            state.clienteSeleccionado?.denominacion ??
+                                'Seleccionar Cliente',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: state.clienteSeleccionado != null
+                                  ? const Color.fromARGB(221, 255, 255, 255)
                                   : Colors.grey,
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 16),
-                        // Información del cliente
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          if (state.clienteSeleccionado != null) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              children: <Widget>[
+                                const FaIcon(
+                                  FontAwesomeIcons.idCard,
+                                  size: 12,
+                                  color: Colors.grey,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  state.clienteSeleccionado!.numeroDocumento,
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                if (state.clienteSeleccionado!.telefono !=
+                                        null &&
+                                    state.clienteSeleccionado!.telefono!
+                                        .isNotEmpty) ...[
+                                  const SizedBox(width: 16),
+                                  const FaIcon(
+                                    FontAwesomeIcons.phone,
+                                    size: 12,
+                                    color: Colors.grey,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    state.clienteSeleccionado!.telefono!,
+                                    style: const TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    // Botón para cambiar cliente
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _mostrarDialogoClientes,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: <Widget>[
                               Text(
-                                provider.clienteSeleccionado?.denominacion ??
-                                    'Seleccionar Cliente',
+                                state.clienteSeleccionado != null
+                                    ? 'Cambiar'
+                                    : 'Seleccionar',
                                 style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: provider.clienteSeleccionado != null
-                                      ? const Color.fromARGB(221, 255, 255, 255)
+                                  color: state.clienteSeleccionado != null
+                                      ? const Color(0xFF1976D2)
                                       : Colors.grey,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              if (provider.clienteSeleccionado != null) ...[
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: <Widget>[
-                                    const FaIcon(
-                                      FontAwesomeIcons.idCard,
-                                      size: 12,
-                                      color: Colors.grey,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      provider
-                                          .clienteSeleccionado!.numeroDocumento,
-                                      style: const TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                    if (provider.clienteSeleccionado!
-                                                .telefono !=
-                                            null &&
-                                        provider.clienteSeleccionado!.telefono!
-                                            .isNotEmpty) ...[
-                                      const SizedBox(width: 16),
-                                      const FaIcon(
-                                        FontAwesomeIcons.phone,
-                                        size: 12,
-                                        color: Colors.grey,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        provider.clienteSeleccionado!.telefono!,
-                                        style: const TextStyle(
-                                          color: Colors.grey,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ],
+                              const SizedBox(width: 4),
+                              FaIcon(
+                                state.clienteSeleccionado != null
+                                    ? FontAwesomeIcons.penToSquare
+                                    : FontAwesomeIcons.chevronRight,
+                                size: 14,
+                                color: state.clienteSeleccionado != null
+                                    ? const Color(0xFF1976D2)
+                                    : Colors.grey,
+                              ),
                             ],
                           ),
                         ),
-                        // Botón para cambiar cliente
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: _mostrarDialogoClientes,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Botones de acción (escanear y buscar)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6A1B9A), // Morado
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      icon: const FaIcon(FontAwesomeIcons.barcode),
+                      label: const Text('Escanear'),
+                      onPressed: _escanearProducto,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1976D2), // Azul
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      icon: const FaIcon(FontAwesomeIcons.magnifyingGlass),
+                      label: const Text('Buscar Productos'),
+                      onPressed: _mostrarDialogoProductos,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Contenido principal (lista de productos)
+            Expanded(
+              child: Stack(
+                children: <Widget>[
+                  if (state.productosVenta.isEmpty)
+                    const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          FaIcon(
+                            FontAwesomeIcons.cartShopping,
+                            size: 64,
+                            color: Colors.grey,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'No hay productos en el carrito',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Busca o escanea productos para agregarlos',
+                            style: TextStyle(
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    ListView.builder(
+                      padding: const EdgeInsets.only(
+                          bottom: 100), // Espacio para el botón de finalizar
+                      itemCount: state.productosVenta.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        final producto = state.productosVenta[index];
+                        final cantidad = state.cantidades[index];
+                        return ProductoVentaItemWidget(
+                          producto: producto,
+                          cantidad: cantidad,
+                          onEliminar: () => _eliminarProducto(index),
+                          onCambiarCantidad: (nuevaCantidad) {
+                            _cambiarCantidad(index, nuevaCantidad);
+                          },
+                        );
+                      },
+                    ),
+
+                  // Mensaje de promoción animado
+                  if (_mostrarMensajePromocion)
+                    Positioned(
+                      bottom: 75,
+                      left: 0,
+                      right: 0,
+                      child: FadeTransition(
+                        opacity: _animationController,
+                        child: Center(
+                          child: Material(
+                            elevation: 4,
                             borderRadius: BorderRadius.circular(8),
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              child: Row(
+                            color: const Color(0xFF2E7D32), // Verde oscuro
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 10),
+                              child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: <Widget>[
                                   Text(
-                                    provider.clienteSeleccionado != null
-                                        ? 'Cambiar'
-                                        : 'Seleccionar',
-                                    style: TextStyle(
-                                      color:
-                                          provider.clienteSeleccionado != null
-                                              ? const Color(0xFF1976D2)
-                                              : Colors.grey,
+                                    _nombreProductoPromocion,
+                                    style: const TextStyle(
                                       fontWeight: FontWeight.bold,
+                                      color: Colors.white,
                                     ),
                                   ),
-                                  const SizedBox(width: 4),
-                                  FaIcon(
-                                    provider.clienteSeleccionado != null
-                                        ? FontAwesomeIcons.penToSquare
-                                        : FontAwesomeIcons.chevronRight,
-                                    size: 14,
-                                    color: provider.clienteSeleccionado != null
-                                        ? const Color(0xFF1976D2)
-                                        : Colors.grey,
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _mensajePromocion,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
+                ],
+              ),
+            ),
 
-                // Botones de acción (escanear y buscar)
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
+            // Barra inferior con total y botón de finalizar
+            Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  // Información del total
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: <Widget>[
+                      const Text(
+                        'Total:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color.fromARGB(255, 255, 0, 0),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: <Widget>[
+                            const Text(
+                              'TOTAL',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
+                            ),
+                            Text(
+                              'S/ ${notifier.totalVenta.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Botones de acción
+                  Row(
+                    children: <Widget>[
+                      // Botón para limpiar la venta
                       Expanded(
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF6A1B9A), // Morado
+                            backgroundColor: const Color(0xFF424242),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          icon: const FaIcon(FontAwesomeIcons.barcode),
-                          label: const Text('Escanear'),
-                          onPressed: _escanearProducto,
+                          icon: const FaIcon(FontAwesomeIcons.trash, size: 16),
+                          label: const Text('Limpiar'),
+                          onPressed: state.productosVenta.isEmpty
+                              ? null
+                              : () {
+                                  notifier.limpiarVenta();
+                                  debugPrint('Carrito limpiado');
+                                },
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 16),
+                      // Botón para finalizar venta
                       Expanded(
                         flex: 2,
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1976D2), // Azul
+                            backgroundColor: const Color(0xFF4CAF50),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          icon: const FaIcon(FontAwesomeIcons.magnifyingGlass),
-                          label: const Text('Buscar Productos'),
-                          onPressed: _mostrarDialogoProductos,
+                          icon: const FaIcon(FontAwesomeIcons.check, size: 16),
+                          label: const Text('Finalizar Venta'),
+                          onPressed: state.productosVenta.isEmpty ||
+                                  state.clienteSeleccionado == null
+                              ? null
+                              : _finalizarVenta,
                         ),
                       ),
                     ],
                   ),
-                ),
-
-                // Contenido principal (lista de productos)
-                Expanded(
-                  child: Stack(
-                    children: <Widget>[
-                      if (provider.productosVenta.isEmpty)
-                        const Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: <Widget>[
-                              FaIcon(
-                                FontAwesomeIcons.cartShopping,
-                                size: 64,
-                                color: Colors.grey,
-                              ),
-                              SizedBox(height: 16),
-                              Text(
-                                'No hay productos en el carrito',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                'Busca o escanea productos para agregarlos',
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      else
-                        ListView.builder(
-                          padding: const EdgeInsets.only(
-                              bottom:
-                                  100), // Espacio para el botón de finalizar
-                          itemCount: provider.productosVenta.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            final producto = provider.productosVenta[index];
-                            final cantidad = provider.cantidades[index];
-                            return ProductoVentaItemWidget(
-                              producto: producto,
-                              cantidad: cantidad,
-                              onEliminar: () => _eliminarProducto(index),
-                              onCambiarCantidad: (nuevaCantidad) {
-                                _cambiarCantidad(index, nuevaCantidad);
-                              },
-                            );
-                          },
-                        ),
-
-                      // Mensaje de promoción animado
-                      if (_mostrarMensajePromocion)
-                        Positioned(
-                          bottom: 75,
-                          left: 0,
-                          right: 0,
-                          child: FadeTransition(
-                            opacity: _animationController,
-                            child: Center(
-                              child: Material(
-                                elevation: 4,
-                                borderRadius: BorderRadius.circular(8),
-                                color: const Color(0xFF2E7D32), // Verde oscuro
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 10),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: <Widget>[
-                                      Text(
-                                        _nombreProductoPromocion,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        _mensajePromocion,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-
-                // Barra inferior con total y botón de finalizar
-                Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    boxShadow: <BoxShadow>[
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 4,
-                        offset: const Offset(0, -2),
-                      ),
-                    ],
-                  ),
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      // Información del total
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: <Widget>[
-                          const Text(
-                            'Total:',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: const Color.fromARGB(255, 255, 0, 0),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: <Widget>[
-                                const Text(
-                                  'TOTAL',
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                Text(
-                                  'S/ ${provider.totalVenta.toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 20,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      // Botones de acción
-                      Row(
-                        children: <Widget>[
-                          // Botón para limpiar la venta
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF424242),
-                                foregroundColor: Colors.white,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              icon: const FaIcon(FontAwesomeIcons.trash,
-                                  size: 16),
-                              label: const Text('Limpiar'),
-                              onPressed: provider.productosVenta.isEmpty
-                                  ? null
-                                  : () {
-                                      provider.limpiarVenta();
-                                      debugPrint('Carrito limpiado');
-                                    },
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          // Botón para finalizar venta
-                          Expanded(
-                            flex: 2,
-                            child: ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF4CAF50),
-                                foregroundColor: Colors.white,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              icon: const FaIcon(FontAwesomeIcons.check,
-                                  size: 16),
-                              label: const Text('Finalizar Venta'),
-                              onPressed: provider.productosVenta.isEmpty ||
-                                      provider.clienteSeleccionado == null
-                                  ? null
-                                  : _finalizarVenta,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 }

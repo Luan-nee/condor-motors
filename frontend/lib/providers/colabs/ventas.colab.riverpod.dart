@@ -8,67 +8,104 @@ import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/proforma.model.dart';
 import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:flutter/material.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-/// Provider para gestionar ventas en el módulo de colaboradores
-///
-/// REF: Ahora toda la lógica de productos usa `List<Producto>` (no Maps). La carga de productos se hace usando ProductoRepository.
-class VentasColabProvider extends ChangeNotifier {
+part 'ventas.colab.riverpod.g.dart';
+
+class VentasColabState {
+  final bool isLoading;
+  final String loadingMessage;
+  final String sucursalId;
+  final int empleadoId;
+
+  final List<Producto> productos;
+  final bool productosLoaded;
+  final bool isLoadingProductos;
+  final List<String> categorias;
+
+  final List<Producto> productosVenta;
+  final List<int> cantidades;
+  final Cliente? clienteSeleccionado;
+
+  final List<Cliente> clientes;
+  final bool clientesLoaded;
+
+  final String mensajePromocion;
+  final String nombreProductoPromocion;
+
+  const VentasColabState({
+    this.isLoading = false,
+    this.loadingMessage = '',
+    this.sucursalId = '1',
+    this.empleadoId = 1,
+    this.productos = const <Producto>[],
+    this.productosLoaded = false,
+    this.isLoadingProductos = false,
+    this.categorias = const <String>['Todas'],
+    this.productosVenta = const <Producto>[],
+    this.cantidades = const <int>[],
+    this.clienteSeleccionado,
+    this.clientes = const <Cliente>[],
+    this.clientesLoaded = false,
+    this.mensajePromocion = '',
+    this.nombreProductoPromocion = '',
+  });
+
+  VentasColabState copyWith({
+    bool? isLoading,
+    String? loadingMessage,
+    String? sucursalId,
+    int? empleadoId,
+    List<Producto>? productos,
+    bool? productosLoaded,
+    bool? isLoadingProductos,
+    List<String>? categorias,
+    List<Producto>? productosVenta,
+    List<int>? cantidades,
+    Cliente? clienteSeleccionado,
+    bool nullifyCliente = false,
+    List<Cliente>? clientes,
+    bool? clientesLoaded,
+    String? mensajePromocion,
+    String? nombreProductoPromocion,
+  }) {
+    return VentasColabState(
+      isLoading: isLoading ?? this.isLoading,
+      loadingMessage: loadingMessage ?? this.loadingMessage,
+      sucursalId: sucursalId ?? this.sucursalId,
+      empleadoId: empleadoId ?? this.empleadoId,
+      productos: productos ?? this.productos,
+      productosLoaded: productosLoaded ?? this.productosLoaded,
+      isLoadingProductos: isLoadingProductos ?? this.isLoadingProductos,
+      categorias: categorias ?? this.categorias,
+      productosVenta: productosVenta ?? this.productosVenta,
+      cantidades: cantidades ?? this.cantidades,
+      clienteSeleccionado: nullifyCliente
+          ? null
+          : (clienteSeleccionado ?? this.clienteSeleccionado),
+      clientes: clientes ?? this.clientes,
+      clientesLoaded: clientesLoaded ?? this.clientesLoaded,
+      mensajePromocion: mensajePromocion ?? this.mensajePromocion,
+      nombreProductoPromocion:
+          nombreProductoPromocion ?? this.nombreProductoPromocion,
+    );
+  }
+}
+
+@Riverpod(keepAlive: true)
+class VentasColab extends _$VentasColab {
   // APIs
   final ProductosApi _productosApi = api.productos;
   final api_proforma.ProformaVentaApi _proformasApi = api.proformas;
   final ClientesApi _clientesApi = api.clientes;
 
-  // Estado general
-  bool _isLoading = false;
-  String _loadingMessage = '';
-  String _sucursalId = '1'; // Valor por defecto
-  int _empleadoId = 1; // Valor por defecto
+  @override
+  VentasColabState build() {
+    return const VentasColabState();
+  }
 
-  // Estado para productos
-  List<Producto> _productos = <Producto>[];
-  bool _productosLoaded = false;
-  bool _isLoadingProductos = false;
-  List<String> _categorias = <String>['Todas'];
-
-  // Estado para la venta actual
-  final List<Producto> _productosVenta = <Producto>[];
-  final List<int> _cantidades = <int>[];
-  Cliente? _clienteSeleccionado;
-
-  // Estado para clientes
-  List<Cliente> _clientes = <Cliente>[];
-  bool _clientesLoaded = false;
-
-  // Estado para promociones
-  final String _mensajePromocion = '';
-  final String _nombreProductoPromocion = '';
-
-  // Getters
-  bool get isLoading => _isLoading;
-  String get loadingMessage => _loadingMessage;
-  String get sucursalId => _sucursalId;
-  int get empleadoId => _empleadoId;
-
-  List<Producto> get productos => _productos;
-  bool get productosLoaded => _productosLoaded;
-  bool get isLoadingProductos => _isLoadingProductos;
-  List<String> get categorias => _categorias;
-
-  List<Producto> get productosVenta => _productosVenta;
-  List<int> get cantidades => _cantidades;
-  Cliente? get clienteSeleccionado => _clienteSeleccionado;
-
-  List<Cliente> get clientes => _clientes;
-  bool get clientesLoaded => _clientesLoaded;
-
-  String get mensajePromocion => _mensajePromocion;
-  String get nombreProductoPromocion => _nombreProductoPromocion;
-
-  // Métodos para gestionar el estado
   void setLoading({required bool loading, String message = ''}) {
-    _isLoading = loading;
-    _loadingMessage = message;
-    notifyListeners();
+    state = state.copyWith(isLoading: loading, loadingMessage: message);
   }
 
   /// Inicializar datos básicos del provider
@@ -83,29 +120,30 @@ class VentasColabProvider extends ChangeNotifier {
     try {
       // Obtener datos del usuario autenticado
       final Map<String, dynamic>? userData = await api.auth.getUserData();
+      String sucursalId = state.sucursalId;
+      int empleadoId = state.empleadoId;
+
       if (userData != null && userData['sucursalId'] != null) {
-        _sucursalId = userData['sucursalId'].toString();
-        debugPrint('Usando sucursal del usuario autenticado: $_sucursalId');
+        sucursalId = userData['sucursalId'].toString();
 
         // Determinar ID de empleado directamente desde userData
         if (userData['empleadoId'] != null) {
-          _empleadoId = int.tryParse(userData['empleadoId'].toString()) ?? 0;
-          debugPrint('Usando empleadoId del userData: $_empleadoId');
+          empleadoId = int.tryParse(userData['empleadoId'].toString()) ?? 0;
         } else {
           // Si no hay empleadoId en userData, usar el ID del usuario como empleadoId
-          // Esta es la solución más segura sin depender de la API de empleados
           if (userData['id'] != null) {
-            _empleadoId = int.tryParse(userData['id'].toString()) ?? 0;
-            debugPrint('Usando id del usuario como empleadoId: $_empleadoId');
+            empleadoId = int.tryParse(userData['id'].toString()) ?? 0;
           } else {
-            _empleadoId = 0; // Valor cero para que sea un error explícito
-            debugPrint('No se pudo determinar el empleadoId, usando 0');
+            empleadoId = 0; // Valor cero para que sea un error explícito
           }
         }
       } else {
-        debugPrint(
-            'No se pudo obtener la sucursal del usuario, usando fallback: $_sucursalId');
       }
+
+      state = state.copyWith(
+        sucursalId: sucursalId,
+        empleadoId: empleadoId,
+      );
     } catch (e) {
       debugPrint('Error al obtener datos del usuario: $e');
     } finally {
@@ -119,49 +157,49 @@ class VentasColabProvider extends ChangeNotifier {
 
   /// Cargar productos desde la API
   Future<void> cargarProductos() async {
-    if (_productosLoaded) {
+    if (state.productosLoaded) {
       return;
     }
 
-    _isLoadingProductos = true;
-    notifyListeners();
+    state = state.copyWith(isLoadingProductos: true);
 
     try {
-      debugPrint('Cargando productos para sucursal ID: $_sucursalId');
 
       // Obtener productos con stock disponible usando el repositorio
       final response = await ProductoRepository.instance.getProductosPorFiltros(
-        sucursalId: _sucursalId,
+        sucursalId: state.sucursalId,
         stockPositivo: true,
         pageSize: 100,
       );
-      _productos = response.items;
-      _productosLoaded = true;
-      _categorias = <String>{'Todas', ..._productos.map((p) => p.categoria)}
+
+      final productos = response.items;
+      final categorias = <String>{'Todas', ...productos.map((p) => p.categoria)}
           .toList()
         ..sort();
-      _isLoadingProductos = false;
-      notifyListeners();
-      debugPrint('Productos cargados: ${_productos.length}');
-      debugPrint('Categorías detectadas: ${_categorias.length}');
+
+      state = state.copyWith(
+        productos: productos,
+        productosLoaded: true,
+        categorias: categorias,
+        isLoadingProductos: false,
+      );
+
     } catch (e) {
       debugPrint('Error al cargar productos: $e');
-      _isLoadingProductos = false;
-      notifyListeners();
+      state = state.copyWith(isLoadingProductos: false);
       throw Exception('Error al cargar productos: $e');
     }
   }
 
   /// Cargar clientes desde la API
   Future<void> cargarClientes() async {
-    if (_clientesLoaded) {
+    if (state.clientesLoaded) {
       return; // Evitar cargar múltiples veces
     }
 
     setLoading(loading: true, message: 'Cargando clientes...');
 
     try {
-      debugPrint('Cargando clientes desde la API...');
 
       // Obtener los clientes desde la API
       final List<Cliente> clientesData = await _clientesApi.getClientes(
@@ -169,10 +207,10 @@ class VentasColabProvider extends ChangeNotifier {
         sortBy: 'denominacion', // Ordenar por nombre
       );
 
-      _clientes = clientesData;
-      _clientesLoaded = true;
-      debugPrint('Clientes cargados: ${_clientes.length}');
-      notifyListeners();
+      state = state.copyWith(
+        clientes: clientesData,
+        clientesLoaded: true,
+      );
     } catch (e) {
       debugPrint('Error al cargar clientes: $e');
       throw Exception('Error al cargar clientes: $e');
@@ -184,9 +222,9 @@ class VentasColabProvider extends ChangeNotifier {
   /// Calcular el total de la venta actual
   double get totalVenta {
     double total = 0;
-    for (int i = 0; i < _productosVenta.length; i++) {
-      final producto = _productosVenta[i];
-      final cantidad = _cantidades[i];
+    for (int i = 0; i < state.productosVenta.length; i++) {
+      final producto = state.productosVenta[i];
+      final cantidad = state.cantidades[i];
       total += producto.getPrecioConDescuento(cantidad) * cantidad;
     }
     return total;
@@ -194,51 +232,73 @@ class VentasColabProvider extends ChangeNotifier {
 
   /// Agregar un producto a la venta actual
   bool agregarProducto(Producto producto) {
-    final index = _productosVenta.indexWhere((p) => p.id == producto.id);
+    final newProductosVenta = List<Producto>.from(state.productosVenta);
+    final newCantidades = List<int>.from(state.cantidades);
+
+    final index = newProductosVenta.indexWhere((p) => p.id == producto.id);
     if (index >= 0) {
-      _cantidades[index]++;
+      newCantidades[index]++;
     } else {
-      _productosVenta.add(producto);
-      _cantidades.add(1);
+      newProductosVenta.add(producto);
+      newCantidades.add(1);
     }
-    notifyListeners();
+
+    state = state.copyWith(
+      productosVenta: newProductosVenta,
+      cantidades: newCantidades,
+    );
     return true;
   }
 
   /// Eliminar un producto de la venta
   void eliminarProducto(int index) {
-    _productosVenta.removeAt(index);
-    _cantidades.removeAt(index);
-    notifyListeners();
+    final newProductosVenta = List<Producto>.from(state.productosVenta);
+    final newCantidades = List<int>.from(state.cantidades);
+
+    newProductosVenta.removeAt(index);
+    newCantidades.removeAt(index);
+
+    state = state.copyWith(
+      productosVenta: newProductosVenta,
+      cantidades: newCantidades,
+    );
   }
 
   /// Cambiar la cantidad de un producto en la venta
   bool cambiarCantidad(int index, int nuevaCantidad) {
-    if (index < 0 || index >= _productosVenta.length) {
+    if (index < 0 || index >= state.productosVenta.length) {
       return false;
     }
+
+    final newProductosVenta = List<Producto>.from(state.productosVenta);
+    final newCantidades = List<int>.from(state.cantidades);
+
     if (nuevaCantidad <= 0) {
-      _productosVenta.removeAt(index);
-      _cantidades.removeAt(index);
+      newProductosVenta.removeAt(index);
+      newCantidades.removeAt(index);
     } else {
-      _cantidades[index] = nuevaCantidad;
+      newCantidades[index] = nuevaCantidad;
     }
-    notifyListeners();
+
+    state = state.copyWith(
+      productosVenta: newProductosVenta,
+      cantidades: newCantidades,
+    );
     return true;
   }
 
   /// Limpiar la venta actual
   void limpiarVenta() {
-    _productosVenta.clear();
-    _cantidades.clear();
-    _clienteSeleccionado = null;
-    notifyListeners();
+    state = state.copyWith(
+      productosVenta: [],
+      cantidades: [],
+      nullifyCliente: true,
+    );
   }
 
   /// Seleccionar un cliente para la venta
   void seleccionarCliente(Cliente cliente) {
-    _clienteSeleccionado = cliente;
-    notifyListeners();
+    state = state.copyWith(clienteSeleccionado: cliente);
   }
 
   /// Crear un nuevo cliente
@@ -251,9 +311,12 @@ class VentasColabProvider extends ChangeNotifier {
           await _clientesApi.createCliente(clienteData);
 
       // Actualizar la lista de clientes y seleccionar el nuevo cliente
-      _clientes.add(nuevoCliente);
-      _clienteSeleccionado = nuevoCliente;
-      notifyListeners();
+      final newClientes = List<Cliente>.from(state.clientes)..add(nuevoCliente);
+
+      state = state.copyWith(
+        clientes: newClientes,
+        clienteSeleccionado: nuevoCliente,
+      );
 
       return nuevoCliente;
     } catch (e) {
@@ -266,7 +329,7 @@ class VentasColabProvider extends ChangeNotifier {
 
   /// Verificar el stock de los productos antes de finalizar venta
   Future<bool> verificarStockProductos() async {
-    if (_productosVenta.isEmpty) {
+    if (state.productosVenta.isEmpty) {
       return false;
     }
 
@@ -275,8 +338,8 @@ class VentasColabProvider extends ChangeNotifier {
 
     try {
       // Usar validaciones del modelo Producto
-      final List<String> errors =
-          Producto.validateProductsForSale(_productosVenta, _cantidades);
+      final List<String> errors = Producto.validateProductsForSale(
+          state.productosVenta, state.cantidades);
       if (errors.isNotEmpty) {
         setLoading(loading: false);
         debugPrint('Errores de validación de stock: ${errors.join(', ')}');
@@ -284,7 +347,7 @@ class VentasColabProvider extends ChangeNotifier {
       }
 
       // Verificar stock de cada producto (validación adicional con API)
-      for (final Producto producto in _productosVenta) {
+      for (final Producto producto in state.productosVenta) {
         // Validar ID de producto
         final dynamic productoIdDynamic = producto.id;
         int productoId;
@@ -298,7 +361,14 @@ class VentasColabProvider extends ChangeNotifier {
           return false;
         }
 
-        final int cantidad = _cantidades[productoId];
+        // Buscar indice
+        final index =
+            state.productosVenta.indexWhere((p) => p.id == producto.id);
+        if (index < 0) {
+          continue;
+        }
+
+        final int cantidad = state.cantidades[index];
 
         // Actualizar mensaje de loading
         setLoading(
@@ -307,7 +377,7 @@ class VentasColabProvider extends ChangeNotifier {
 
         // Obtener producto actualizado para verificar stock
         final Producto productoActual = await _productosApi.getProducto(
-          sucursalId: _sucursalId,
+          sucursalId: state.sucursalId,
           productoId: productoId,
           useCache: false, // No usar caché para obtener datos actualizados
         );
@@ -330,7 +400,7 @@ class VentasColabProvider extends ChangeNotifier {
   /// Crear proforma de venta
   Future<Proforma?> crearProformaVenta() async {
     // Validar que haya productos y cliente seleccionado
-    if (_productosVenta.isEmpty || _clienteSeleccionado == null) {
+    if (state.productosVenta.isEmpty || state.clienteSeleccionado == null) {
       return null;
     }
 
@@ -341,15 +411,17 @@ class VentasColabProvider extends ChangeNotifier {
 
       // Convertir los productos de la venta al formato esperado por la API
       final List<api_proforma.DetalleProforma> detalles =
-          _productosVenta.map((Producto producto) {
-        final double precioUnitario =
-            producto.getPrecioConDescuento(_cantidades[producto.id]);
-        final double subtotal = precioUnitario * _cantidades[producto.id];
+          state.productosVenta.map((Producto producto) {
+        final index =
+            state.productosVenta.indexWhere((p) => p.id == producto.id);
+        final int cantidad = state.cantidades[index];
+        final double precioUnitario = producto.getPrecioConDescuento(cantidad);
+        final double subtotal = precioUnitario * cantidad;
 
         return api_proforma.DetalleProforma(
           productoId: producto.id,
           nombre: producto.nombre,
-          cantidad: _cantidades[producto.id],
+          cantidad: cantidad,
           subtotal: subtotal,
           precioUnitario: precioUnitario,
         );
@@ -360,12 +432,12 @@ class VentasColabProvider extends ChangeNotifier {
       // Llamar a la API para crear la proforma
       final Map<String, dynamic> respuesta =
           await _proformasApi.createProformaVenta(
-        sucursalId: _sucursalId,
-        nombre: 'Proforma ${_clienteSeleccionado!.denominacion}',
+        sucursalId: state.sucursalId,
+        nombre: 'Proforma ${state.clienteSeleccionado!.denominacion}',
         total: totalVenta,
         detalles: detalles,
-        empleadoId: _empleadoId,
-        clienteId: _clienteSeleccionado!.id,
+        empleadoId: state.empleadoId,
+        clienteId: state.clienteSeleccionado!.id,
       );
 
       setLoading(loading: true, message: 'Procesando respuesta...');
@@ -375,7 +447,7 @@ class VentasColabProvider extends ChangeNotifier {
           _proformasApi.parseProformaVenta(respuesta);
 
       // Recargar productos para reflejar el stock actualizado por el backend
-      _productosLoaded = false;
+      state = state.copyWith(productosLoaded: false);
       await cargarProductos();
 
       return proformaCreada;
@@ -389,13 +461,15 @@ class VentasColabProvider extends ChangeNotifier {
 
   /// Buscar un producto por código de barras
   Producto? buscarProductoPorCodigo(String codigo) {
-    return _productos.firstWhereOrNull((p) => p.sku == codigo);
+    return state.productos.firstWhereOrNull((p) => p.sku == codigo);
   }
 
   /// Invalida el caché de clientes y recarga desde la API
   Future<void> invalidateClientesCache() async {
-    _clientesLoaded = false;
-    _clientes = <Cliente>[];
+    state = state.copyWith(
+      clientesLoaded: false,
+      clientes: <Cliente>[],
+    );
     await cargarClientes();
   }
 }

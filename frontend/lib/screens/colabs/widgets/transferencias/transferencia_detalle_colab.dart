@@ -1,14 +1,14 @@
 import 'package:condorsmotors/models/transferencias.model.dart';
-import 'package:condorsmotors/providers/colabs/transferencias.colab.provider.dart';
+import 'package:condorsmotors/providers/colabs/transferencias.colab.riverpod.dart';
 import 'package:condorsmotors/screens/colabs/transferencias_colab.dart';
 import 'package:condorsmotors/screens/colabs/widgets/transferencias/transferencia_comparar_colab.dart';
 import 'package:condorsmotors/utils/transferencias_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:provider/provider.dart';
 
-class TransferenciaDetalleColab extends StatefulWidget {
+class TransferenciaDetalleColab extends ConsumerStatefulWidget {
   final String transferenciaid;
 
   const TransferenciaDetalleColab({
@@ -17,7 +17,7 @@ class TransferenciaDetalleColab extends StatefulWidget {
   });
 
   @override
-  State<TransferenciaDetalleColab> createState() =>
+  ConsumerState<TransferenciaDetalleColab> createState() =>
       _TransferenciaDetalleColabState();
 
   @override
@@ -27,16 +27,17 @@ class TransferenciaDetalleColab extends StatefulWidget {
   }
 }
 
-class _TransferenciaDetalleColabState extends State<TransferenciaDetalleColab> {
-  late final TransferenciasColabProvider _provider;
+class _TransferenciaDetalleColabState
+    extends ConsumerState<TransferenciaDetalleColab> {
 
   @override
   void initState() {
     super.initState();
-    _provider = context.read<TransferenciasColabProvider>();
     // Cargar los detalles solo una vez en el initState
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _provider.cargarDetalleTransferencia(widget.transferenciaid);
+      ref
+          .read(transferenciasColabProvider.notifier)
+          .cargarDetalleTransferencia(widget.transferenciaid);
     });
   }
 
@@ -44,6 +45,9 @@ class _TransferenciaDetalleColabState extends State<TransferenciaDetalleColab> {
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 600;
+
+    final state = ref.watch(transferenciasColabProvider);
+    final notifier = ref.read(transferenciasColabProvider.notifier);
 
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
@@ -58,18 +62,16 @@ class _TransferenciaDetalleColabState extends State<TransferenciaDetalleColab> {
           IconButton(
             icon: const FaIcon(FontAwesomeIcons.arrowsRotate),
             onPressed: () {
-              // Usar el método del provider para recargar
-              _provider.cargarDetalleTransferencia(widget.transferenciaid);
+              notifier.cargarDetalleTransferencia(widget.transferenciaid);
             },
             tooltip: 'Recargar',
           ),
         ],
       ),
-      // Usar Consumer para actualizar la UI automáticamente
-      body: Consumer<TransferenciasColabProvider>(
-        builder: (context, provider, child) {
+      body: Builder(
+        builder: (context) {
           // Si está cargando, mostrar indicador
-          if (provider.isLoading) {
+          if (state.isLoading) {
             return const Center(
               child: CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
@@ -78,7 +80,7 @@ class _TransferenciaDetalleColabState extends State<TransferenciaDetalleColab> {
           }
 
           // Si hay error, mostrar mensaje
-          if (provider.errorMessage != null) {
+          if (state.errorMessage != null) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -90,14 +92,14 @@ class _TransferenciaDetalleColabState extends State<TransferenciaDetalleColab> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Error al cargar la transferencia: ${provider.errorMessage}',
+                    'Error al cargar la transferencia: ${state.errorMessage}',
                     style: const TextStyle(color: Colors.white),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
                     onPressed: () {
-                      provider
+                      notifier
                           .cargarDetalleTransferencia(widget.transferenciaid);
                     },
                     icon: const FaIcon(FontAwesomeIcons.arrowsRotate),
@@ -112,7 +114,7 @@ class _TransferenciaDetalleColabState extends State<TransferenciaDetalleColab> {
           }
 
           // Si no hay datos, mostrar mensaje
-          if (provider.detalleTransferenciaActual == null) {
+          if (state.detalleTransferenciaActual == null) {
             return const Center(
               child: Text(
                 'No se encontró la transferencia',
@@ -122,7 +124,7 @@ class _TransferenciaDetalleColabState extends State<TransferenciaDetalleColab> {
           }
 
           // Mostrar detalle
-          final transferencia = provider.detalleTransferenciaActual!;
+          final transferencia = state.detalleTransferenciaActual!;
 
           return SingleChildScrollView(
             padding: EdgeInsets.all(isMobile ? 16 : 24),
@@ -231,7 +233,8 @@ class _TransferenciaDetalleColabState extends State<TransferenciaDetalleColab> {
   }
 
   Future<void> _procesarEnvio(TransferenciaInventario transferencia) async {
-    final provider = context.read<TransferenciasColabProvider>();
+    final notifier = ref.read(transferenciasColabProvider.notifier);
+    final state = ref.read(transferenciasColabProvider);
 
     // Mostrar diálogo de carga
     showDialog(
@@ -246,13 +249,13 @@ class _TransferenciaDetalleColabState extends State<TransferenciaDetalleColab> {
 
     try {
       // Obtener datos de comparación usando el nuevo endpoint
-      if (provider.sucursalId == null) {
+      if (state.sucursalId == null) {
         throw Exception('No se pudo obtener el ID de la sucursal del usuario');
       }
 
       debugPrint(
           'Obteniendo comparación para transferencia ${transferencia.id}');
-      final comparacion = await provider.obtenerComparacionTransferencia(
+      final comparacion = await notifier.obtenerComparacionTransferencia(
         transferencia.id.toString(),
       );
 
@@ -363,10 +366,14 @@ class _TransferenciaDetalleColabState extends State<TransferenciaDetalleColab> {
             );
 
             if (confirmar == true) {
-              Navigator.of(context).pop(true);
+              if (context.mounted) {
+                Navigator.of(context).pop(true);
+              }
             }
           } else {
-            Navigator.of(context).pop(true);
+            if (context.mounted) {
+              Navigator.of(context).pop(true);
+            }
           }
         },
       ),
@@ -376,8 +383,8 @@ class _TransferenciaDetalleColabState extends State<TransferenciaDetalleColab> {
   Future<void> _enviarTransferencia(
       TransferenciaInventario transferencia) async {
     try {
-      await context
-          .read<TransferenciasColabProvider>()
+      await ref
+          .read(transferenciasColabProvider.notifier)
           .enviarTransferencia(transferencia);
 
       // Mostrar mensaje de éxito y redirigir

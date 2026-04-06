@@ -2,16 +2,7 @@ import 'dart:io';
 
 import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/components/proforma_notification.dart';
-import 'package:condorsmotors/providers/admin/dashboard.admin.provider.dart';
-
-import 'package:condorsmotors/providers/admin/sucursal.admin.provider.dart';
-import 'package:condorsmotors/providers/admin/transferencias.admin.provider.dart';
-import 'package:condorsmotors/providers/auth.provider.dart';
-import 'package:condorsmotors/providers/colabs/transferencias.colab.provider.dart';
-import 'package:condorsmotors/providers/computer/proforma.computer.provider.dart';
-import 'package:condorsmotors/providers/computer/ventas.computer.provider.dart';
-import 'package:condorsmotors/providers/login.provider.dart';
-import 'package:condorsmotors/providers/session.provider.dart';
+import 'package:condorsmotors/providers/shared_prefs.riverpod.dart';
 import 'package:condorsmotors/routes/routes.dart' as routes;
 import 'package:condorsmotors/screens/login.dart';
 import 'package:condorsmotors/theme/apptheme.dart';
@@ -21,12 +12,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_phoenix/flutter_phoenix.dart';
-import 'package:provider/provider.dart';
-import 'package:provider/single_child_widget.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-// Configuración global de API
-// Nota: La variable api ahora se define en index.api.dart
 
 // Instancia global del sistema de notificaciones
 final ProformaNotification proformaNotification = ProformaNotification();
@@ -37,12 +24,6 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 // Clave global para el ScaffoldMessenger
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
-
-// Instancia global para acceso desde interceptores (ej: main.api.dart)
-late AuthProvider globalAuthProvider;
-
-// variables globales. Esto mejora la predictibilidad y el testing.
-// y luego `final authProvider = locator<AuthProvider>();` donde se necesite.
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -69,62 +50,12 @@ void main() async {
   // Inicializar API usando la función centralizada en index.api.dart
   await ApiInitializer.instance.initializeApiIfNeeded();
 
-  // Inicializar globalAuthProvider ANTES de cualquier petición protegida
-  globalAuthProvider = AuthProvider();
-
-  // Agrupación de providers por dominio
-  final List<SingleChildWidget> globalProviders = [
-    ChangeNotifierProvider(
-      create: (_) => LoginProvider(),
-    ),
-    ChangeNotifierProvider<AuthProvider>.value(
-      value: globalAuthProvider,
-    ),
-
-    ChangeNotifierProvider(create: (_) => SessionProvider()),
-    // Puedes agregar aquí un Provider para sharedPrefs si lo necesitas globalmente
-    Provider<SharedPreferences>.value(value: sharedPrefs),
-  ];
-
-  final List<SingleChildWidget> adminProviders = [
-    ChangeNotifierProvider<TransferenciasProvider>(
-      create: (_) => TransferenciasProvider(),
-    ),
-    ChangeNotifierProvider<SucursalProvider>(
-      create: (_) => SucursalProvider(),
-    ),
-    ChangeNotifierProvider<DashboardProvider>(
-      create: (_) => DashboardProvider(),
-    ),
-  ];
-
-  final List<SingleChildWidget> computerProviders = [
-    ChangeNotifierProvider<VentasComputerProvider>(
-      create: (_) => VentasComputerProvider(),
-    ),
-    ChangeNotifierProvider<ProformaComputerProvider>(
-      create: (context) => ProformaComputerProvider(
-        Provider.of<VentasComputerProvider>(context, listen: false),
-      ),
-    ),
-  ];
-
-  final List<SingleChildWidget> colabProviders = [
-    ChangeNotifierProvider<TransferenciasColabProvider>(
-      create: (_) => TransferenciasColabProvider(),
-    ),
-  ];
-
   runApp(
-    Phoenix(
-      child: MultiProvider(
-        providers: [
-          ...globalProviders,
-          ...adminProviders,
-          ...computerProviders,
-          ...colabProviders,
-          // Aquí puedes agregar más grupos de providers según sea necesario
-        ],
+    ProviderScope(
+      overrides: [
+        sharedPrefsProvider.overrideWithValue(sharedPrefs),
+      ],
+      child: Phoenix(
         child: const AppInitializer(
           child: ConnectionStatusWidget(
             child: CondorMotorsApp(),

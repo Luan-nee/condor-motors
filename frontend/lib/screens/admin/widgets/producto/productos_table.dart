@@ -1,7 +1,6 @@
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/repositories/producto.repository.dart';
-import 'package:condorsmotors/utils/productos_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -56,15 +55,12 @@ class ProductosTable extends StatefulWidget {
 
 class _ProductosTableState extends State<ProductosTable>
     with TickerProviderStateMixin {
-  late TabController _tabController;
   late AnimationController _loadingController;
   late Animation<double> _loadingAnimation;
-  Map<String, List<Producto>> _productosAgrupados = <String, List<Producto>>{};
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
     _loadingController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
@@ -73,12 +69,10 @@ class _ProductosTableState extends State<ProductosTable>
       parent: _loadingController,
       curve: Curves.easeInOut,
     );
-    _agruparProductos();
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     _loadingController.dispose();
     super.dispose();
   }
@@ -129,16 +123,10 @@ class _ProductosTableState extends State<ProductosTable>
     if (productosHanCambiado || keyDiferente) {
       debugPrint(
           'ProductosTable: Actualización detectada. Productos cambiados: $productosHanCambiado, Key diferente: $keyDiferente');
-      _agruparProductos();
 
       // Forzar reconstrucción del widget
       setState(() {});
     }
-  }
-
-  void _agruparProductos() {
-    _productosAgrupados =
-        ProductosUtils.agruparProductosPorDisponibilidad(widget.productos);
   }
 
   @override
@@ -188,101 +176,8 @@ class _ProductosTableState extends State<ProductosTable>
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            TabBar(
-              controller: _tabController,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white.withValues(alpha: 0.5),
-              indicatorColor: const Color(0xFFE31E24),
-              indicatorWeight: 4,
-              tabs: <Widget>[
-                Tab(
-                  icon: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      const FaIcon(FontAwesomeIcons.boxOpen, size: 16),
-                      const SizedBox(width: 8),
-                      const Text('Disponibles'),
-                      const SizedBox(width: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2D2D2D),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '${widget.productos.length}',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Tab(
-                  icon: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      const FaIcon(FontAwesomeIcons.triangleExclamation,
-                          size: 16, color: Color(0xFFE31E24)),
-                      const SizedBox(width: 8),
-                      const Text('Stock Bajo'),
-                      const SizedBox(width: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2D2D2D),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '${_productosAgrupados['stockBajo']?.length ?? 0}',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Tab(
-                  icon: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      FaIcon(FontAwesomeIcons.ban,
-                          size: 16, color: Colors.red.shade800),
-                      const SizedBox(width: 8),
-                      const Text('Agotados'),
-                      const SizedBox(width: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2D2D2D),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '${_productosAgrupados['agotados']?.length ?? 0}',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
             Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: <Widget>[
-                  _buildProductosTabla(
-                      _productosAgrupados['disponibles'] ?? <Producto>[]),
-                  _buildProductosTabla(
-                      _productosAgrupados['stockBajo'] ?? <Producto>[]),
-                  _buildProductosTabla(
-                      _productosAgrupados['agotados'] ?? <Producto>[]),
-                ],
-              ),
+              child: _buildProductosTabla(widget.productos),
             ),
           ],
         ),
@@ -318,7 +213,9 @@ class _ProductosTableState extends State<ProductosTable>
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: DecoratedBox(
+        child: SizedBox(
+          width: double.infinity,
+          child: DecoratedBox(
           decoration: BoxDecoration(
             color: const Color(0xFF222222),
             borderRadius: BorderRadius.circular(8),
@@ -339,6 +236,7 @@ class _ProductosTableState extends State<ProductosTable>
               child: _buildDataTable(context, productosLista),
             ),
           ),
+        ),
         ),
       ),
     );
@@ -627,26 +525,59 @@ class _ProductosTableState extends State<ProductosTable>
 
             // Precio
             DataCell(
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: <Widget>[
-                  Text(
-                    producto.getPrecioVentaFormateado(),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
+              Builder(
+                builder: (context) {
+                  final double precioActivo = producto.getPrecioActual();
+                  final double ganancia = precioActivo - producto.precioCompra;
+                  final double margen = producto.precioCompra > 0 
+                      ? (ganancia / producto.precioCompra) * 100 
+                      : 0;
+                  
+                  return Tooltip(
+                    message:
+                        'Ganancia: S/ ${ganancia.toStringAsFixed(2)}\n'
+                        'Margen: ${margen.toStringAsFixed(2)}%',
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: <Widget>[
+                        if (producto.liquidacion && producto.precioOferta != null) ...[
+                          Text(
+                            producto.getPrecioOfertaFormateado() ?? '',
+                            style: TextStyle(
+                              color: Colors.amber[400],
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            producto.getPrecioVentaFormateado(),
+                            style: const TextStyle(
+                              color: Colors.white54,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ] else ...[
+                          Text(
+                            producto.getPrecioVentaFormateado(),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          if (producto.estaEnOferta())
+                            Text(
+                              producto.getPrecioOfertaFormateado() ?? '',
+                              style: TextStyle(
+                                color: Colors.amber[400],
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                        ],
+                      ],
                     ),
-                  ),
-                  if (producto.estaEnOferta())
-                    Text(
-                      producto.getPrecioOfertaFormateado() ?? '',
-                      style: TextStyle(
-                        color: Colors.amber[400],
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                ],
+                  );
+                },
               ),
             ),
 

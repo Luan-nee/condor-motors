@@ -1,8 +1,8 @@
-import 'package:condorsmotors/providers/computer/dash.computer.provider.dart';
+import 'package:condorsmotors/providers/computer/dash.computer.riverpod.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:provider/provider.dart';
 
 // Definición de la clase Venta para manejar los datos
 class Venta {
@@ -73,7 +73,7 @@ class ProductoStockBajo {
   }
 }
 
-class DashboardComputerScreen extends StatefulWidget {
+class DashboardComputerScreen extends ConsumerStatefulWidget {
   final int? sucursalId;
   final String nombreSucursal;
 
@@ -84,7 +84,7 @@ class DashboardComputerScreen extends StatefulWidget {
   });
 
   @override
-  State<DashboardComputerScreen> createState() =>
+  ConsumerState<DashboardComputerScreen> createState() =>
       _DashboardComputerScreenState();
 
   @override
@@ -96,50 +96,44 @@ class DashboardComputerScreen extends StatefulWidget {
   }
 }
 
-class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
-  late DashboardComputerProvider _dashboardProvider;
-
+class _DashboardComputerScreenState
+    extends ConsumerState<DashboardComputerScreen> {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeProvider();
+      ref.read(dashComputerProvider.notifier).inicializar();
     });
-  }
-
-  Future<void> _initializeProvider() async {
-    _dashboardProvider =
-        Provider.of<DashboardComputerProvider>(context, listen: false);
-    await _dashboardProvider.inicializar();
   }
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(dashComputerProvider);
+    final notifier = ref.read(dashComputerProvider.notifier);
+
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
       appBar: AppBar(
         backgroundColor: const Color(0xFF2D2D2D),
-        title: Consumer<DashboardComputerProvider>(
-          builder: (context, provider, _) => Text(
-            'Dashboard - ${provider.nombreSucursal}',
-            style: const TextStyle(color: Colors.white),
-          ),
+        title: Text(
+          'Dashboard - ${state.nombreSucursal}',
+          style: const TextStyle(color: Colors.white),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: <Widget>[
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => _dashboardProvider.cargarDatos(),
+            onPressed: notifier.cargarDatos,
           ),
         ],
       ),
-      body: Consumer<DashboardComputerProvider>(
-        builder: (context, provider, _) {
-          if (provider.isLoading) {
+      body: Builder(
+        builder: (context) {
+          if (state.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (provider.errorMessage.isNotEmpty) {
+          if (state.errorMessage.isNotEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -147,13 +141,13 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
                   const Icon(Icons.error_outline, size: 48, color: Colors.red),
                   const SizedBox(height: 16),
                   Text(
-                    provider.errorMessage,
+                    state.errorMessage,
                     style: const TextStyle(color: Colors.white),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () => provider.cargarDatos(),
+                    onPressed: notifier.cargarDatos,
                     child: const Text('Reintentar'),
                   ),
                 ],
@@ -166,9 +160,9 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                _buildVentasCard(provider),
+                _buildVentasCard(state),
                 const SizedBox(height: 16),
-                _buildStockBajoCard(provider),
+                _buildStockBajoCard(state, notifier),
               ],
             ),
           );
@@ -177,7 +171,7 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
     );
   }
 
-  Widget _buildVentasCard(DashboardComputerProvider provider) {
+  Widget _buildVentasCard(DashComputerState provider) {
     // Verificar el tipo de los elementos en ultimasVentas
     final List<Venta> ventas = provider.ultimasVentas.map((item) {
       try {
@@ -288,10 +282,10 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
     );
   }
 
-  Widget _buildStockBajoCard(DashboardComputerProvider provider) {
-    final List<ProductoStockBajo> productos = provider.productosStockBajo
-        .map(ProductoStockBajo.fromJson)
-        .toList();
+  Widget _buildStockBajoCard(
+      DashComputerState provider, DashComputer notifier) {
+    final List<ProductoStockBajo> productos =
+        provider.productosStockBajo.map(ProductoStockBajo.fromJson).toList();
 
     return Card(
       color: const Color(0xFF2D2D2D),
@@ -332,7 +326,7 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
                   ],
                 ),
                 TextButton.icon(
-                  onPressed: () => provider.cargarDatos(),
+                  onPressed: () => notifier.cargarDatos(),
                   icon: const FaIcon(
                     FontAwesomeIcons.arrowsRotate,
                     size: 14,
@@ -414,7 +408,8 @@ class _DashboardComputerScreenState extends State<DashboardComputerScreen> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF2196F3).withValues(alpha: 0.1),
+                              color: const Color(0xFF2196F3)
+                                  .withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(

@@ -1,22 +1,22 @@
 // Importamos la variable global api
 import 'package:condorsmotors/models/transferencias.model.dart';
-import 'package:condorsmotors/providers/admin/transferencias.admin.provider.dart';
+import 'package:condorsmotors/providers/admin/transferencias.admin.riverpod.dart';
 import 'package:condorsmotors/screens/admin/widgets/movimiento/transferencia_detail_dialog.dart'; // Importamos el nuevo widget unificado
 import 'package:condorsmotors/utils/transferencias_utils.dart';
 import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 
-class MovimientosAdminScreen extends StatefulWidget {
+class MovimientosAdminScreen extends ConsumerStatefulWidget {
   const MovimientosAdminScreen({super.key});
 
   @override
-  State<MovimientosAdminScreen> createState() => _MovimientosAdminScreenState();
+  ConsumerState<MovimientosAdminScreen> createState() => _MovimientosAdminScreenState();
 }
 
-class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
+class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen> {
   @override
   void initState() {
     super.initState();
@@ -31,24 +31,24 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
       return;
     }
 
-    final TransferenciasProvider transferenciasProvider =
-        Provider.of<TransferenciasProvider>(context, listen: false);
+    final notifier = ref.read(transferenciasAdminProvider.notifier);
+    final state = ref.read(transferenciasAdminProvider);
 
-    // Actualizamos los filtros en el provider
-    transferenciasProvider.actualizarFiltros(
-      fechaInicio: transferenciasProvider.fechaInicio,
-      fechaFin: transferenciasProvider.fechaFin,
+    // Actualizamos los filtros en el notifier
+    notifier.actualizarFiltros(
+      fechaInicio: state.fechaInicio,
+      fechaFin: state.fechaFin,
     );
 
-    await transferenciasProvider.cargarTransferencias(
+    await notifier.cargarTransferencias(
       forceRefresh: forceRefresh,
     );
 
     // Si hay error, mostrar snackbar
-    if (transferenciasProvider.errorMessage != null && mounted) {
+    if (ref.read(transferenciasAdminProvider).errorMessage != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(transferenciasProvider.errorMessage!),
+          content: Text(ref.read(transferenciasAdminProvider).errorMessage!),
           backgroundColor: Colors.red,
         ),
       );
@@ -56,9 +56,9 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
   }
 
   // Botón de refrescar
-  Widget _buildRefreshButton(TransferenciasProvider transferenciasProvider) {
+  Widget _buildRefreshButton(TransferenciasAdminState state, TransferenciasAdmin notifier) {
     return ElevatedButton.icon(
-      icon: transferenciasProvider.isLoading
+      icon: state.isLoading
           ? const SizedBox(
               width: 16,
               height: 16,
@@ -73,7 +73,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
               color: Colors.white,
             ),
       label: Text(
-        transferenciasProvider.isLoading ? 'Recargando...' : 'Recargar',
+        state.isLoading ? 'Recargando...' : 'Recargar',
         style: const TextStyle(color: Colors.white),
       ),
       style: ElevatedButton.styleFrom(
@@ -84,20 +84,21 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
           vertical: 12,
         ),
       ),
-      onPressed: transferenciasProvider.isLoading
+      onPressed: state.isLoading
           ? null
           : () async {
               final scaffoldMessenger = ScaffoldMessenger.of(context);
-              await transferenciasProvider.recargarDatos();
+              await notifier.recargarDatos();
 
               if (!mounted) {
                 return;
               }
 
-              if (transferenciasProvider.errorMessage != null) {
+              final currentState = ref.read(transferenciasAdminProvider);
+              if (currentState.errorMessage != null) {
                 scaffoldMessenger.showSnackBar(
                   SnackBar(
-                    content: Text(transferenciasProvider.errorMessage!),
+                    content: Text(currentState.errorMessage!),
                     backgroundColor: Colors.red,
                   ),
                 );
@@ -115,99 +116,99 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<TransferenciasProvider>(
-        builder: (context, transferenciasProvider, child) {
-      return Scaffold(
-        body: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      const FaIcon(
-                        FontAwesomeIcons.truck,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 16),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          const Text(
-                            'INVENTARIO',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
+    final state = ref.watch(transferenciasAdminProvider);
+    final notifier = ref.read(transferenciasAdminProvider.notifier);
+
+    return Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            // Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    const FaIcon(
+                      FontAwesomeIcons.truck,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        const Text(
+                          'INVENTARIO',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
-                          Text(
-                            'transferencias de inventario',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.white.withValues(alpha: 0.7),
-                            ),
+                        ),
+                        Text(
+                          'transferencias de inventario',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                // Filtros
+                Row(
+                  children: <Widget>[
+                    // Filtro por estado
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2D2D2D),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      margin: const EdgeInsets.only(right: 12),
+                      child: Row(
+                        children: <Widget>[
+                          const FaIcon(
+                            FontAwesomeIcons.filter,
+                            color: Color(0xFFE31E24),
+                            size: 14,
+                          ),
+                          const SizedBox(width: 8),
+                          DropdownButton<String>(
+                            value: state.selectedFilter,
+                            dropdownColor: const Color(0xFF2D2D2D),
+                            style: const TextStyle(color: Colors.white),
+                            underline: const SizedBox(),
+                            items: <DropdownMenuItem<String>>[
+                              const DropdownMenuItem(
+                                  value: 'Todos',
+                                  child: Text('Todos los estados')),
+                              ...['Pedido', 'Enviado', 'Recibido']
+                                  .map(
+                                    (String filter) => DropdownMenuItem(
+                                        value: filter, child: Text(filter)),
+                                  ),
+                            ],
+                            onChanged: (String? value) {
+                              if (value != null) {
+                                notifier.cambiarFiltro(value);
+                              }
+                            },
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                  // Filtros
-                  Row(
-                    children: <Widget>[
-                      // Filtro por estado
-                      Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2D2D2D),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        margin: const EdgeInsets.only(right: 12),
-                        child: Row(
-                          children: <Widget>[
-                            const FaIcon(
-                              FontAwesomeIcons.filter,
-                              color: Color(0xFFE31E24),
-                              size: 14,
-                            ),
-                            const SizedBox(width: 8),
-                            DropdownButton<String>(
-                              value: transferenciasProvider.selectedFilter,
-                              dropdownColor: const Color(0xFF2D2D2D),
-                              style: const TextStyle(color: Colors.white),
-                              underline: const SizedBox(),
-                              items: <DropdownMenuItem<String>>[
-                                const DropdownMenuItem(
-                                    value: 'Todos',
-                                    child: Text('Todos los estados')),
-                                ...transferenciasProvider.filters
-                                    .where((filter) => filter != 'Todos')
-                                    .map(
-                                      (String filter) => DropdownMenuItem(
-                                          value: filter, child: Text(filter)),
-                                    ),
-                              ],
-                              onChanged: (String? value) {
-                                if (value != null) {
-                                  transferenciasProvider.cambiarFiltro(value);
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Botón de refrescar (solo uno)
-                      _buildRefreshButton(transferenciasProvider),
-                      const SizedBox(width: 16),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                    // Botón de refrescar (solo uno)
+                    _buildRefreshButton(state, notifier),
+                    const SizedBox(width: 16),
+                  ],
+                ),
+              ],
+            ),
               const SizedBox(height: 32),
 
               // Tabla de movimientos con paginación
@@ -301,7 +302,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: <Widget>[
-                              ...transferenciasProvider.transferencias
+                              ...state.transferencias
                                   .map(_buildTransferenciaRow),
                             ],
                           ),
@@ -318,7 +319,7 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Paginador(
-                      paginacion: transferenciasProvider.paginacion,
+                      paginacion: state.paginacion,
                       backgroundColor: const Color(0xFF1A1A1A),
                       textColor: Colors.white,
                       accentColor: const Color(0xFFE31E24),
@@ -341,20 +342,19 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
                         {'value': 'estado', 'label': 'Estado'},
                       ],
                       onPageChange: () async {
-                        await transferenciasProvider.cargarTransferencias();
+                        await notifier.cargarTransferencias();
                       },
                       onPageChanged: (page) async {
-                        await transferenciasProvider.cambiarPagina(page);
+                        await notifier.cambiarPagina(page);
                       },
                       onPageSizeChanged: (pageSize) async {
-                        await transferenciasProvider
-                            .cambiarTamanoPagina(pageSize);
+                        await notifier.cambiarTamanoPagina(pageSize);
                       },
                       onSortByChanged: (sortBy) async {
-                        await transferenciasProvider.cambiarOrdenarPor(sortBy);
+                        await notifier.cambiarOrdenarPor(sortBy);
                       },
                       onOrderChanged: (order) async {
-                        await transferenciasProvider.cambiarOrden(order);
+                        await notifier.cambiarOrden(order);
                       },
                     ),
                   ],
@@ -364,7 +364,6 @@ class _MovimientosAdminScreenState extends State<MovimientosAdminScreen> {
           ),
         ),
       );
-    });
   }
 
   // Función para mostrar el detalle de un movimiento

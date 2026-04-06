@@ -48,6 +48,7 @@ class AdminNavigation extends StatelessWidget {
     super.debugFillProperties(properties);
     properties
       ..add(IntProperty('selectedIndex', selectedIndex))
-      ..add(ObjectFlagProperty<Function(int)>.has('onDestinationSelected', onDestinationSelected));
+      ..add(ObjectFlagProperty<Function(int)>.has(
+          'onDestinationSelected', onDestinationSelected));
   }
-} 
+}

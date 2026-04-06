@@ -1,7 +1,7 @@
 import 'dart:math' show min;
 
 import 'package:condorsmotors/models/proforma.model.dart';
-import 'package:condorsmotors/providers/computer/proforma.computer.provider.dart';
+import 'package:condorsmotors/providers/computer/proforma.computer.riverpod.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma/form_proforma_keynum.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma/proforma_utils.dart';
 import 'package:condorsmotors/utils/documento_utils.dart';
@@ -9,10 +9,10 @@ import 'package:condorsmotors/utils/logger.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Widget para mostrar los detalles de una proforma individual
-class ProformaWidget extends StatelessWidget {
+class ProformaWidget extends ConsumerWidget {
   final Proforma proforma;
   final Function(Proforma)? onConvert;
   final Function(Proforma)? onUpdate;
@@ -27,7 +27,7 @@ class ProformaWidget extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final bool puedeConvertirse = proforma.puedeConvertirseEnVenta();
 
     return Column(
@@ -51,7 +51,7 @@ class ProformaWidget extends StatelessWidget {
         const SizedBox(height: 16),
 
         // Resumen y acciones
-        _buildSummary(context, puedeConvertirse),
+        _buildSummary(context, ref, puedeConvertirse),
       ],
     );
   }
@@ -408,7 +408,8 @@ class ProformaWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildSummary(BuildContext context, bool puedeConvertirse) {
+  Widget _buildSummary(
+      BuildContext context, WidgetRef ref, bool puedeConvertirse) {
     // Calcular impuestos
     final double subtotal =
         VentasUtils.calcularSubtotalDesdeTotal(proforma.total);
@@ -505,7 +506,7 @@ class ProformaWidget extends StatelessWidget {
             children: [
               if (onDelete != null)
                 OutlinedButton.icon(
-                  onPressed: () => _handleDelete(context),
+                  onPressed: () => _handleDelete(context, ref),
                   icon: const Icon(Icons.delete),
                   label: const Text('Eliminar'),
                   style: OutlinedButton.styleFrom(
@@ -518,7 +519,7 @@ class ProformaWidget extends StatelessWidget {
               const SizedBox(width: 16),
               if (onConvert != null && puedeConvertirse)
                 ElevatedButton.icon(
-                  onPressed: () => _handleConvert(context),
+                  onPressed: () => _handleConvert(context, ref),
                   icon: const Icon(Icons.shopping_cart),
                   label: const Text('Convertir a Venta'),
                   style: ElevatedButton.styleFrom(
@@ -535,12 +536,9 @@ class ProformaWidget extends StatelessWidget {
   }
 
   /// Maneja la eliminación de una proforma utilizando el provider
-  Future<void> _handleDelete(BuildContext context) async {
+  Future<void> _handleDelete(BuildContext context, WidgetRef ref) async {
     try {
-      final proformaProvider = Provider.of<ProformaComputerProvider>(
-        context,
-        listen: false,
-      );
+      final proformaProvider = ref.read(proformaComputerProvider.notifier);
 
       // Mostrar diálogo de confirmación
       bool? confirmar = await showDialog<bool>(
@@ -644,16 +642,13 @@ class ProformaWidget extends StatelessWidget {
     }
   }
 
-  Future<void> _handleConvert(BuildContext context) async {
+  Future<void> _handleConvert(BuildContext context, WidgetRef ref) async {
     // Guardamos el contexto de construcción antes de operaciones asíncronas
     final BuildContext originalContext = context;
 
     try {
       // Obtener el provider de proformas
-      final proformaProvider = Provider.of<ProformaComputerProvider>(
-        context,
-        listen: false,
-      );
+      final proformaProvider = ref.read(proformaComputerProvider.notifier);
 
       // Registrar inicio del proceso
       Logger.debug(

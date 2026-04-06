@@ -141,15 +141,17 @@ class Paginador extends StatelessWidget {
 
   /// Construye los controles de ordenación
   List<Widget> _buildOrdenacionControls(Color txtColor, Color accent) {
-    final List<Widget> controls = [Container(
+    final List<Widget> controls = [
+      Container(
         width: 1,
         height: 20,
         margin: const EdgeInsets.symmetric(horizontal: 8),
         color: Colors.white.withValues(alpha: 0.2),
-      )]
+      )
+    ]
 
-    // Separador
-    ;
+        // Separador
+        ;
 
     // Selector de campo de ordenación
     if (camposParaOrdenar != null && camposParaOrdenar!.isNotEmpty) {

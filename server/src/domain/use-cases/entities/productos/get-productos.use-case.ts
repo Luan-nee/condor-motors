@@ -70,10 +70,12 @@ export class GetProductos {
     liquidacion: detallesProductoTable.liquidacion
   } as const
 
-  private readonly validDecimalFilter = {
+  private readonly validFilters = {
     precioCompra: detallesProductoTable.precioCompra,
     precioVenta: detallesProductoTable.precioVenta,
-    precioOferta: detallesProductoTable.precioOferta
+    precioOferta: detallesProductoTable.precioOferta,
+    categoriaId: productosTable.categoriaId,
+    marcaId: productosTable.marcaId
   } as const
 
   constructor(authPayload: AuthPayload) {
@@ -94,15 +96,15 @@ export class GetProductos {
     return this.validSortBy.fechaCreacion
   }
 
-  private isValidDecimalFilter(
+  private isValidFilter(
     filter: string
-  ): filter is keyof typeof this.validDecimalFilter {
-    return Object.keys(this.validDecimalFilter).includes(filter)
+  ): filter is keyof typeof this.validFilters {
+    return Object.keys(this.validFilters).includes(filter)
   }
 
-  private getDecimalFilterColumn(filter: string) {
-    if (this.isValidDecimalFilter(filter)) {
-      return this.validDecimalFilter[filter]
+  private getFilterColumn(filter: string) {
+    if (this.isValidFilter(filter)) {
+      return this.validFilters[filter]
     }
 
     return undefined
@@ -162,7 +164,7 @@ export class GetProductos {
   private getMetadata() {
     return {
       sortByOptions: Object.keys(this.validSortBy),
-      filterOptions: Object.keys(this.validDecimalFilter)
+      filterOptions: Object.keys(this.validFilters)
     }
   }
 
@@ -221,10 +223,24 @@ export class GetProductos {
       }
     }
 
-    const filterColumn = this.getDecimalFilterColumn(queriesProductoDto.filter)
-    const filterValueNumber = parseFloat(queriesProductoDto.filter_value)
+    const filterColumn = this.getFilterColumn(queriesProductoDto.filter)
 
-    if (filterColumn === undefined || isNaN(filterValueNumber)) {
+    if (filterColumn === undefined || queriesProductoDto.filter_value === undefined) {
+      return and(...conditions)
+    }
+
+    // Para filtros de ID (categoriaId, marcaId)
+    if (queriesProductoDto.filter === 'categoriaId' || queriesProductoDto.filter === 'marcaId') {
+      const idValue = Number.parseInt(queriesProductoDto.filter_value, 10)
+      if (!Number.isNaN(idValue)) {
+        conditions.push(eq(filterColumn, idValue))
+      }
+      return and(...conditions)
+    }
+
+    const filterValueNumber = Number.parseFloat(queriesProductoDto.filter_value)
+
+    if (Number.isNaN(filterValueNumber)) {
       return and(...conditions)
     }
 

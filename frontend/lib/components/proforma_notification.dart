@@ -112,8 +112,7 @@ class ProformaNotification {
   /// Considera si ya fue notificada recientemente y si se debe limitar la frecuencia.
   bool _puedeNotificar(int proformaId, {bool aplicarLimitacion = true}) {
     if (_fueNotificadaRecientemente(proformaId)) {
-      Logger.debug(
-          'Notificación duplicada omitida para proforma #$proformaId');
+      Logger.debug('Notificación duplicada omitida para proforma #$proformaId');
       return false;
     }
     if (aplicarLimitacion && _deberiaLimitarNotificaciones()) {

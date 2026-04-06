@@ -54,4 +54,4 @@ class ConfirmDialog extends StatelessWidget {
       ..add(StringProperty('cancelText', cancelText))
       ..add(ObjectFlagProperty<VoidCallback>.has('onConfirm', onConfirm));
   }
-} 
+}

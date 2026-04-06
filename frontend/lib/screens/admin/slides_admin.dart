@@ -1,6 +1,6 @@
 // Providers Admin individuales
 
-import 'package:condorsmotors/providers/auth.provider.dart';
+import 'package:condorsmotors/providers/auth.riverpod.dart';
 import 'package:condorsmotors/screens/admin/categorias_admin.dart';
 import 'package:condorsmotors/screens/admin/dashboard_admin.dart';
 import 'package:condorsmotors/screens/admin/empleados_admin.dart';
@@ -13,17 +13,17 @@ import 'package:condorsmotors/screens/admin/sucursal_admin.dart';
 import 'package:condorsmotors/screens/admin/transferencias_admin.dart';
 import 'package:condorsmotors/screens/admin/ventas_admin.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:provider/provider.dart';
 
-class SlidesAdminScreen extends StatefulWidget {
+class SlidesAdminScreen extends ConsumerStatefulWidget {
   const SlidesAdminScreen({super.key});
 
   @override
-  State<SlidesAdminScreen> createState() => _SlidesAdminScreenState();
+  ConsumerState<SlidesAdminScreen> createState() => _SlidesAdminScreenState();
 }
 
-class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
+class _SlidesAdminScreenState extends ConsumerState<SlidesAdminScreen> {
   // Índices para las secciones principales y subsecciones
   // 0: Dashboard, 1: Ventas, 2: Inventario, 3: Colaboradores, 4: Sucursales, 5: Configuración, 6: Pedidos Exclusivos
   int _selectedIndex = 0;
@@ -53,10 +53,7 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
       case 4:
         return const SucursalAdminScreen();
       case 5:
-        return ChangeNotifierProvider(
-          create: (_) => ConfiguracionesProvider(),
-          child: const SettingsAdminScreen(),
-        );
+        return const SettingsAdminScreen();
       case 6:
         return const PedidoAdminScreen();
       default:
@@ -207,8 +204,8 @@ class _SlidesAdminScreenState extends State<SlidesAdminScreen> {
 
   // Método para manejar el cierre de sesión
   Future<void> _handleLogout(BuildContext context) async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    await authProvider.logoutAndRedirectToLogin(context);
+    final authNotifier = ref.read(authProvider.notifier);
+    await authNotifier.logoutAndRedirectToLogin(context);
   }
 
   @override

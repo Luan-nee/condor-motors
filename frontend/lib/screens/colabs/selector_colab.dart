@@ -1,16 +1,16 @@
-import 'package:condorsmotors/providers/auth.provider.dart';
-import 'package:condorsmotors/providers/colabs/transferencias.colab.provider.dart';
-import 'package:condorsmotors/providers/colabs/ventas.colab.provider.dart';
+import 'package:condorsmotors/providers/auth.riverpod.dart';
+import 'package:condorsmotors/providers/colabs/transferencias.colab.riverpod.dart';
 import 'package:condorsmotors/screens/colabs/productos_colab.dart';
 import 'package:condorsmotors/screens/colabs/settings_colab.dart';
 import 'package:condorsmotors/screens/colabs/transferencias_colab.dart';
 import 'package:condorsmotors/screens/colabs/ventas_colab.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'
+    hide Provider, ChangeNotifierProvider;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:provider/provider.dart';
 
-class SelectorColabScreen extends StatelessWidget {
+class SelectorColabScreen extends ConsumerWidget {
   final Map<String, dynamic>? empleadoData;
 
   const SelectorColabScreen({
@@ -19,11 +19,10 @@ class SelectorColabScreen extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // Inicia el polling apenas se construye el selector
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<TransferenciasColabProvider>(context, listen: false)
-          .startPolling();
+      ref.read(transferenciasColabProvider.notifier).startPolling();
     });
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 600;
@@ -98,7 +97,7 @@ class SelectorColabScreen extends StatelessWidget {
                     ),
                     // Botón de cierre de sesión
                     InkWell(
-                      onTap: () => _showLogoutDialog(context),
+                      onTap: () => _showLogoutDialog(context, ref),
                       borderRadius: BorderRadius.circular(12),
                       child: Container(
                         padding: EdgeInsets.symmetric(
@@ -215,7 +214,7 @@ class SelectorColabScreen extends StatelessWidget {
   }
 
   // Método para mostrar el diálogo de confirmación de cierre de sesión
-  void _showLogoutDialog(BuildContext context) {
+  void _showLogoutDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (BuildContext context) => AlertDialog(
@@ -231,7 +230,7 @@ class SelectorColabScreen extends StatelessWidget {
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
             ),
-            onPressed: () => _logout(context),
+            onPressed: () => _logout(context, ref),
             child: const Text('Cerrar Sesión'),
           ),
         ],
@@ -240,9 +239,9 @@ class SelectorColabScreen extends StatelessWidget {
   }
 
   // Método para realizar el cierre de sesión
-  Future<void> _logout(BuildContext context) async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    await authProvider.logoutAndRedirectToLogin(context);
+  Future<void> _logout(BuildContext context, WidgetRef ref) async {
+    final authNotifier = ref.read(authProvider.notifier);
+    await authNotifier.logoutAndRedirectToLogin(context);
   }
 
   Widget _buildOptionCard(
@@ -260,12 +259,7 @@ class SelectorColabScreen extends StatelessWidget {
 
     // Envolver la pantalla con su Provider si es necesario
     Widget wrappedScreen = screen;
-    if (screen is VentasColabScreen) {
-      wrappedScreen = ChangeNotifierProvider(
-        create: (_) => VentasColabProvider(),
-        child: screen,
-      );
-    }
+    // FIX: VentasColab ya usa Riverpod, no necesita ChangeNotifierProvider
 
     return Card(
       elevation: 0,

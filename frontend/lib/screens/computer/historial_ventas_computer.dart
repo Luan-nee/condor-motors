@@ -1,12 +1,12 @@
 import 'package:condorsmotors/models/ventas.model.dart';
-import 'package:condorsmotors/providers/computer/ventas.computer.provider.dart';
+import 'package:condorsmotors/providers/computer/ventas.computer.riverpod.dart';
 import 'package:condorsmotors/repositories/venta.repository.dart';
 import 'package:condorsmotors/screens/admin/widgets/venta/venta_detalle_dialog.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 
 // Widget para mostrar la lista de ventas
 class VentasListComputer extends StatelessWidget {
@@ -179,7 +179,7 @@ class VentasListComputer extends StatelessWidget {
   }
 }
 
-class HistorialVentasComputerScreen extends StatefulWidget {
+class HistorialVentasComputerScreen extends ConsumerStatefulWidget {
   final int? sucursalId;
   final String nombreSucursal;
 
@@ -190,7 +190,7 @@ class HistorialVentasComputerScreen extends StatefulWidget {
   });
 
   @override
-  State<HistorialVentasComputerScreen> createState() =>
+  ConsumerState<HistorialVentasComputerScreen> createState() =>
       _HistorialVentasComputerScreenState();
 
   @override
@@ -203,32 +203,31 @@ class HistorialVentasComputerScreen extends StatefulWidget {
 }
 
 class _HistorialVentasComputerScreenState
-    extends State<HistorialVentasComputerScreen> {
-  late VentasComputerProvider _ventasProvider;
-  bool _isInitialized = false;
+    extends ConsumerState<HistorialVentasComputerScreen> {
   // Instancia del repositorio para acceder a las ventas
   final VentaRepository _ventaRepository = VentaRepository.instance;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_isInitialized) {
-      _ventasProvider =
-          Provider.of<VentasComputerProvider>(context, listen: false);
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       _inicializarProvider();
-      _isInitialized = true;
-    }
+    });
   }
 
   Future<void> _inicializarProvider() async {
+    final notifier = ref.read(ventasComputerProvider.notifier);
     if (widget.sucursalId != null) {
-      await _ventasProvider.establecerSucursalPorId(widget.sucursalId);
+      await notifier.establecerSucursalPorId(widget.sucursalId);
     }
-    _ventasProvider.cargarVentas();
+    notifier.cargarVentas();
   }
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(ventasComputerProvider);
+    final notifier = ref.read(ventasComputerProvider.notifier);
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Historial de Ventas - ${widget.nombreSucursal}'),
@@ -237,123 +236,118 @@ class _HistorialVentasComputerScreenState
         elevation: 0,
       ),
       backgroundColor: const Color(0xFF121212),
-      body: Consumer<VentasComputerProvider>(
-        builder: (context, provider, child) {
-          return Column(
-            children: [
-              // Barra de filtros
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A1A),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+      body: Column(
+        children: [
+          // Barra de filtros
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A1A),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
                 ),
-                child: Column(
+              ],
+            ),
+            child: Column(
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        // Búsqueda
-                        Expanded(
-                          child: TextField(
-                            onChanged: provider.actualizarBusqueda,
-                            decoration: InputDecoration(
-                              hintText: 'Buscar por número o cliente...',
-                              prefixIcon: const FaIcon(
-                                  FontAwesomeIcons.magnifyingGlass,
-                                  size: 16),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              contentPadding: EdgeInsets.zero,
-                            ),
+                    // Búsqueda
+                    Expanded(
+                      child: TextField(
+                        onChanged: notifier.actualizarBusqueda,
+                        decoration: InputDecoration(
+                          hintText: 'Buscar por número o cliente...',
+                          prefixIcon: const FaIcon(
+                              FontAwesomeIcons.magnifyingGlass,
+                              size: 16),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
                           ),
+                          contentPadding: EdgeInsets.zero,
                         ),
-                        const SizedBox(width: 16),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
 
-                        // Botón de refrescar
-                        ElevatedButton.icon(
-                          onPressed: () => provider.cargarVentas(),
-                          icon: const FaIcon(FontAwesomeIcons.arrowsRotate,
-                              size: 14),
-                          label: const Text('Refrescar'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFE31E24),
-                          ),
-                        ),
-                      ],
+                    // Botón de refrescar
+                    ElevatedButton.icon(
+                      onPressed: notifier.cargarVentas,
+                      icon:
+                          const FaIcon(FontAwesomeIcons.arrowsRotate, size: 14),
+                      label: const Text('Refrescar'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE31E24),
+                      ),
                     ),
                   ],
                 ),
-              ),
+              ],
+            ),
+          ),
 
-              // Lista de ventas
-              Expanded(
-                child: VentasListComputer(
-                  ventas: provider.ventas,
-                  isLoading: provider.isVentasLoading,
-                  onAnularVenta: _mostrarAnularVentaDialog,
-                  onRecargarVentas: () => provider.cargarVentas(),
-                ),
-              ),
+          // Lista de ventas
+          Expanded(
+            child: VentasListComputer(
+              ventas: state.ventas,
+              isLoading: state.isVentasLoading,
+              onAnularVenta: _mostrarAnularVentaDialog,
+              onRecargarVentas: notifier.cargarVentas,
+            ),
+          ),
 
-              // Paginación
-              if (provider.paginacion.totalPages > 0)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  color: const Color(0xFF1A1A1A),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        icon: const FaIcon(FontAwesomeIcons.angleLeft),
-                        onPressed: provider.paginacion.hasPrev
-                            ? () => provider.cambiarPagina(
-                                provider.paginacion.currentPage - 1)
-                            : null,
-                      ),
-                      ...List.generate(
-                        provider.paginacion.totalPages,
-                        (index) {
-                          final pageNumber = index + 1;
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: ElevatedButton(
-                              onPressed:
-                                  pageNumber != provider.paginacion.currentPage
-                                      ? () => provider.cambiarPagina(pageNumber)
-                                      : null,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: pageNumber ==
-                                        provider.paginacion.currentPage
+          // Paginación
+          if (state.paginacion.totalPages > 0)
+            Container(
+              padding: const EdgeInsets.all(16),
+              color: const Color(0xFF1A1A1A),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const FaIcon(FontAwesomeIcons.angleLeft),
+                    onPressed: state.paginacion.hasPrev
+                        ? () => notifier
+                            .cambiarPagina(state.paginacion.currentPage - 1)
+                        : null,
+                  ),
+                  ...List.generate(
+                    state.paginacion.totalPages,
+                    (index) {
+                      final pageNumber = index + 1;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: ElevatedButton(
+                          onPressed: pageNumber != state.paginacion.currentPage
+                              ? () => notifier.cambiarPagina(pageNumber)
+                              : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                pageNumber == state.paginacion.currentPage
                                     ? const Color(0xFFE31E24)
                                     : Colors.grey[800],
-                                padding: EdgeInsets.zero,
-                                minimumSize: const Size(40, 40),
-                              ),
-                              child: Text(pageNumber.toString()),
-                            ),
-                          );
-                        },
-                      ),
-                      IconButton(
-                        icon: const FaIcon(FontAwesomeIcons.angleRight),
-                        onPressed: provider.paginacion.hasNext
-                            ? () => provider.cambiarPagina(
-                                provider.paginacion.currentPage + 1)
-                            : null,
-                      ),
-                    ],
+                            padding: EdgeInsets.zero,
+                            minimumSize: const Size(40, 40),
+                          ),
+                          child: Text(pageNumber.toString()),
+                        ),
+                      );
+                    },
                   ),
-                ),
-            ],
-          );
-        },
+                  IconButton(
+                    icon: const FaIcon(FontAwesomeIcons.angleRight),
+                    onPressed: state.paginacion.hasNext
+                        ? () => notifier
+                            .cambiarPagina(state.paginacion.currentPage + 1)
+                        : null,
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -445,7 +439,7 @@ class _HistorialVentasComputerScreenState
               backgroundColor: Colors.green,
             ),
           );
-          _ventasProvider.cargarVentas();
+          ref.read(ventasComputerProvider.notifier).cargarVentas();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(

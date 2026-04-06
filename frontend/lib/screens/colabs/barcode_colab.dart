@@ -438,7 +438,8 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                           height: 40,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
-                              const Icon(Icons.image, color: Colors.grey, size: 24),
+                              const Icon(Icons.image,
+                                  color: Colors.grey, size: 24),
                         )
                       : Container(
                           width: 40,
@@ -697,7 +698,8 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                           height: 60,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
-                              const Icon(Icons.image, color: Colors.grey, size: 40),
+                              const Icon(Icons.image,
+                                  color: Colors.grey, size: 40),
                         )
                       : Container(
                           width: 60,
@@ -1057,7 +1059,9 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                       size: 40,
                       color: _quickAdd
                           ? Colors.amber.withValues(alpha: 0.8)
-                          : Theme.of(context).primaryColor.withValues(alpha: 0.8),
+                          : Theme.of(context)
+                              .primaryColor
+                              .withValues(alpha: 0.8),
                     ),
                   ),
                   const SizedBox(height: 12),

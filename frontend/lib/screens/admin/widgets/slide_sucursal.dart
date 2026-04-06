@@ -1,10 +1,12 @@
 import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/providers/admin/settings.admin.riverpod.dart';
 import 'package:condorsmotors/utils/sucursal_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-class SlideSucursal extends StatefulWidget {
+class SlideSucursal extends ConsumerStatefulWidget {
   final List<Sucursal> sucursales;
   final Sucursal? sucursalSeleccionada;
   final Function(Sucursal) onSucursalSelected;
@@ -21,7 +23,7 @@ class SlideSucursal extends StatefulWidget {
   });
 
   @override
-  State<SlideSucursal> createState() => _SlideSucursalState();
+  ConsumerState<SlideSucursal> createState() => _SlideSucursalState();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
@@ -38,9 +40,8 @@ class SlideSucursal extends StatefulWidget {
   }
 }
 
-class _SlideSucursalState extends State<SlideSucursal>
+class _SlideSucursalState extends ConsumerState<SlideSucursal>
     with SingleTickerProviderStateMixin {
-  bool _mostrarAgrupados = true;
   late AnimationController _animationController;
   late Animation<double> _animation;
 
@@ -90,6 +91,8 @@ class _SlideSucursalState extends State<SlideSucursal>
 
   @override
   Widget build(BuildContext context) {
+    final mostrarAgrupados =
+        ref.watch(settingsAdminProvider).mostrarSucursalesAgrupadas;
     if (widget.isLoading) {
       return const Center(
         child: Column(
@@ -140,121 +143,13 @@ class _SlideSucursalState extends State<SlideSucursal>
 
     // Agrupar las sucursales si es necesario
     final Map<String, List<Sucursal>>? sucursalesAgrupadas =
-        _mostrarAgrupados ? _agruparSucursales() : null;
+        mostrarAgrupados ? _agruparSucursales() : null;
 
     return FadeTransition(
       opacity: _animation,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          // Cabecera del panel
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: const Color(0xFF222222),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    const Row(
-                      children: <Widget>[
-                        FaIcon(
-                          FontAwesomeIcons.buildingUser,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          'SUCURSALES',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      children: <Widget>[
-                        Tooltip(
-                          message: '${widget.sucursales.length} sucursales',
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF2D2D2D),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              widget.sucursales.length.toString(),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          icon: const FaIcon(
-                            FontAwesomeIcons.arrowsRotate,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                          onPressed: widget.onRecargarSucursales,
-                          tooltip: 'Recargar sucursales',
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // Switch para agrupar/desagrupar
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    Row(
-                      children: <Widget>[
-                        FaIcon(
-                          _mostrarAgrupados
-                              ? FontAwesomeIcons.layerGroup
-                              : FontAwesomeIcons.list,
-                          color: Colors.white70,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Agrupar sucursales',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 150),
-                      child: Switch(
-                        key: ValueKey<bool>(_mostrarAgrupados),
-                        value: _mostrarAgrupados,
-                        onChanged: (bool value) {
-                          setState(() {
-                            _mostrarAgrupados = value;
-                          });
-                        },
-                        activeThumbColor: const Color(0xFFE31E24),
-                        activeTrackColor:
-                            const Color(0xFFE31E24).withValues(alpha: 0.3),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
           // Lista de sucursales con transición suave
           Expanded(
             child: AnimatedSwitcher(
@@ -274,7 +169,7 @@ class _SlideSucursalState extends State<SlideSucursal>
                   ),
                 );
               },
-              child: _mostrarAgrupados
+              child: mostrarAgrupados
                   ? _buildAgrupadas(sucursalesAgrupadas!)
                   : _buildListaCompleta(),
             ),

@@ -40,8 +40,7 @@ class Marca extends Equatable {
     final int id = _parseInt(json['id']);
 
     // Parsear totalProductos de forma segura
-    final int totalProductos =
-        _parseInt(json['totalProductos']);
+    final int totalProductos = _parseInt(json['totalProductos']);
 
     return Marca(
       id: id,

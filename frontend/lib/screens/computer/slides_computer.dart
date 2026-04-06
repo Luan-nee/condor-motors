@@ -1,23 +1,24 @@
-import 'package:condorsmotors/providers/auth.provider.dart';
-import 'package:condorsmotors/providers/computer/dash.computer.provider.dart';
-import 'package:condorsmotors/providers/computer/proforma.computer.provider.dart';
-import 'package:condorsmotors/providers/computer/ventas.computer.provider.dart';
+import 'package:condorsmotors/providers/auth.riverpod.dart';
+// Removed dash provider
 import 'package:condorsmotors/screens/computer/dashboard_computer.dart';
 import 'package:condorsmotors/screens/computer/proforma_computer.dart';
 import 'package:condorsmotors/screens/computer/settings_computer.dart';
 import 'package:condorsmotors/screens/computer/ventas_computer.dart';
 import 'package:flutter/material.dart';
+// Removed provider
+import 'package:flutter_riverpod/flutter_riverpod.dart'
+    hide ChangeNotifierProvider, Provider;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:provider/provider.dart';
 
-class SlidesComputerScreen extends StatefulWidget {
+class SlidesComputerScreen extends ConsumerStatefulWidget {
   const SlidesComputerScreen({super.key});
 
   @override
-  State<SlidesComputerScreen> createState() => _SlidesComputerScreenState();
+  ConsumerState<SlidesComputerScreen> createState() =>
+      _SlidesComputerScreenState();
 }
 
-class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
+class _SlidesComputerScreenState extends ConsumerState<SlidesComputerScreen> {
   int _selectedIndex = 0;
   String _nombreSucursal = 'Sucursal';
   String _nombreUsuario = 'Usuario';
@@ -178,187 +179,172 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => DashboardComputerProvider()),
-        ChangeNotifierProvider(
-          create: (_) => AuthProvider(),
-        ),
-        ChangeNotifierProvider(create: (_) => VentasComputerProvider()),
-        ChangeNotifierProvider(
-          create: (context) => ProformaComputerProvider(
-            Provider.of<VentasComputerProvider>(context, listen: false),
-          ),
-        ),
-      ],
-      child: Scaffold(
-        body: Row(
-          children: <Widget>[
-            // Menú lateral
-            Container(
-              width: 250,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
-                border: Border(
-                  right: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.1),
-                  ),
+    return Scaffold(
+      body: Row(
+        children: <Widget>[
+          // Menú lateral
+          Container(
+            width: 250,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A1A),
+              border: Border(
+                right: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.1),
                 ),
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: const Offset(2, 0),
-                  ),
-                ],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  // Logo y título
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Row(
-                          children: <Widget>[
-                            Container(
-                              width: 40,
-                              height: 40,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                image: DecorationImage(
-                                  image: AssetImage(
-                                      'assets/images/condor-motors-logo.webp'),
-                                  fit: BoxFit.cover,
-                                ),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 8,
+                  offset: const Offset(2, 0),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                // Logo y título
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Row(
+                        children: <Widget>[
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              image: DecorationImage(
+                                image: AssetImage(
+                                    'assets/images/condor-motors-logo.webp'),
+                                fit: BoxFit.cover,
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            const Text(
-                              'TiendaPeru',
-                              style: TextStyle(
-                                color: Color(0xFFE31E24),
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'TiendaPeru',
+                            style: TextStyle(
+                              color: Color(0xFFE31E24),
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        // Información de la sucursal
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color:
-                                const Color(0xFFE31E24).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4),
                           ),
-                          child: Row(
-                            children: <Widget>[
-                              const FaIcon(
-                                FontAwesomeIcons.store,
-                                color: Color(0xFFE31E24),
-                                size: 12,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  _nombreSucursal,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      // Información de la sucursal
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE31E24).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
                         ),
-                        const SizedBox(height: 4),
-                        // Información del usuario
-                        Row(
+                        child: Row(
                           children: <Widget>[
                             const FaIcon(
-                              FontAwesomeIcons.user,
-                              color: Colors.white54,
+                              FontAwesomeIcons.store,
+                              color: Color(0xFFE31E24),
                               size: 12,
                             ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                _nombreUsuario,
+                                _nombreSucursal,
                                 style: const TextStyle(
-                                  color: Colors.white54,
+                                  color: Colors.white,
                                   fontSize: 12,
+                                  fontWeight: FontWeight.bold,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 4),
+                      // Información del usuario
+                      Row(
+                        children: <Widget>[
+                          const FaIcon(
+                            FontAwesomeIcons.user,
+                            color: Colors.white54,
+                            size: 12,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _nombreUsuario,
+                              style: const TextStyle(
+                                color: Colors.white54,
+                                fontSize: 12,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
+                ),
+                const SizedBox(height: 16),
 
-                  // Menú de opciones
-                  ..._menuItems
-                      .asMap()
-                      .entries
-                      .map((MapEntry<int, Map<String, dynamic>> entry) {
-                    final int index = entry.key;
-                    final Map<String, dynamic> item = entry.value;
-                    return _buildMenuItem(
-                      icon: item['icon'] as IconData,
-                      text: item['title'] as String,
-                      description: item['description'] as String,
-                      isSelected: _selectedIndex == index,
-                      onTap: () => setState(() => _selectedIndex = index),
-                    );
-                  }),
+                // Menú de opciones
+                ..._menuItems
+                    .asMap()
+                    .entries
+                    .map((MapEntry<int, Map<String, dynamic>> entry) {
+                  final int index = entry.key;
+                  final Map<String, dynamic> item = entry.value;
+                  return _buildMenuItem(
+                    icon: item['icon'] as IconData,
+                    text: item['title'] as String,
+                    description: item['description'] as String,
+                    isSelected: _selectedIndex == index,
+                    onTap: () => setState(() => _selectedIndex = index),
+                  );
+                }),
 
-                  const Spacer(),
+                const Spacer(),
 
-                  // Botón de salir
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: TextButton.icon(
-                      onPressed: () => _showLogoutDialog(context),
-                      icon: const FaIcon(
-                        FontAwesomeIcons.rightFromBracket,
+                // Botón de salir
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: TextButton.icon(
+                    onPressed: () => _showLogoutDialog(context),
+                    icon: const FaIcon(
+                      FontAwesomeIcons.rightFromBracket,
+                      color: Colors.white54,
+                      size: 18,
+                    ),
+                    label: const Text(
+                      'Salir',
+                      style: TextStyle(
                         color: Colors.white54,
-                        size: 18,
                       ),
-                      label: const Text(
-                        'Salir',
-                        style: TextStyle(
-                          color: Colors.white54,
-                        ),
-                      ),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
+          ),
 
-            // Contenido principal
-            Expanded(
-              child: _menuItems.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
-                  : _menuItems[_selectedIndex]['screen'] as Widget,
-            ),
-          ],
-        ),
+          // Contenido principal
+          Expanded(
+            child: _menuItems.isEmpty
+                ? const Center(child: CircularProgressIndicator())
+                : _menuItems[_selectedIndex]['screen'] as Widget,
+          ),
+        ],
       ),
     );
   }
@@ -458,7 +444,7 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
 
   // Método para manejar el cierre de sesión
   Future<void> _handleLogout(BuildContext context) async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final authNotifier = ref.read(authProvider.notifier);
     // Limpiar el estado actual
     if (mounted) {
       setState(() {
@@ -467,6 +453,6 @@ class _SlidesComputerScreenState extends State<SlidesComputerScreen> {
       });
     }
 
-    await authProvider.logoutAndRedirectToLogin(context);
+    await authNotifier.logoutAndRedirectToLogin(context);
   }
 }

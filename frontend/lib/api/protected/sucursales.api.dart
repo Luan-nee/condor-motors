@@ -293,8 +293,7 @@ class SucursalesApi {
       // Guardar en caché
       if (useCache) {
         _cache.set(cacheKey, notificaciones);
-        logCache(
-            'Guardadas notificaciones en caché para sucursal $sucursalId');
+        logCache('Guardadas notificaciones en caché para sucursal $sucursalId');
       }
 
       return notificaciones;

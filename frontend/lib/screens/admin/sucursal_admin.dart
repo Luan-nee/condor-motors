@@ -1,26 +1,26 @@
 import 'package:condorsmotors/models/sucursal.model.dart';
-import 'package:condorsmotors/providers/admin/sucursal.admin.provider.dart';
+import 'package:condorsmotors/providers/admin/sucursal.admin.riverpod.dart';
 import 'package:condorsmotors/screens/admin/widgets/sucursal/sucursal_detalles.dart';
 import 'package:condorsmotors/screens/admin/widgets/sucursal/sucursal_form.dart';
-import 'package:condorsmotors/utils/sucursal_utils.dart';
-import 'package:flutter/foundation.dart';
+import 'package:condorsmotors/screens/admin/widgets/sucursal/sucursal_header.dart';
+import 'package:condorsmotors/screens/admin/widgets/sucursal/sucursal_table.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:provider/provider.dart';
 
 // La clase Sucursal ha sido reemplazada por la importación de '../../models/sucursal.model.dart'
 // La clase SucursalRequest ha sido movida al provider de sucursales
 
-class SucursalAdminScreen extends StatefulWidget {
+class SucursalAdminScreen extends ConsumerStatefulWidget {
   const SucursalAdminScreen({super.key});
 
   @override
-  State<SucursalAdminScreen> createState() => _SucursalAdminScreenState();
+  ConsumerState<SucursalAdminScreen> createState() =>
+      _SucursalAdminScreenState();
 }
 
-class _SucursalAdminScreenState extends State<SucursalAdminScreen>
+class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
     with SingleTickerProviderStateMixin {
-  late SucursalProvider _sucursalProvider;
   bool _mostrarAgrupados = true;
   late AnimationController _animationController;
   late Animation<double> _animation;
@@ -33,7 +33,6 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
   // Filtros avanzados
   bool _mostrarFiltrosAvanzados = false;
   String _filtroTipo = 'Todos';
-  final List<String> _opcionesTipo = SucursalUtils.tiposSucursal;
 
   // Estado de la lista
   bool _isListScrollable = false;
@@ -43,7 +42,6 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
   @override
   void initState() {
     super.initState();
-    _sucursalProvider = Provider.of<SucursalProvider>(context, listen: false);
 
     // Configurar animaciones
     _animationController = AnimationController(
@@ -66,7 +64,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
     if (!_isInitialized) {
       // Inicializar de manera asíncrona
       Future<void>.microtask(() async {
-        await _sucursalProvider.inicializar();
+        await ref.read(sucursalAdminProvider.notifier).inicializar();
       });
       _isInitialized = true;
     }
@@ -88,6 +86,32 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
       duration: const Duration(milliseconds: 500),
       curve: Curves.easeOutQuad,
     );
+  }
+
+  Future<void> _recargarDatos() async {
+    final notifier = ref.read(sucursalAdminProvider.notifier);
+    await notifier.limpiarCacheYRecargar();
+
+    if (!mounted) {
+      return;
+    }
+
+    final state = ref.read(sucursalAdminProvider);
+    if (state.errorMessage.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(state.errorMessage),
+          backgroundColor: const Color(0xFFE31E24),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Datos recargados exitosamente'),
+          backgroundColor: Color(0xFF4CAF50),
+        ),
+      );
+    }
   }
 
   @override
@@ -122,7 +146,8 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
   }
 
   Future<void> _guardarSucursal(Map<String, dynamic> data) async {
-    final String? error = await _sucursalProvider.guardarSucursal(data);
+    final String? error =
+        await ref.read(sucursalAdminProvider.notifier).guardarSucursal(data);
 
     if (!mounted) {
       return;
@@ -133,7 +158,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
 
     if (error == null) {
       // Si no hubo error, recargamos explícitamente la caché
-      await _sucursalProvider.limpiarCacheYRecargar();
+      await ref.read(sucursalAdminProvider.notifier).limpiarCacheYRecargar();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -183,7 +208,9 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
     }
 
     if (confirm == true) {
-      final String? error = await _sucursalProvider.eliminarSucursal(sucursal);
+      final String? error = await ref
+          .read(sucursalAdminProvider.notifier)
+          .eliminarSucursal(sucursal);
 
       if (!mounted) {
         return;
@@ -191,7 +218,7 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
 
       if (error == null) {
         // Si no hubo error, recargamos explícitamente la caché
-        await _sucursalProvider.limpiarCacheYRecargar();
+        await ref.read(sucursalAdminProvider.notifier).limpiarCacheYRecargar();
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -232,464 +259,187 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<SucursalProvider>(builder: (context, provider, child) {
-      // Pantalla principal de listado de sucursales
-      return Scaffold(
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF212121),
-          title: const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                'Gestión de Sucursales',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                'Administre las sucursales y locales de la empresa',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.normal,
-                  color: Colors.white70,
-                ),
-              ),
-            ],
+    debugPrint('[SucursalAdminScreen] build ejecutado');
+    final state = ref.watch(sucursalAdminProvider);
+    final notifier = ref.read(sucursalAdminProvider.notifier);
+
+    // Pantalla principal de listado de sucursales
+    return Scaffold(
+      body: Column(
+        children: <Widget>[
+          SucursalHeader(
+            totalSucursales: state.sucursales.length,
+            isLoading: state.isLoading,
+            terminoBusqueda: state.terminoBusqueda,
+            onSearchChanged: notifier.actualizarBusqueda,
+            onReload: _recargarDatos,
+            onAddNew: _mostrarFormularioSucursal,
+            onToggleFiltros: _toggleFiltrosAvanzados,
+            mostrarFiltrosAvanzados: _mostrarFiltrosAvanzados,
+            filtroTipo: _filtroTipo,
+            onFiltroTipoChanged: (String? value) {
+              if (value != null) {
+                setState(() => _filtroTipo = value);
+              }
+            },
+            mostrarAgrupados: _mostrarAgrupados,
+            onToggleAgrupados: (bool value) =>
+                setState(() => _mostrarAgrupados = value),
           ),
-          actions: <Widget>[
-            IconButton(
-              icon: const FaIcon(FontAwesomeIcons.filter, size: 16),
-              tooltip: 'Filtros avanzados',
-              onPressed: _toggleFiltrosAvanzados,
-            ),
-            ElevatedButton.icon(
-              icon: provider.isLoading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const FaIcon(
-                      FontAwesomeIcons.arrowsRotate,
-                      size: 16,
-                      color: Colors.white,
-                    ),
-              label: Text(
-                provider.isLoading ? 'Recargando...' : 'Recargar',
-                style: const TextStyle(color: Colors.white),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2D2D2D),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-              ),
-              onPressed: provider.isLoading
-                  ? null
-                  : () async {
-                      // Definir funciones para mostrar SnackBars
-                      void showErrorSnackBar() {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(provider.errorMessage),
-                            backgroundColor: const Color(0xFFE31E24),
-                          ),
-                        );
-                      }
 
-                      void showSuccessSnackBar() {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Datos recargados exitosamente'),
-                            backgroundColor: Color(0xFF4CAF50),
-                          ),
-                        );
-                      }
-
-                      // Usar el método que también limpia el caché
-                      await provider.limpiarCacheYRecargar();
-
-                      // Verificar si el widget aún está montado
-                      if (!mounted) {
-                        return;
-                      }
-
-                      if (provider.errorMessage.isNotEmpty) {
-                        showErrorSnackBar();
-                      } else {
-                        showSuccessSnackBar();
-                      }
-                    },
-            ),
-            const SizedBox(width: 12),
-            ElevatedButton.icon(
-              icon: const FaIcon(FontAwesomeIcons.plus,
-                  size: 16, color: Colors.white),
-              label: const Text('Nueva Sucursal'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE31E24),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
-                ),
-              ),
-              onPressed: _mostrarFormularioSucursal,
-            ),
-            const SizedBox(width: 12)
-          ],
-        ),
-        body: Column(
-          children: <Widget>[
-            // Encabezado con estadísticas y búsqueda
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF222222),
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      const Row(
-                        children: <Widget>[
-                          FaIcon(
-                            FontAwesomeIcons.buildingUser,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'GESTIÓN DE SUCURSALES',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Tooltip(
-                        message: '${provider.sucursales.length} sucursales',
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2D2D2D),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            provider.sucursales.length.toString(),
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+          // Sección de resultados y contenido principal
+          Expanded(
+            child: Stack(
+              children: [
+                if (state.isLoading && state.sucursales.isEmpty)
+                  const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        CircularProgressIndicator(
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    decoration: InputDecoration(
-                      labelText: 'Buscar sucursal',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: Colors.white.withValues(alpha: 0.05),
-                      hintStyle:
-                          TextStyle(color: Colors.white.withValues(alpha: 0.5)),
-                      labelStyle:
-                          TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+                        SizedBox(height: 16),
+                        Text(
+                          'Cargando sucursales...',
+                          style: TextStyle(color: Colors.white54),
+                        ),
+                      ],
                     ),
-                    style: const TextStyle(color: Colors.white),
-                    onChanged: provider.actualizarBusqueda,
-                  ),
-
-                  // Filtros avanzados (expandibles)
-                  if (_mostrarFiltrosAvanzados) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Filtros Avanzados',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                  )
+                else if (state.errorMessage.isNotEmpty)
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        const FaIcon(
+                          FontAwesomeIcons.circleExclamation,
+                          color: Color(0xFFE31E24),
+                          size: 48,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          state.errorMessage,
+                          style: const TextStyle(color: Colors.red),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFE31E24),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              const Text(
-                                'Tipo de Local:',
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Container(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: 8),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF2D2D2D),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: DropdownButtonHideUnderline(
-                                    child: DropdownButton<String>(
-                                      isExpanded: true,
-                                      value: _filtroTipo,
-                                      dropdownColor: const Color(0xFF2D2D2D),
-                                      style:
-                                          const TextStyle(color: Colors.white),
-                                      items: _opcionesTipo.map((String item) {
-                                        return DropdownMenuItem<String>(
-                                          value: item,
-                                          child: Text(item),
-                                        );
-                                      }).toList(),
-                                      onChanged: (String? value) {
-                                        if (value != null) {
-                                          setState(() {
-                                            _filtroTipo = value;
-                                          });
-                                        }
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                          onPressed: notifier.cargarSucursales,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Reintentar'),
+                        ),
+                      ],
                     ),
-                  ],
-
-                  const SizedBox(height: 12),
-                  // Switch para agrupar/desagrupar
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: <Widget>[
-                      Row(
-                        children: <Widget>[
-                          FaIcon(
-                            _mostrarAgrupados
-                                ? FontAwesomeIcons.layerGroup
-                                : FontAwesomeIcons.list,
-                            color: Colors.white70,
-                            size: 14,
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'Agrupar por tipo',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: 12),
-                      Switch(
-                        value: _mostrarAgrupados,
-                        onChanged: (bool value) {
-                          setState(() {
-                            _mostrarAgrupados = value;
-                          });
-                        },
-                        activeThumbColor: const Color(0xFFE31E24),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Sección de resultados y contenido principal
-            Expanded(
-              child: Stack(
-                children: [
-                  if (provider.isLoading && provider.sucursales.isEmpty)
-                    const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: <Widget>[
-                          CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                                Color(0xFFE31E24)),
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            'Cargando sucursales...',
-                            style: TextStyle(color: Colors.white54),
-                          ),
-                        ],
-                      ),
-                    )
-                  else if (provider.errorMessage.isNotEmpty)
-                    Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: <Widget>[
-                          const FaIcon(
-                            FontAwesomeIcons.circleExclamation,
-                            color: Color(0xFFE31E24),
-                            size: 48,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            provider.errorMessage,
-                            style: const TextStyle(color: Colors.red),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 16),
+                  )
+                else if (state.sucursales.isEmpty)
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        const FaIcon(
+                          FontAwesomeIcons.building,
+                          color: Colors.white24,
+                          size: 48,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          state.terminoBusqueda.isEmpty
+                              ? 'No hay sucursales para mostrar'
+                              : 'No se encontraron sucursales con "${state.terminoBusqueda}"',
+                          style: const TextStyle(color: Colors.white54),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        if (state.terminoBusqueda.isNotEmpty)
+                          TextButton.icon(
+                            onPressed: notifier.limpiarBusqueda,
+                            icon: const Icon(Icons.clear),
+                            label: const Text('Limpiar búsqueda'),
+                          )
+                        else
                           ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFE31E24),
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 12,
-                              ),
                             ),
-                            onPressed: provider.cargarSucursales,
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Reintentar'),
+                            onPressed: _mostrarFormularioSucursal,
+                            icon: const Icon(Icons.add),
+                            label: const Text('Agregar sucursal'),
                           ),
-                        ],
-                      ),
-                    )
-                  else if (provider.sucursales.isEmpty)
-                    Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: <Widget>[
-                          const FaIcon(
-                            FontAwesomeIcons.building,
-                            color: Colors.white24,
-                            size: 48,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            provider.terminoBusqueda.isEmpty
-                                ? 'No hay sucursales para mostrar'
-                                : 'No se encontraron sucursales con "${provider.terminoBusqueda}"',
-                            style: const TextStyle(color: Colors.white54),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 16),
-                          if (provider.terminoBusqueda.isNotEmpty)
-                            TextButton.icon(
-                              onPressed: provider.limpiarBusqueda,
-                              icon: const Icon(Icons.clear),
-                              label: const Text('Limpiar búsqueda'),
-                            )
-                          else
-                            ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFE31E24),
-                                foregroundColor: Colors.white,
-                              ),
-                              onPressed: _mostrarFormularioSucursal,
-                              icon: const Icon(Icons.add),
-                              label: const Text('Agregar sucursal'),
-                            ),
-                        ],
-                      ),
-                    )
-                  else
-                    FadeTransition(
-                      opacity: _animation,
-                      child: _mostrarAgrupados
-                          ? _buildAgrupadas(provider)
-                          : _buildListaCompleta(provider),
+                      ],
                     ),
+                  )
+                else
+                  FadeTransition(
+                    opacity: _animation,
+                    child: _mostrarAgrupados
+                        ? _buildAgrupadas(state, notifier)
+                        : _buildListaCompleta(state),
+                  ),
 
-                  // Botón flotante para subir cuando la lista es larga
-                  if (_isListScrollable)
-                    Positioned(
-                      right: 20,
-                      bottom: 80,
-                      child: AnimatedOpacity(
-                        opacity: _isListScrollable ? 1.0 : 0.0,
-                        duration: const Duration(milliseconds: 200),
-                        child: FloatingActionButton.small(
-                          heroTag: 'scrollToTop',
-                          backgroundColor: Colors.black.withValues(alpha: 0.6),
-                          onPressed: _scrollToTop,
-                          child: const Icon(Icons.keyboard_arrow_up, size: 20),
-                        ),
+                // Botón flotante para subir cuando la lista es larga
+                if (_isListScrollable)
+                  Positioned(
+                    right: 20,
+                    bottom: 80,
+                    child: AnimatedOpacity(
+                      opacity: _isListScrollable ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 200),
+                      child: FloatingActionButton.small(
+                        heroTag: 'scrollToTop',
+                        backgroundColor: Colors.black.withValues(alpha: 0.6),
+                        onPressed: _scrollToTop,
+                        child: const Icon(Icons.keyboard_arrow_up, size: 20),
                       ),
                     ),
+                  ),
 
-                  // Indicador de carga cuando está actualizando pero ya tiene datos
-                  if (provider.isLoading && provider.sucursales.isNotEmpty)
-                    const Positioned(
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      child: SizedBox(
-                        height: 3,
-                        child: LinearProgressIndicator(
-                          backgroundColor: Colors.transparent,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
-                        ),
+                // Indicador de carga cuando está actualizando pero ya tiene datos
+                if (state.isLoading && state.sucursales.isNotEmpty)
+                  const Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: SizedBox(
+                      height: 3,
+                      child: LinearProgressIndicator(
+                        backgroundColor: Colors.transparent,
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
                       ),
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
-          ],
-        ),
-        floatingActionButton: FloatingActionButton(
-          backgroundColor: const Color(0xFFE31E24),
-          foregroundColor: Colors.white,
-          onPressed: _mostrarFormularioSucursal,
-          tooltip: 'Agregar sucursal',
-          child: const Icon(Icons.add),
-        ),
-      );
-    });
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFFE31E24),
+        foregroundColor: Colors.white,
+        onPressed: _mostrarFormularioSucursal,
+        tooltip: 'Agregar sucursal',
+        child: const Icon(Icons.add),
+      ),
+    );
   }
 
-  Widget _buildAgrupadas(SucursalProvider provider) {
-    // Aplicamos filtros avanzados a la lista de sucursales
+  Widget _buildAgrupadas(SucursalAdminState state, SucursalAdmin notifier) {
     final List<Sucursal> sucursalesFiltradas =
-        _aplicarFiltrosAvanzados(provider.sucursales);
+        _aplicarFiltrosAvanzados(state.sucursales);
 
     final Map<String, List<Sucursal>> grupos =
-        provider.agruparSucursalesPorTipo(sucursales: sucursalesFiltradas);
+        notifier.agruparSucursalesPorTipo();
     final List<Sucursal> sucursalesCentrales =
         grupos['Centrales'] ?? <Sucursal>[];
     final List<Sucursal> sucursalesNoCentrales =
@@ -699,285 +449,72 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(vertical: 8),
       children: <Widget>[
-        // Mostrar resumen de resultados si hay filtros aplicados
-        if (_filtroTipo != 'Todos' || provider.terminoBusqueda.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Row(
-              children: [
-                const FaIcon(
-                  FontAwesomeIcons.filter,
-                  color: Colors.white54,
-                  size: 14,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Mostrando ${sucursalesFiltradas.length} de ${provider.sucursales.length} sucursales',
-                    style: const TextStyle(
-                      color: Colors.white54,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-                if (provider.terminoBusqueda.isNotEmpty ||
-                    _filtroTipo != 'Todos')
-                  TextButton.icon(
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      minimumSize: const Size(0, 30),
-                    ),
-                    onPressed: () {
-                      provider.limpiarBusqueda();
-                      setState(() {
-                        _filtroTipo = 'Todos';
-                      });
-                    },
-                    icon: const Icon(Icons.clear, size: 14),
-                    label: const Text('Limpiar filtros',
-                        style: TextStyle(fontSize: 12)),
-                  ),
-              ],
-            ),
-          ),
+        if (_filtroTipo != 'Todos' || state.terminoBusqueda.isNotEmpty)
+          _buildFiltroHeader(state, notifier, sucursalesFiltradas.length),
 
-        // Construimos los grupos que tienen elementos
         if (sucursalesCentrales.isNotEmpty) ...<Widget>[
           _buildGrupoHeader('Sucursales Centrales', sucursalesCentrales.length),
-          _buildTablaSucursales(sucursalesCentrales),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: SucursalTable(
+              sucursales: sucursalesCentrales,
+              onDetails: _mostrarDetallesSucursal,
+              onEdit: _mostrarFormularioSucursal,
+              onDelete: _confirmarEliminarSucursal,
+              shrinkWrap: true,
+            ),
+          ),
         ],
         if (sucursalesNoCentrales.isNotEmpty) ...<Widget>[
           if (sucursalesCentrales.isNotEmpty) const SizedBox(height: 16),
           _buildGrupoHeader('Sucursales', sucursalesNoCentrales.length),
-          _buildTablaSucursales(sucursalesNoCentrales),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: SucursalTable(
+              sucursales: sucursalesNoCentrales,
+              onDetails: _mostrarDetallesSucursal,
+              onEdit: _mostrarFormularioSucursal,
+              onDelete: _confirmarEliminarSucursal,
+              shrinkWrap: true,
+            ),
+          ),
         ],
-        // Espaciado extra al final para evitar que el FAB cubra el último elemento
         const SizedBox(height: 80),
       ],
     );
   }
 
-  Widget _buildTablaSucursales(List<Sucursal> sucursales) {
+  Widget _buildFiltroHeader(
+      SucursalAdminState state, SucursalAdmin notifier, int count) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Card(
-        margin: EdgeInsets.zero,
-        color: const Color(0xFF1A1A1A),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          children: [
-            // Encabezado de la tabla
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              color: const Color(0xFF2A2A2A),
-              child: Row(
-                children: [
-                  const SizedBox(width: 36), // Espacio para el icono
-                  Expanded(
-                    flex: 4,
-                    child: Text(
-                      'NOMBRE / CÓDIGO',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white.withValues(alpha: 0.7),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 4,
-                    child: Text(
-                      'DIRECCIÓN',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white.withValues(alpha: 0.7),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      'SERIE FACTURA',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white.withValues(alpha: 0.7),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      'SERIE BOLETA',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white.withValues(alpha: 0.7),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 110), // Espacio para acciones
-                ],
-              ),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Row(
+        children: [
+          const FaIcon(FontAwesomeIcons.filter, color: Colors.white54, size: 14),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Mostrando $count de ${state.sucursales.length} sucursales',
+              style: const TextStyle(color: Colors.white54, fontSize: 13),
             ),
-
-            // Filas de la tabla
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: sucursales.length,
-              separatorBuilder: (context, index) => const Divider(
-                height: 1,
-                color: Color(0xFF333333),
-              ),
-              itemBuilder: (context, index) {
-                final Sucursal sucursal = sucursales[index];
-                return _buildFilaSucursal(sucursal);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFilaSucursal(Sucursal sucursal) {
-    final IconData icon = SucursalUtils.getIconForSucursal(sucursal);
-    final Color iconColor = SucursalUtils.getColorForSucursal(sucursal);
-    final Color iconBgColor = SucursalUtils.getIconBackgroundColor(sucursal);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _mostrarDetallesSucursal(sucursal),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              // Icono
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: iconBgColor,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: FaIcon(
-                  icon,
-                  color: iconColor,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              // Nombre y Código
-              Expanded(
-                flex: 4,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      sucursal.nombre,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        if (sucursal.codigoEstablecimiento != null)
-                          SucursalUtils.buildCodigoEstablecimiento(
-                            sucursal.codigoEstablecimiento,
-                          ),
-                        if (sucursal.sucursalCentral) ...[
-                          const SizedBox(width: 8),
-                          SucursalUtils.buildTipoSucursalBadge(sucursal),
-                        ],
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              // Dirección
-              Expanded(
-                flex: 4,
-                child: Text(
-                  sucursal.direccion ?? 'Sin dirección',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.white70,
-                    fontStyle: sucursal.direccion == null
-                        ? FontStyle.italic
-                        : FontStyle.normal,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-
-              // Serie Factura
-              Expanded(
-                flex: 2,
-                child: SucursalUtils.buildSerieInfo(
-                  sucursal.serieFactura,
-                  sucursal.numeroFacturaInicial,
-                ),
-              ),
-
-              // Serie Boleta
-              Expanded(
-                flex: 2,
-                child: SucursalUtils.buildSerieInfo(
-                  sucursal.serieBoleta,
-                  sucursal.numeroBoletaInicial,
-                ),
-              ),
-
-              // Acciones
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const FaIcon(
-                      FontAwesomeIcons.eye,
-                      size: 16,
-                      color: Colors.white70,
-                    ),
-                    tooltip: 'Ver detalles',
-                    onPressed: () => _mostrarDetallesSucursal(sucursal),
-                  ),
-                  IconButton(
-                    icon: const FaIcon(
-                      FontAwesomeIcons.penToSquare,
-                      size: 16,
-                      color: Colors.white70,
-                    ),
-                    tooltip: 'Editar sucursal',
-                    onPressed: () => _mostrarFormularioSucursal(sucursal),
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.delete,
-                      size: 18,
-                      color: Colors.red,
-                    ),
-                    tooltip: 'Eliminar sucursal',
-                    onPressed: () => _confirmarEliminarSucursal(sucursal),
-                  ),
-                ],
-              ),
-            ],
           ),
-        ),
+          TextButton.icon(
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: const Size(0, 30),
+            ),
+            onPressed: () {
+              notifier.limpiarBusqueda();
+              setState(() => _filtroTipo = 'Todos');
+            },
+            icon: const Icon(Icons.clear, size: 14),
+            label: const Text('Limpiar filtros', style: TextStyle(fontSize: 12)),
+          ),
+        ],
       ),
     );
   }
+
 
   void _mostrarDetallesSucursal(Sucursal sucursal) {
     showDialog(
@@ -1055,144 +592,27 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
     );
   }
 
-  Widget _buildListaCompleta(SucursalProvider provider) {
-    // Aplicamos filtros avanzados
+  Widget _buildListaCompleta(SucursalAdminState state) {
     final List<Sucursal> sucursalesFiltradas =
-        _aplicarFiltrosAvanzados(provider.sucursales);
+        _aplicarFiltrosAvanzados(state.sucursales);
 
     return Column(
       children: [
-        // Mostrar resumen de resultados si hay filtros aplicados
-        if (_filtroTipo != 'Todos' || provider.terminoBusqueda.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Row(
-              children: [
-                const FaIcon(
-                  FontAwesomeIcons.filter,
-                  color: Colors.white54,
-                  size: 14,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Mostrando ${sucursalesFiltradas.length} de ${provider.sucursales.length} sucursales',
-                    style: const TextStyle(
-                      color: Colors.white54,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-                if (provider.terminoBusqueda.isNotEmpty ||
-                    _filtroTipo != 'Todos')
-                  TextButton.icon(
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      minimumSize: const Size(0, 30),
-                    ),
-                    onPressed: () {
-                      provider.limpiarBusqueda();
-                      setState(() {
-                        _filtroTipo = 'Todos';
-                      });
-                    },
-                    icon: const Icon(Icons.clear, size: 14),
-                    label: const Text('Limpiar filtros',
-                        style: TextStyle(fontSize: 12)),
-                  ),
-              ],
-            ),
-          ),
-
-        // Lista principal
+        if (_filtroTipo != 'Todos' || state.terminoBusqueda.isNotEmpty)
+          _buildFiltroHeader(
+              state,
+              ref.read(sucursalAdminProvider.notifier),
+              sucursalesFiltradas.length),
         Expanded(
           child: Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Card(
-              margin: EdgeInsets.zero,
-              color: const Color(0xFF1A1A1A),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Column(
-                children: [
-                  // Encabezado de la tabla
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 10),
-                    color: const Color(0xFF2A2A2A),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 36), // Espacio para el icono
-                        Expanded(
-                          flex: 4,
-                          child: Text(
-                            'NOMBRE',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white.withValues(alpha: 0.7),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 4,
-                          child: Text(
-                            'DIRECCIÓN',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white.withValues(alpha: 0.7),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            'SERIE FACTURA',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white.withValues(alpha: 0.7),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            'SERIE BOLETA',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white.withValues(alpha: 0.7),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 110), // Espacio para acciones
-                      ],
-                    ),
-                  ),
-
-                  // Lista de sucursales
-                  Expanded(
-                    child: ListView.separated(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.only(bottom: 80),
-                      itemCount: sucursalesFiltradas.length,
-                      separatorBuilder: (context, index) => const Divider(
-                        height: 1,
-                        color: Color(0xFF333333),
-                      ),
-                      itemBuilder: (context, index) {
-                        final Sucursal sucursal = sucursalesFiltradas[index];
-                        return _buildFilaSucursal(sucursal);
-                      },
-                    ),
-                  ),
-                ],
-              ),
+            child: SucursalTable(
+              sucursales: sucursalesFiltradas,
+              onDetails: _mostrarDetallesSucursal,
+              onEdit: _mostrarFormularioSucursal,
+              onDelete: _confirmarEliminarSucursal,
+              scrollController: _scrollController,
             ),
           ),
         ),
@@ -1201,251 +621,4 @@ class _SucursalAdminScreenState extends State<SucursalAdminScreen>
   }
 }
 
-class SucursalFormDialog extends StatefulWidget {
-  final Sucursal? sucursal;
-  final Function(Map<String, dynamic>) onSave;
 
-  const SucursalFormDialog({
-    super.key,
-    this.sucursal,
-    required this.onSave,
-  });
-
-  @override
-  State<SucursalFormDialog> createState() => _SucursalFormDialogState();
-
-  @override
-  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
-    properties
-      ..add(DiagnosticsProperty<Sucursal?>('sucursal', sucursal))
-      ..add(ObjectFlagProperty<Function(Map<String, dynamic>)>.has(
-          'onSave', onSave));
-  }
-}
-
-class _SucursalFormDialogState extends State<SucursalFormDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _nombreController = TextEditingController();
-  final TextEditingController _direccionController = TextEditingController();
-  final TextEditingController _serieFacturaController = TextEditingController();
-  final TextEditingController _numeroFacturaInicialController =
-      TextEditingController();
-  final TextEditingController _serieBoletaController = TextEditingController();
-  final TextEditingController _numeroBoletaInicialController =
-      TextEditingController();
-  final TextEditingController _codigoEstablecimientoController =
-      TextEditingController();
-  bool _sucursalCentral = false;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.sucursal != null) {
-      _nombreController.text = widget.sucursal!.nombre;
-      _direccionController.text = widget.sucursal!.direccion ?? '';
-      _sucursalCentral = widget.sucursal!.sucursalCentral;
-      _serieFacturaController.text = widget.sucursal!.serieFactura ?? '';
-      _numeroFacturaInicialController.text =
-          widget.sucursal!.numeroFacturaInicial?.toString() ?? '1';
-      _serieBoletaController.text = widget.sucursal!.serieBoleta ?? '';
-      _numeroBoletaInicialController.text =
-          widget.sucursal!.numeroBoletaInicial?.toString() ?? '1';
-      _codigoEstablecimientoController.text =
-          widget.sucursal!.codigoEstablecimiento ?? '';
-    } else {
-      // Valores predeterminados para nuevas sucursales
-      _numeroFacturaInicialController.text = '1';
-      _numeroBoletaInicialController.text = '1';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final bool esNuevaSucursal = widget.sucursal == null;
-
-    return AlertDialog(
-      title: Text(
-        esNuevaSucursal ? 'Nueva Sucursal' : 'Editar Sucursal',
-        style: const TextStyle(
-          color: Color(0xFFE31E24),
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      content: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              TextFormField(
-                controller: _nombreController,
-                decoration: const InputDecoration(
-                  labelText: 'Nombre',
-                  hintText: 'Ej: Sucursal Principal',
-                  prefixIcon: Icon(Icons.business),
-                ),
-                validator: (String? value) {
-                  if (value == null || value.isEmpty) {
-                    return 'El nombre es requerido';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _direccionController,
-                decoration: const InputDecoration(
-                  labelText: 'Dirección',
-                  hintText: 'Ej: Av. Principal 123',
-                  prefixIcon: Icon(Icons.location_on),
-                ),
-                validator: (String? value) {
-                  if (value == null || value.isEmpty) {
-                    return 'La dirección es requerida';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Configuración de facturación - Sección
-              Container(
-                margin: const EdgeInsets.only(top: 8, bottom: 8),
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.grey.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 8),
-                      child: Text(
-                        'Configuración de Facturación',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                    // Serie de Factura
-                    TextFormField(
-                      controller: _serieFacturaController,
-                      decoration: const InputDecoration(
-                        labelText: 'Serie de Factura',
-                        hintText: 'Ej: F001',
-                        prefixIcon: Icon(Icons.receipt_long),
-                        helperText: 'Debe empezar con F y tener 4 caracteres',
-                      ),
-                      validator: (value) =>
-                          SucursalUtils.validarSerie(value, 'factura'),
-                    ),
-                    const SizedBox(height: 8),
-                    // Número de Factura Inicial
-                    TextFormField(
-                      controller: _numeroFacturaInicialController,
-                      decoration: const InputDecoration(
-                        labelText: 'Número de Factura Inicial',
-                        hintText: 'Ej: 1',
-                        prefixIcon: Icon(Icons.format_list_numbered),
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: SucursalUtils.validarNumeroInicial,
-                    ),
-                    const SizedBox(height: 16),
-                    // Serie de Boleta
-                    TextFormField(
-                      controller: _serieBoletaController,
-                      decoration: const InputDecoration(
-                        labelText: 'Serie de Boleta',
-                        hintText: 'Ej: B001',
-                        prefixIcon: Icon(Icons.receipt),
-                        helperText: 'Debe empezar con B y tener 4 caracteres',
-                      ),
-                      validator: (value) =>
-                          SucursalUtils.validarSerie(value, 'boleta'),
-                    ),
-                    const SizedBox(height: 8),
-                    // Número de Boleta Inicial
-                    TextFormField(
-                      controller: _numeroBoletaInicialController,
-                      decoration: const InputDecoration(
-                        labelText: 'Número de Boleta Inicial',
-                        hintText: 'Ej: 1',
-                        prefixIcon: Icon(Icons.format_list_numbered),
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: SucursalUtils.validarNumeroInicial,
-                    ),
-                    const SizedBox(height: 16),
-                    // Código de Establecimiento
-                    TextFormField(
-                      controller: _codigoEstablecimientoController,
-                      decoration: const InputDecoration(
-                        labelText: 'Código de Establecimiento',
-                        hintText: 'Ej: EST001',
-                        prefixIcon: Icon(Icons.store),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 16),
-              SwitchListTile(
-                title: const Text('Sucursal Central'),
-                subtitle: const Text(
-                    'Las sucursales centrales tienen permisos especiales'),
-                value: _sucursalCentral,
-                activeThumbColor: const Color(0xFFE31E24),
-                onChanged: (bool value) =>
-                    setState(() => _sucursalCentral = value),
-              ),
-            ],
-          ),
-        ),
-      ),
-      actions: <Widget>[
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
-        ),
-        ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFE31E24),
-            foregroundColor: Colors.white,
-          ),
-          onPressed: () {
-            if (_formKey.currentState!.validate()) {
-              final Map<String, Object> data = <String, Object>{
-                if (widget.sucursal != null) 'id': widget.sucursal!.id,
-                'nombre': _nombreController.text,
-                'direccion': _direccionController.text,
-                'sucursalCentral': _sucursalCentral,
-                if (_serieFacturaController.text.isNotEmpty)
-                  'serieFactura': _serieFacturaController.text,
-                if (_numeroFacturaInicialController.text.isNotEmpty)
-                  'numeroFacturaInicial':
-                      int.parse(_numeroFacturaInicialController.text),
-                if (_serieBoletaController.text.isNotEmpty)
-                  'serieBoleta': _serieBoletaController.text,
-                if (_numeroBoletaInicialController.text.isNotEmpty)
-                  'numeroBoletaInicial':
-                      int.parse(_numeroBoletaInicialController.text),
-                if (_codigoEstablecimientoController.text.isNotEmpty)
-                  'codigoEstablecimiento':
-                      _codigoEstablecimientoController.text,
-              };
-              widget.onSave(data);
-              Navigator.pop(context);
-            }
-          },
-          icon: Icon(esNuevaSucursal ? Icons.add : Icons.save),
-          label: Text(esNuevaSucursal ? 'Crear' : 'Guardar'),
-        ),
-      ],
-    );
-  }
-}

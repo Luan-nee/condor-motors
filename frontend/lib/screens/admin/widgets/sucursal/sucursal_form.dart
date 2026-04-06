@@ -1,12 +1,12 @@
 import 'package:condorsmotors/models/sucursal.model.dart';
-import 'package:condorsmotors/providers/admin/sucursal.admin.provider.dart';
+import 'package:condorsmotors/providers/admin/sucursal.admin.riverpod.dart';
 import 'package:condorsmotors/utils/sucursal_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:provider/provider.dart';
 
-class SucursalForm extends StatefulWidget {
+class SucursalForm extends ConsumerStatefulWidget {
   final Sucursal? sucursal;
   final Function(Map<String, dynamic>) onSave;
   final VoidCallback onCancel;
@@ -19,7 +19,7 @@ class SucursalForm extends StatefulWidget {
   });
 
   @override
-  State<SucursalForm> createState() => _SucursalFormState();
+  ConsumerState<SucursalForm> createState() => _SucursalFormState();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
@@ -32,10 +32,9 @@ class SucursalForm extends StatefulWidget {
   }
 }
 
-class _SucursalFormState extends State<SucursalForm>
+class _SucursalFormState extends ConsumerState<SucursalForm>
     with SingleTickerProviderStateMixin {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late SucursalProvider _sucursalProvider;
   late AnimationController _linkAnimationController;
   late Animation<double> _linkAnimation;
 
@@ -60,7 +59,7 @@ class _SucursalFormState extends State<SucursalForm>
   void initState() {
     super.initState();
     _isEditing = widget.sucursal != null;
-    _sucursalProvider = Provider.of<SucursalProvider>(context, listen: false);
+    final notifier = ref.read(sucursalAdminProvider.notifier);
 
     // Inicializar el controlador de animación
     _linkAnimationController = AnimationController(
@@ -101,9 +100,9 @@ class _SucursalFormState extends State<SucursalForm>
       _serieBoletaController.text = '';
       _codigoEstablecimientoController.text = '';
       _numeroFacturaInicialController.text =
-          _sucursalProvider.getSiguienteNumeroFactura().toString();
+          notifier.getSiguienteNumeroFactura().toString();
       _numeroBoletaInicialController.text =
-          _sucursalProvider.getSiguienteNumeroBoleta().toString();
+          notifier.getSiguienteNumeroBoleta().toString();
     }
   }
 
@@ -168,508 +167,494 @@ class _SucursalFormState extends State<SucursalForm>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<SucursalProvider>(
-      builder: (context, provider, child) {
-        return Card(
-          elevation: 4,
-          margin: const EdgeInsets.all(16),
-          color: const Color(0xFF1A1A1A),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Encabezado
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF2D2D2D),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(12),
-                      topRight: Radius.circular(12),
+    // Escuchamos el estado si es necesario, aunque aquí principalmente usamos acciones
+    // final state = ref.watch(sucursalAdminProvider);
+
+    return Card(
+      elevation: 4,
+      margin: const EdgeInsets.all(16),
+      color: const Color(0xFF1A1A1A),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Encabezado
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Color(0xFF2D2D2D),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
+                ),
+              ),
+              child: Row(
+                children: [
+                  FaIcon(
+                    _isEditing
+                        ? FontAwesomeIcons.penToSquare
+                        : FontAwesomeIcons.plus,
+                    color: SucursalUtils.colorCentral,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    _isEditing ? 'Editar Sucursal' : 'Nueva Sucursal',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: Colors.white,
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      FaIcon(
-                        _isEditing
-                            ? FontAwesomeIcons.penToSquare
-                            : FontAwesomeIcons.plus,
-                        color: SucursalUtils.colorCentral,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        _isEditing ? 'Editar Sucursal' : 'Nueva Sucursal',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                ],
+              ),
+            ),
 
-                // Contenido del formulario
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Columna Izquierda
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Sección: Información General
-                              _buildSectionTitle('Información General',
-                                  FontAwesomeIcons.building),
-                              const SizedBox(height: 16),
+            // Contenido del formulario
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Columna Izquierda
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Sección: Información General
+                          _buildSectionTitle(
+                              'Información General', FontAwesomeIcons.building),
+                          const SizedBox(height: 16),
 
-                              // Nombre de la sucursal
-                              TextFormField(
-                                controller: _nombreController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Nombre de la Sucursal *',
-                                  hintText: 'Ej: Sucursal Principal',
-                                  prefixIcon:
-                                      FaIcon(FontAwesomeIcons.store, size: 18),
-                                  border: OutlineInputBorder(),
-                                ),
-                                validator: (String? value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'El nombre es requerido';
-                                  }
-                                  return null;
-                                },
+                          // Nombre de la sucursal
+                          TextFormField(
+                            controller: _nombreController,
+                            decoration: const InputDecoration(
+                              labelText: 'Nombre de la Sucursal *',
+                              hintText: 'Ej: Sucursal Principal',
+                              prefixIcon:
+                                  FaIcon(FontAwesomeIcons.store, size: 18),
+                              border: OutlineInputBorder(),
+                            ),
+                            validator: (String? value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'El nombre es requerido';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Dirección
+                          TextFormField(
+                            controller: _direccionController,
+                            decoration: const InputDecoration(
+                              labelText: 'Dirección',
+                              hintText: 'Ej: Av. Principal 123',
+                              prefixIcon: FaIcon(FontAwesomeIcons.locationDot,
+                                  size: 18),
+                              border: OutlineInputBorder(),
+                            ),
+                            validator: (String? value) {
+                              // Ya no se requiere validación para campo opcional
+                              return null;
+                            },
+                            maxLines: 2,
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Tipo de sucursal
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.1),
                               ),
-                              const SizedBox(height: 16),
-
-                              // Dirección
-                              TextFormField(
-                                controller: _direccionController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Dirección',
-                                  hintText: 'Ej: Av. Principal 123',
-                                  prefixIcon: FaIcon(
-                                      FontAwesomeIcons.locationDot,
-                                      size: 18),
-                                  border: OutlineInputBorder(),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Row(
+                                  children: [
+                                    FaIcon(
+                                      FontAwesomeIcons.buildingFlag,
+                                      size: 16,
+                                      color: Colors.white70,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Tipo de local',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                validator: (String? value) {
-                                  // Ya no se requiere validación para campo opcional
-                                  return null;
-                                },
-                                maxLines: 2,
-                              ),
-                              const SizedBox(height: 16),
-
-                              // Tipo de sucursal
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.05),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.1),
+                                const SizedBox(height: 8),
+                                DropdownButtonFormField<String>(
+                                  initialValue:
+                                      _sucursalCentral ? 'Central' : 'Sucursal',
+                                  items: SucursalUtils.tiposSucursal
+                                      .where((tipo) => tipo != 'Todos')
+                                      .map((tipo) => DropdownMenuItem(
+                                            value: tipo,
+                                            child: Text(tipo),
+                                          ))
+                                      .toList(),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _sucursalCentral = value == 'Central';
+                                    });
+                                  },
+                                  decoration: const InputDecoration(
+                                    border: OutlineInputBorder(),
+                                    contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 8),
                                   ),
                                 ),
-                                child: Column(
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 24),
+                    // Columna Derecha
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Sección: Series y Numeración
+                          _buildSectionTitle('Series y Numeración',
+                              FontAwesomeIcons.fileInvoiceDollar),
+                          const SizedBox(height: 16),
+
+                          // Series de Facturación (Ya existente)
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.1),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const FaIcon(
+                                      FontAwesomeIcons.fileInvoice,
+                                      size: 16,
+                                      color: Colors.white,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text(
+                                      'Series de Facturación',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Tooltip(
+                                      message: _seriesVinculadas
+                                          ? 'Series vinculadas: Los cambios en la factura se reflejarán en la boleta'
+                                          : 'Vincular series de factura y boleta',
+                                      child: AnimatedBuilder(
+                                        animation: _linkAnimation,
+                                        builder: (context, child) {
+                                          return IconButton(
+                                            icon: Transform.rotate(
+                                              angle: _linkAnimation.value *
+                                                  2.0 *
+                                                  3.14159,
+                                              child: FaIcon(
+                                                _seriesVinculadas
+                                                    ? FontAwesomeIcons.link
+                                                    : FontAwesomeIcons
+                                                        .linkSlash,
+                                                size: 16,
+                                                color: Color.lerp(
+                                                  Colors.white54,
+                                                  Colors.blue,
+                                                  _linkAnimation.value,
+                                                ),
+                                              ),
+                                            ),
+                                            onPressed: () {
+                                              setState(() {
+                                                _seriesVinculadas =
+                                                    !_seriesVinculadas;
+                                                if (_seriesVinculadas) {
+                                                  _linkAnimationController
+                                                      .forward();
+                                                  final String serieFactura =
+                                                      _serieFacturaController
+                                                          .text;
+                                                  if (serieFactura
+                                                          .startsWith('F') &&
+                                                      serieFactura.length ==
+                                                          4) {
+                                                    _serieBoletaController
+                                                            .text =
+                                                        'B${serieFactura.substring(1)}';
+                                                  }
+                                                } else {
+                                                  _linkAnimationController
+                                                      .reverse();
+                                                }
+                                              });
+                                            },
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+
+                                // Serie de Factura
+                                Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     const Row(
                                       children: [
                                         FaIcon(
-                                          FontAwesomeIcons.buildingFlag,
-                                          size: 16,
+                                          FontAwesomeIcons.fileInvoice,
+                                          size: 14,
                                           color: Colors.white70,
                                         ),
                                         SizedBox(width: 8),
                                         Text(
-                                          'Tipo de local',
+                                          'Serie Factura (Opcional)',
                                           style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
+                                            color: Colors.white70,
+                                            fontSize: 14,
                                           ),
                                         ),
                                       ],
                                     ),
                                     const SizedBox(height: 8),
-                                    DropdownButtonFormField<String>(
-                                      initialValue: _sucursalCentral
-                                          ? 'Central'
-                                          : 'Sucursal',
-                                      items: SucursalUtils.tiposSucursal
-                                          .where((tipo) => tipo != 'Todos')
-                                          .map((tipo) => DropdownMenuItem(
-                                                value: tipo,
-                                                child: Text(tipo),
-                                              ))
-                                          .toList(),
-                                      onChanged: (value) {
-                                        setState(() {
-                                          _sucursalCentral = value == 'Central';
-                                        });
-                                      },
-                                      decoration: const InputDecoration(
-                                        border: OutlineInputBorder(),
-                                        contentPadding: EdgeInsets.symmetric(
-                                            horizontal: 12, vertical: 8),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 24),
-                        // Columna Derecha
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Sección: Series y Numeración
-                              _buildSectionTitle('Series y Numeración',
-                                  FontAwesomeIcons.fileInvoiceDollar),
-                              const SizedBox(height: 16),
-
-                              // Series de Facturación (Ya existente)
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.05),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.1),
-                                  ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        const FaIcon(
-                                          FontAwesomeIcons.fileInvoice,
-                                          size: 16,
-                                          color: Colors.white,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        const Text(
-                                          'Series de Facturación',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        const Spacer(),
-                                        Tooltip(
-                                          message: _seriesVinculadas
-                                              ? 'Series vinculadas: Los cambios en la factura se reflejarán en la boleta'
-                                              : 'Vincular series de factura y boleta',
-                                          child: AnimatedBuilder(
-                                            animation: _linkAnimation,
-                                            builder: (context, child) {
-                                              return IconButton(
-                                                icon: Transform.rotate(
-                                                  angle: _linkAnimation.value *
-                                                      2.0 *
-                                                      3.14159,
-                                                  child: FaIcon(
-                                                    _seriesVinculadas
-                                                        ? FontAwesomeIcons.link
-                                                        : FontAwesomeIcons
-                                                            .linkSlash,
-                                                    size: 16,
-                                                    color: Color.lerp(
-                                                      Colors.white54,
-                                                      Colors.blue,
-                                                      _linkAnimation.value,
-                                                    ),
-                                                  ),
-                                                ),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    _seriesVinculadas =
-                                                        !_seriesVinculadas;
-                                                    if (_seriesVinculadas) {
-                                                      _linkAnimationController
-                                                          .forward();
-                                                      final String
-                                                          serieFactura =
-                                                          _serieFacturaController
-                                                              .text;
-                                                      if (serieFactura
-                                                              .startsWith(
-                                                                  'F') &&
-                                                          serieFactura.length ==
-                                                              4) {
-                                                        _serieBoletaController
-                                                                .text =
-                                                            'B${serieFactura.substring(1)}';
-                                                      }
-                                                    } else {
-                                                      _linkAnimationController
-                                                          .reverse();
-                                                    }
-                                                  });
-                                                },
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 16),
-
-                                    // Serie de Factura
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Row(
-                                          children: [
-                                            FaIcon(
-                                              FontAwesomeIcons.fileInvoice,
-                                              size: 14,
-                                              color: Colors.white70,
-                                            ),
-                                            SizedBox(width: 8),
-                                            Text(
-                                              'Serie Factura (Opcional)',
-                                              style: TextStyle(
-                                                color: Colors.white70,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 8),
-                                        TextFormField(
-                                          controller: _serieFacturaController,
-                                          maxLength: 4,
-                                          decoration: const InputDecoration(
-                                            border: OutlineInputBorder(),
-                                            helperText:
-                                                'F + 3 dígitos (F001) o dejar vacío',
-                                            counterText: '',
-                                            isDense: true,
-                                            hintText: 'Ej: F001',
-                                          ),
-                                          validator: (value) =>
-                                              _validateSerie(value, 'F'),
-                                          onChanged: (value) =>
-                                              _handleSerieChange(value,
-                                                  _serieFacturaController, 'F'),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 16),
-
-                                    // Serie de Boleta
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Row(
-                                          children: [
-                                            FaIcon(
-                                              FontAwesomeIcons.receipt,
-                                              size: 14,
-                                              color: Colors.white70,
-                                            ),
-                                            SizedBox(width: 8),
-                                            Text(
-                                              'Serie Boleta (Opcional)',
-                                              style: TextStyle(
-                                                color: Colors.white70,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 8),
-                                        TextFormField(
-                                          controller: _serieBoletaController,
-                                          maxLength: 4,
-                                          enabled: !_seriesVinculadas,
-                                          decoration: InputDecoration(
-                                            border: const OutlineInputBorder(),
-                                            helperText:
-                                                'B + 3 dígitos (B001) o dejar vacío',
-                                            counterText: '',
-                                            isDense: true,
-                                            hintText: 'Ej: B001',
-                                            filled: _seriesVinculadas,
-                                            fillColor: _seriesVinculadas
-                                                ? Colors.blue.withValues(alpha: 0.1)
-                                                : null,
-                                          ),
-                                          validator: (value) =>
-                                              _validateSerie(value, 'B'),
-                                          onChanged: (value) =>
-                                              _handleSerieChange(value,
-                                                  _serieBoletaController, 'B'),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-
-                              // Números Iniciales
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: TextFormField(
-                                      controller:
-                                          _numeroFacturaInicialController,
-                                      decoration: const InputDecoration(
-                                        labelText: 'N° Factura Inicial',
-                                        border: OutlineInputBorder(),
-                                        isDense: true,
-                                        prefixIcon: FaIcon(
-                                            FontAwesomeIcons.hashtag,
-                                            size: 16),
-                                      ),
-                                      keyboardType: TextInputType.number,
-                                      validator: _validateNumeroInicial,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: TextFormField(
-                                      controller:
-                                          _numeroBoletaInicialController,
-                                      decoration: const InputDecoration(
-                                        labelText: 'N° Boleta Inicial',
-                                        border: OutlineInputBorder(),
-                                        isDense: true,
-                                        prefixIcon: FaIcon(
-                                            FontAwesomeIcons.hashtag,
-                                            size: 16),
-                                      ),
-                                      keyboardType: TextInputType.number,
-                                      validator: _validateNumeroInicial,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 24),
-
-                              // Sección: Código de Establecimiento
-                              _buildSectionTitle('Código de Establecimiento',
-                                  FontAwesomeIcons.qrcode),
-                              const SizedBox(height: 16),
-
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.05),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.1),
-                                  ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
                                     TextFormField(
-                                      controller:
-                                          _codigoEstablecimientoController,
+                                      controller: _serieFacturaController,
                                       maxLength: 4,
                                       decoration: const InputDecoration(
-                                        labelText: 'Código (Opcional)',
-                                        hintText: 'Ej: 0001',
-                                        counterText: '',
                                         border: OutlineInputBorder(),
+                                        helperText:
+                                            'F + 3 dígitos (F001) o dejar vacío',
+                                        counterText: '',
                                         isDense: true,
-                                        prefixIcon: FaIcon(
-                                            FontAwesomeIcons.buildingUser,
-                                            size: 16),
+                                        hintText: 'Ej: F001',
                                       ),
-                                      keyboardType: TextInputType.number,
-                                      validator: _validateCodigo,
-                                      onChanged: _handleCodigoChange,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'El código de establecimiento es único para cada sucursal (opcional)',
-                                      style: TextStyle(
-                                        color: Colors.white.withValues(alpha: 0.7),
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Ingresar solo 4 dígitos numéricos (0-9)',
-                                      style: TextStyle(
-                                        color: Colors.white.withValues(alpha: 0.6),
-                                        fontSize: 11,
-                                      ),
+                                      validator: (value) =>
+                                          _validateSerie(value, 'F'),
+                                      onChanged: (value) => _handleSerieChange(
+                                          value, _serieFacturaController, 'F'),
                                     ),
                                   ],
+                                ),
+                                const SizedBox(height: 16),
+
+                                // Serie de Boleta
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Row(
+                                      children: [
+                                        FaIcon(
+                                          FontAwesomeIcons.receipt,
+                                          size: 14,
+                                          color: Colors.white70,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Serie Boleta (Opcional)',
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    TextFormField(
+                                      controller: _serieBoletaController,
+                                      maxLength: 4,
+                                      enabled: !_seriesVinculadas,
+                                      decoration: InputDecoration(
+                                        border: const OutlineInputBorder(),
+                                        helperText:
+                                            'B + 3 dígitos (B001) o dejar vacío',
+                                        counterText: '',
+                                        isDense: true,
+                                        hintText: 'Ej: B001',
+                                        filled: _seriesVinculadas,
+                                        fillColor: _seriesVinculadas
+                                            ? Colors.blue.withValues(alpha: 0.1)
+                                            : null,
+                                      ),
+                                      validator: (value) =>
+                                          _validateSerie(value, 'B'),
+                                      onChanged: (value) => _handleSerieChange(
+                                          value, _serieBoletaController, 'B'),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Números Iniciales
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _numeroFacturaInicialController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'N° Factura Inicial',
+                                    border: OutlineInputBorder(),
+                                    isDense: true,
+                                    prefixIcon: FaIcon(FontAwesomeIcons.hashtag,
+                                        size: 16),
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  validator: _validateNumeroInicial,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _numeroBoletaInicialController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'N° Boleta Inicial',
+                                    border: OutlineInputBorder(),
+                                    isDense: true,
+                                    prefixIcon: FaIcon(FontAwesomeIcons.hashtag,
+                                        size: 16),
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  validator: _validateNumeroInicial,
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                          const SizedBox(height: 24),
 
-                // Botones de acción
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF212121),
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(12),
-                      bottomRight: Radius.circular(12),
+                          // Sección: Código de Establecimiento
+                          _buildSectionTitle('Código de Establecimiento',
+                              FontAwesomeIcons.qrcode),
+                          const SizedBox(height: 16),
+
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.1),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                TextFormField(
+                                  controller: _codigoEstablecimientoController,
+                                  maxLength: 4,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Código (Opcional)',
+                                    hintText: 'Ej: 0001',
+                                    counterText: '',
+                                    border: OutlineInputBorder(),
+                                    isDense: true,
+                                    prefixIcon: FaIcon(
+                                        FontAwesomeIcons.buildingUser,
+                                        size: 16),
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  validator: _validateCodigo,
+                                  onChanged: _handleCodigoChange,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'El código de establecimiento es único para cada sucursal (opcional)',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                Text(
+                                  'Ingresar solo 4 dígitos numéricos (0-9)',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Botones de acción
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Color(0xFF212121),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(12),
+                  bottomRight: Radius.circular(12),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: widget.onCancel,
+                    icon: const Icon(Icons.close),
+                    label: const Text('Cancelar'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white70,
+                      side: const BorderSide(color: Colors.white54),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
                     ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: widget.onCancel,
-                        icon: const Icon(Icons.close),
-                        label: const Text('Cancelar'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white70,
-                          side: const BorderSide(color: Colors.white54),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      ElevatedButton.icon(
-                        onPressed: _guardarSucursal,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: SucursalUtils.colorCentral,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 12),
-                        ),
-                        icon: Icon(_isEditing ? Icons.save : Icons.add),
-                        label: Text(
-                            _isEditing ? 'Guardar Cambios' : 'Crear Sucursal'),
-                      ),
-                    ],
+                  const SizedBox(width: 16),
+                  ElevatedButton.icon(
+                    onPressed: _guardarSucursal,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: SucursalUtils.colorCentral,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
+                    ),
+                    icon: Icon(_isEditing ? Icons.save : Icons.add),
+                    label:
+                        Text(_isEditing ? 'Guardar Cambios' : 'Crear Sucursal'),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 

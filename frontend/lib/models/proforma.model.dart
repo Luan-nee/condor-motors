@@ -270,7 +270,12 @@ class Proforma extends Equatable {
 
   const Proforma({
     required this.id,
-    required this.total, required this.detalles, required this.empleadoId, required this.sucursalId, required this.fechaCreacion, this.nombre,
+    required this.total,
+    required this.detalles,
+    required this.empleadoId,
+    required this.sucursalId,
+    required this.fechaCreacion,
+    this.nombre,
     this.fechaActualizacion,
     this.clienteId,
     this.estado = EstadoProforma.pendiente,
