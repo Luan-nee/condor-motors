@@ -117,7 +117,7 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
                                       ? _descripcionController.text.trim()
                                       : null,
                             );
-                            if (mounted) {
+                            if (context.mounted) {
                               Navigator.pop(dialogContext);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(

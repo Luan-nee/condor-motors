@@ -26,6 +26,7 @@ class VentasComputerState {
 
   final Paginacion paginacion;
   final int itemsPerPage;
+  final int userPreferredPageSize;
   final String orden;
   final String? ordenarPor;
 
@@ -43,6 +44,7 @@ class VentasComputerState {
     this.ventaDetalleErrorMessage = '',
     this.paginacion = Paginacion.emptyPagination,
     this.itemsPerPage = 25,
+    this.userPreferredPageSize = 25,
     this.orden = 'desc',
     this.ordenarPor = 'fechaCreacion',
   });
@@ -61,6 +63,7 @@ class VentasComputerState {
     String? ventaDetalleErrorMessage,
     Paginacion? paginacion,
     int? itemsPerPage,
+    int? userPreferredPageSize,
     String? orden,
     String? ordenarPor,
   }) {
@@ -80,6 +83,7 @@ class VentasComputerState {
           ventaDetalleErrorMessage ?? this.ventaDetalleErrorMessage,
       paginacion: paginacion ?? this.paginacion,
       itemsPerPage: itemsPerPage ?? this.itemsPerPage,
+      userPreferredPageSize: userPreferredPageSize ?? this.userPreferredPageSize,
       orden: orden ?? this.orden,
       ordenarPor: ordenarPor ?? this.ordenarPor,
     );
@@ -106,6 +110,7 @@ class VentasComputer extends _$VentasComputer {
   String get ventaDetalleErrorMessage => state.ventaDetalleErrorMessage;
   Paginacion get paginacion => state.paginacion;
   int get itemsPerPage => state.itemsPerPage;
+  int get userPreferredPageSize => state.userPreferredPageSize;
   String get orden => state.orden;
   String? get ordenarPor => state.ordenarPor;
 
@@ -265,10 +270,13 @@ class VentasComputer extends _$VentasComputer {
     state = state.copyWith(isVentasLoading: true, ventasErrorMessage: '');
 
     try {
+      // Usamos la preferencia guardada del usuario como base para la petición
+      int requestPageSize = state.userPreferredPageSize;
+
       final response = await _ventaRepository.getVentas(
         sucursalId: sucursalId ?? state.sucursalSeleccionada!.id,
         page: state.paginacion.currentPage,
-        pageSize: state.itemsPerPage,
+        pageSize: requestPageSize,
         search: state.searchQuery.isEmpty ? null : state.searchQuery,
         sortBy: state.ordenarPor,
         order: state.orden,
@@ -313,7 +321,10 @@ class VentasComputer extends _$VentasComputer {
         actualPageSize = serverTotalItems;
       }
 
-      state = state.copyWith(ventas: nuevasVentas, itemsPerPage: actualPageSize);
+      state = state.copyWith(
+        ventas: nuevasVentas, 
+        itemsPerPage: actualPageSize
+      );
 
       if (response.containsKey('pagination') && response['pagination'] is Map) {
         final Map<String, dynamic> paginationMap =
@@ -418,6 +429,7 @@ class VentasComputer extends _$VentasComputer {
     }
 
     state = state.copyWith(
+      userPreferredPageSize: nuevoTamano,
       itemsPerPage: nuevoTamano,
       paginacion: Paginacion(
         totalItems: state.paginacion.totalItems,
@@ -425,6 +437,7 @@ class VentasComputer extends _$VentasComputer {
         currentPage: 1,
         hasNext: state.paginacion.totalItems > nuevoTamano,
         hasPrev: false,
+        pageSize: nuevoTamano,
       ),
     );
     await cargarVentas();

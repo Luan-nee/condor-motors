@@ -18,6 +18,7 @@ class VentasAdminState {
   final String sortBy;
   final String order;
   final int itemsPerPage;
+  final int userPreferredPageSize;
   final String? errorMessage;
   final String? successMessage;
 
@@ -33,6 +34,7 @@ class VentasAdminState {
     this.sortBy = 'fechaCreacion',
     this.order = 'desc',
     this.itemsPerPage = 25,
+    this.userPreferredPageSize = 25,
     this.errorMessage,
     this.successMessage,
   });
@@ -49,6 +51,7 @@ class VentasAdminState {
     String? sortBy,
     String? order,
     int? itemsPerPage,
+    int? userPreferredPageSize,
     String? errorMessage,
     String? successMessage,
     bool clearError = false,
@@ -66,6 +69,7 @@ class VentasAdminState {
       sortBy: sortBy ?? this.sortBy,
       order: order ?? this.order,
       itemsPerPage: itemsPerPage ?? this.itemsPerPage,
+      userPreferredPageSize: userPreferredPageSize ?? this.userPreferredPageSize,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       successMessage: clearSuccess ? null : (successMessage ?? this.successMessage),
     );
@@ -134,16 +138,19 @@ class VentasAdmin extends _$VentasAdmin {
 
     state = state.copyWith(isLoadingVentas: true, clearError: true, clearSuccess: true);
     try {
+      // Usamos la preferencia guardada del usuario como base para la petición
+      int requestPageSize = state.userPreferredPageSize;
+
       final response = await _ventaRepository.getVentas(
         sucursalId: state.selectedSucursal!.id,
         page: state.paginacion.currentPage,
-        pageSize: state.itemsPerPage,
+        pageSize: requestPageSize,
         search: state.searchQuery.isEmpty ? null : state.searchQuery,
         sortBy: state.sortBy,
         order: state.order,
         forceRefresh: forceRefresh,
       );
-
+      
       List<Venta> ventasList = [];
       if (response.containsKey('data') && response['data'] is List) {
         ventasList = (response['data'] as List)
@@ -159,9 +166,9 @@ class VentasAdmin extends _$VentasAdmin {
       } else {
         totalItems = ventasList.length;
       }
-
+      
       // Ajuste inteligente del tamaño de página si hay pocos elementos
-      int actualPageSize = state.itemsPerPage;
+      int actualPageSize = requestPageSize;
       if (totalItems > 0 && totalItems < actualPageSize) {
         actualPageSize = totalItems;
       }
@@ -210,6 +217,7 @@ class VentasAdmin extends _$VentasAdmin {
 
   void cambiarTamanioPagina(int tamanio) {
     state = state.copyWith(
+      userPreferredPageSize: tamanio,
       itemsPerPage: tamanio,
       paginacion: state.paginacion.copyWith(currentPage: 1)
     );

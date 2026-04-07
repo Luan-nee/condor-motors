@@ -516,6 +516,14 @@ class _VentasComputerScreenState extends ConsumerState<VentasComputerScreen> {
       ventaNotifier.value = ventaBasica;
       isLoadingFullData.value = true;
     } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo encontrar la información básica de la venta.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
     }
 
     Future<void> declararVenta(String ventaId) async {

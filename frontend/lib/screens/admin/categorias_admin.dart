@@ -100,7 +100,7 @@ class _CategoriasAdminScreenState extends ConsumerState<CategoriasAdminScreen> {
                               nombre: _nombreController.text.trim(),
                               descripcion: _descripcionController.text.trim().isNotEmpty ? _descripcionController.text.trim() : null,
                             );
-                            if (mounted) {
+                            if (context.mounted) {
                               Navigator.pop(dialogContext);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(

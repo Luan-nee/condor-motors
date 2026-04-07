@@ -31,6 +31,7 @@ class TransferenciasColabState {
   final double? precioMaximo;
   final int paginaActual;
   final int tamanoPagina;
+  final int userPreferredPageSize;
   final Paginacion? paginacion;
 
   TransferenciasColabState({
@@ -54,6 +55,7 @@ class TransferenciasColabState {
     this.precioMaximo,
     this.paginaActual = 1,
     this.tamanoPagina = 25,
+    this.userPreferredPageSize = 25,
     this.paginacion,
   });
 
@@ -78,6 +80,7 @@ class TransferenciasColabState {
     double? precioMaximo,
     int? paginaActual,
     int? tamanoPagina,
+    int? userPreferredPageSize,
     Paginacion? paginacion,
   }) {
     return TransferenciasColabState(
@@ -105,6 +108,7 @@ class TransferenciasColabState {
       precioMaximo: precioMaximo ?? this.precioMaximo,
       paginaActual: paginaActual ?? this.paginaActual,
       tamanoPagina: tamanoPagina ?? this.tamanoPagina,
+      userPreferredPageSize: userPreferredPageSize ?? this.userPreferredPageSize,
       paginacion: paginacion ?? this.paginacion,
     );
   }
@@ -159,10 +163,13 @@ class TransferenciasColab extends _$TransferenciasColab {
   Future<void> cargarTransferencias({bool forceRefresh = false}) async {
     state = state.copyWith(isLoading: true);
     try {
+      // Usamos la preferencia guardada del usuario como base para la petición
+      int requestPageSize = state.userPreferredPageSize;
+
       final paginatedResponse =
           await _transferenciaRepository.getTransferencias(
         page: state.paginaActual,
-        pageSize: state.tamanoPagina,
+        pageSize: requestPageSize,
         sortBy: state.ordenarPor,
         order: state.orden,
         forceRefresh: forceRefresh,
@@ -509,7 +516,11 @@ class TransferenciasColab extends _$TransferenciasColab {
   }
 
   Future<void> cambiarTamanoPagina(int nuevoTamano) async {
-    state = state.copyWith(tamanoPagina: nuevoTamano, paginaActual: 1);
+    state = state.copyWith(
+      userPreferredPageSize: nuevoTamano,
+      tamanoPagina: nuevoTamano, 
+      paginaActual: 1
+    );
     await cargarTransferencias();
   }
 }

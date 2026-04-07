@@ -25,6 +25,7 @@ class ProductosAdminState {
   final String order;
   final int currentPage;
   final int pageSize;
+  final int userPreferredPageSize;
   final Paginacion paginacion;
   final String? errorMessage;
 
@@ -44,6 +45,7 @@ class ProductosAdminState {
     this.order = 'asc',
     this.currentPage = 1,
     this.pageSize = 25,
+    this.userPreferredPageSize = 25,
     this.paginacion = Paginacion.emptyPagination,
     this.errorMessage,
   });
@@ -66,6 +68,7 @@ class ProductosAdminState {
     String? order,
     int? currentPage,
     int? pageSize,
+    int? userPreferredPageSize,
     Paginacion? paginacion,
     String? errorMessage,
   }) {
@@ -86,6 +89,7 @@ class ProductosAdminState {
       order: order ?? this.order,
       currentPage: currentPage ?? this.currentPage,
       pageSize: pageSize ?? this.pageSize,
+      userPreferredPageSize: userPreferredPageSize ?? this.userPreferredPageSize,
       paginacion: paginacion ?? this.paginacion,
       errorMessage: errorMessage ?? this.errorMessage,
     );
@@ -175,10 +179,13 @@ class ProductosAdmin extends _$ProductosAdmin {
 
     state = state.copyWith(isLoading: true);
     try {
+      // Usamos la preferencia guardada del usuario como base para la petición
+      int requestPageSize = state.userPreferredPageSize;
+
       final response = await _productoRepository.getProductos(
         sucursalId: state.selectedSucursal!.id.toString(),
         page: state.currentPage,
-        pageSize: state.pageSize,
+        pageSize: requestPageSize,
         search: state.searchQuery.isNotEmpty ? state.searchQuery : null,
         sortBy: state.sortBy,
         order: state.order,
@@ -193,7 +200,7 @@ class ProductosAdmin extends _$ProductosAdmin {
       );
 
       // Ajuste inteligente del tamaño de página si hay pocos elementos
-      int actualPageSize = state.pageSize;
+      int actualPageSize = requestPageSize;
       if (response.totalItems > 0 && response.totalItems < actualPageSize) {
         actualPageSize = response.totalItems;
       }
@@ -249,7 +256,11 @@ class ProductosAdmin extends _$ProductosAdmin {
   }
 
   void cambiarTamanioPagina(int tamanio) {
-    state = state.copyWith(pageSize: tamanio, currentPage: 1);
+    state = state.copyWith(
+      userPreferredPageSize: tamanio,
+      pageSize: tamanio, 
+      currentPage: 1
+    );
     cargarProductos();
   }
 

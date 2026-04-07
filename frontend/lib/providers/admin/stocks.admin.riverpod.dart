@@ -20,6 +20,7 @@ class StocksAdminState {
   final String sortBy;
   final String order;
   final StockStatus? filtroEstadoStock;
+  final int userPreferredPageSize;
 
   StocksAdminState({
     this.isLoadingSucursales = false,
@@ -34,6 +35,7 @@ class StocksAdminState {
     this.sortBy = 'nombre',
     this.order = 'desc',
     this.filtroEstadoStock,
+    this.userPreferredPageSize = 25,
   });
 
   StocksAdminState copyWith({
@@ -49,6 +51,7 @@ class StocksAdminState {
     String? sortBy,
     String? order,
     StockStatus? filtroEstadoStock,
+    int? userPreferredPageSize,
     bool clearSelectedSucursal = false,
     bool clearFiltroEstadoStock = false,
   }) {
@@ -65,6 +68,7 @@ class StocksAdminState {
       sortBy: sortBy ?? this.sortBy,
       order: order ?? this.order,
       filtroEstadoStock: clearFiltroEstadoStock ? null : (filtroEstadoStock ?? this.filtroEstadoStock),
+      userPreferredPageSize: userPreferredPageSize ?? this.userPreferredPageSize,
     );
   }
 }
@@ -119,6 +123,9 @@ class StocksAdmin extends _$StocksAdmin {
 
     state = state.copyWith(isLoadingProductos: true);
     try {
+      // Usamos la preferencia guardada del usuario como base para la petición
+      int requestPageSize = state.userPreferredPageSize;
+
       dynamic stockFilter;
       bool? stockBajoFilter;
 
@@ -136,7 +143,7 @@ class StocksAdmin extends _$StocksAdmin {
       final response = await _stockRepository.getProductos(
         sucursalId: sucursalId,
         page: state.currentPage,
-        pageSize: state.pageSize,
+        pageSize: requestPageSize,
         sortBy: state.sortBy,
         order: state.order,
         search: state.searchQuery.length >= 3 ? state.searchQuery : null,
@@ -144,8 +151,8 @@ class StocksAdmin extends _$StocksAdmin {
         stockBajo: stockBajoFilter,
       );
 
-      // Ajuste inteligente del tamaño de página si hay pocos elementos
-      int actualPageSize = state.pageSize;
+      // Ajuste inteligente visual del tamaño de página si hay pocos elementos
+      int actualPageSize = requestPageSize;
       if (response.totalItems > 0 && response.totalItems < actualPageSize) {
         actualPageSize = response.totalItems;
       }
@@ -171,7 +178,11 @@ class StocksAdmin extends _$StocksAdmin {
   }
 
   void cambiarTamanioPagina(int tamanio) {
-    state = state.copyWith(pageSize: tamanio, currentPage: 1);
+    state = state.copyWith(
+      userPreferredPageSize: tamanio,
+      pageSize: tamanio, 
+      currentPage: 1
+    );
     cargarProductos();
   }
 

@@ -81,7 +81,7 @@ class SettingsAdmin extends _$SettingsAdmin {
     }
   }
 
-  Future<void> actualizarMostrarAgrupados(bool valor) async {
+  Future<void> actualizarMostrarAgrupados({required bool valor}) async {
     state = state.copyWith(isLoading: true);
     try {
       final prefs = await SharedPreferences.getInstance();

@@ -21,6 +21,7 @@ class TransferenciasAdminState {
   final String order;
   final int currentPage;
   final int pageSize;
+  final int userPreferredPageSize;
   final Paginacion paginacion;
   final TransferenciaInventario? detalleTransferenciaActual;
 
@@ -37,6 +38,7 @@ class TransferenciasAdminState {
     this.order = 'desc',
     this.currentPage = 1,
     this.pageSize = 25,
+    this.userPreferredPageSize = 25,
     this.paginacion = Paginacion.emptyPagination,
     this.detalleTransferenciaActual,
   });
@@ -54,6 +56,7 @@ class TransferenciasAdminState {
     String? order,
     int? currentPage,
     int? pageSize,
+    int? userPreferredPageSize,
     Paginacion? paginacion,
     TransferenciaInventario? detalleTransferenciaActual,
   }) {
@@ -70,6 +73,7 @@ class TransferenciasAdminState {
       order: order ?? this.order,
       currentPage: currentPage ?? this.currentPage,
       pageSize: pageSize ?? this.pageSize,
+      userPreferredPageSize: userPreferredPageSize ?? this.userPreferredPageSize,
       paginacion: paginacion ?? this.paginacion,
       detalleTransferenciaActual:
           detalleTransferenciaActual ?? this.detalleTransferenciaActual,
@@ -155,6 +159,9 @@ class TransferenciasAdmin extends _$TransferenciasAdmin {
             .codigo;
       }
 
+      // Usamos la preferencia guardada del usuario como base para la petición
+      int requestPageSize = state.userPreferredPageSize;
+
       final paginatedResponse = await _transferenciaRepository.getTransferencias(
         sucursalId: sucursalId,
         estado: estadoFiltro,
@@ -163,12 +170,12 @@ class TransferenciasAdmin extends _$TransferenciasAdmin {
         sortBy: state.sortBy,
         order: state.order,
         page: state.currentPage,
-        pageSize: state.pageSize,
+        pageSize: requestPageSize,
         forceRefresh: forceRefresh,
       );
 
       // Ajuste inteligente del tamaño de página si hay pocos elementos
-      int actualPageSize = state.pageSize;
+      int actualPageSize = requestPageSize;
       if (paginatedResponse.totalItems > 0 && paginatedResponse.totalItems < actualPageSize) {
         actualPageSize = paginatedResponse.totalItems;
       }
@@ -284,7 +291,11 @@ class TransferenciasAdmin extends _$TransferenciasAdmin {
       return;
     }
 
-    state = state.copyWith(pageSize: nuevoTamano, currentPage: 1);
+    state = state.copyWith(
+      userPreferredPageSize: nuevoTamano,
+      pageSize: nuevoTamano, 
+      currentPage: 1
+    );
     await cargarTransferencias(showLoading: false);
   }
 

@@ -56,13 +56,13 @@ class BusquedaProductoUtils {
         productos.first.containsKey('codigo');
   }
 
-  /// Convierte de Map<String, dynamic> a Producto para usar ProductosUtils
+  /// Convierte de `Map<String, dynamic>` a Producto para usar ProductosUtils
   static List<Producto> convertirAProductos(
       List<Map<String, dynamic>> productos) {
     return productos.map(mapToProductoFlexible).toList();
   }
 
-  /// Convierte de Producto a Map<String, dynamic> para la UI
+  /// Convierte de Producto a `Map<String, dynamic>` para la UI
   static List<Map<String, dynamic>> convertirAMapas(List<Producto> productos) {
     return productos
         .map((Producto p) => <String, Object?>{

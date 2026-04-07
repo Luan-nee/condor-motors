@@ -46,6 +46,7 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
 
   // Tamaño de página para la paginación
   int _pageSize = 25;
+  int _userPreferredPageSize = 25;
 
   // Repositorio de productos
   final ProductoRepository _productoRepository = ProductoRepository.instance;
@@ -148,6 +149,9 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
         throw Exception('No se pudo determinar la sucursal del usuario');
       }
 
+      // Usamos la preferencia guardada del usuario como base para la petición
+      final int requestPageSize = pageSize ?? _userPreferredPageSize;
+
       // Cargar productos con su información usando el repositorio
       final response = await _productoRepository.getProductos(
         sucursalId: sucursalId,
@@ -155,7 +159,7 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
         filter: _selectedCategory != 'Todos' ? 'categoria' : null,
         filterValue: _selectedCategory != 'Todos' ? _selectedCategory : null,
         page: page ?? 1,
-        pageSize: pageSize ?? _pageSize,
+        pageSize: requestPageSize,
         sortBy: sortBy ?? _sortBy,
         order: order ?? _order,
         forceRefresh: forceRefresh, // ← Pasar el parámetro forceRefresh
@@ -1467,6 +1471,7 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
   /// Cambia el tamaño de página
   Future<void> _cambiarTamanioPagina(int nuevoTamanio) async {
     setState(() {
+      _userPreferredPageSize = nuevoTamanio;
       _pageSize = nuevoTamanio;
     });
     _limpiarCache(); // Limpiar caché al cambiar tamaño de página

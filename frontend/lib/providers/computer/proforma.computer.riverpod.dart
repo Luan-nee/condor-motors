@@ -24,6 +24,8 @@ class ProformaComputerState {
   final Set<int> proformasIds;
   final Stream<List<Proforma>>? proformasStream;
   final Proforma? selectedProforma;
+  final int userPreferredPageSize;
+  final int pageSize;
 
   const ProformaComputerState({
     this.currentPage = 1,
@@ -37,6 +39,8 @@ class ProformaComputerState {
     this.proformasIds = const {},
     this.proformasStream,
     this.selectedProforma,
+    this.userPreferredPageSize = 25,
+    this.pageSize = 25,
   });
 
   ProformaComputerState copyWith({
@@ -51,6 +55,8 @@ class ProformaComputerState {
     Set<int>? proformasIds,
     Stream<List<Proforma>>? proformasStream,
     Proforma? selectedProforma,
+    int? userPreferredPageSize,
+    int? pageSize,
   }) {
     return ProformaComputerState(
       currentPage: currentPage ?? this.currentPage,
@@ -67,6 +73,8 @@ class ProformaComputerState {
       proformasIds: proformasIds ?? this.proformasIds,
       proformasStream: proformasStream ?? this.proformasStream,
       selectedProforma: selectedProforma ?? this.selectedProforma,
+      userPreferredPageSize: userPreferredPageSize ?? this.userPreferredPageSize,
+      pageSize: pageSize ?? this.pageSize,
     );
   }
 }
@@ -156,6 +164,8 @@ class ProformaComputer extends _$ProformaComputer {
       state = state.copyWith(isLoading: true, errorMessage: '');
     }
 
+    int actualPageSize = state.userPreferredPageSize;
+
     try {
       String? sucursalIdStr = await _getSucursalId(sucursalId);
       if (sucursalIdStr == null) {
@@ -167,10 +177,13 @@ class ProformaComputer extends _$ProformaComputer {
         return;
       }
 
+      // Usamos la preferencia guardada del usuario como base para la petición
+      int requestPageSize = state.userPreferredPageSize;
+
       final response = await _proformaRepository.getProformas(
         sucursalId: sucursalIdStr,
         page: state.currentPage,
-        pageSize: 25, // Estandarizado a 25
+        pageSize: requestPageSize,
         forceRefresh: true,
         useCache: false,
       );
@@ -190,7 +203,7 @@ class ProformaComputer extends _$ProformaComputer {
           final bool hasPrev = currentPage > 1;
 
           // Ajuste inteligente
-          int actualPageSize = pageSize;
+          actualPageSize = pageSize;
           if (total > 0 && total < actualPageSize) {
             actualPageSize = total;
           }
@@ -217,6 +230,7 @@ class ProformaComputer extends _$ProformaComputer {
           proformas: proformas,
           proformasIds: proformasIds,
           paginacion: paginacionObj,
+          pageSize: actualPageSize, // Mantener el pageSize actual para la UI
           isLoading: false,
           hayNuevasProformas: false,
           selectedProforma: newSelected,
@@ -238,6 +252,15 @@ class ProformaComputer extends _$ProformaComputer {
 
   void setPage(int page, {int? sucursalId}) {
     state = state.copyWith(currentPage: page);
+    loadProformas(sucursalId: sucursalId);
+  }
+
+  void setPageSize(int size, {int? sucursalId}) {
+    state = state.copyWith(
+      userPreferredPageSize: size,
+      pageSize: size,
+      currentPage: 1
+    );
     loadProformas(sucursalId: sucursalId);
   }
 

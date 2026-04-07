@@ -697,7 +697,7 @@ class InventarioResumen extends StatefulWidget {
   });
 
   @override
-  _InventarioResumenState createState() => _InventarioResumenState();
+  State<InventarioResumen> createState() => _InventarioResumenState();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {

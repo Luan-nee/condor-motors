@@ -182,7 +182,7 @@ class _SettingsAdminScreenState extends ConsumerState<SettingsAdminScreen> {
                           _directorioController.text = selectedDirectory;
                           _esDirectorioValido = true;
                         });
-                        if (mounted) {
+                        if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text(
@@ -209,7 +209,7 @@ class _SettingsAdminScreenState extends ConsumerState<SettingsAdminScreen> {
                             await settingsNotifier
                                 .actualizarDirectorioExcel(
                                     _directorioController.text);
-                            if (mounted) {
+                            if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text(
@@ -283,7 +283,7 @@ class _SettingsAdminScreenState extends ConsumerState<SettingsAdminScreen> {
                 ),
                 activeThumbColor: const Color(0xFFE31E24),
                 value: settingsState.mostrarSucursalesAgrupadas,
-                onChanged: settingsNotifier.actualizarMostrarAgrupados,
+                onChanged: (value) => settingsNotifier.actualizarMostrarAgrupados(valor: value),
               ),
             ),
 
