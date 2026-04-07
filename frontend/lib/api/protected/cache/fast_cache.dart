@@ -18,7 +18,7 @@ class FastCache {
   FastCache({
     this.maxSize = 100,
     this.stalePeriod = const Duration(minutes: 5),
-    this.expirePeriod = const Duration(minutes: 30),
+    this.expirePeriod = const Duration(minutes: 5), // TTL de 5 minutos por defecto
   });
 
   /// Obtiene un valor del caché

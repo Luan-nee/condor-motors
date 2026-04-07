@@ -7,7 +7,7 @@ import 'package:condorsmotors/utils/logger.dart';
 class VentasApi {
   final ApiClient _api;
   final String _endpoint = '/ventas';
-  final FastCache _cache = FastCache(maxSize: 75);
+  final FastCache _cache = FastCache();
 
   // Prefijos para las claves de caché
   static const String _prefixListaVentas = 'ventas_lista_';

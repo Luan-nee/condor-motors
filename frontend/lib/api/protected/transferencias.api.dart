@@ -8,7 +8,7 @@ import 'package:flutter/foundation.dart';
 class TransferenciasInventarioApi {
   final ApiClient _api;
   final String _endpoint = '/transferenciasInventario';
-  final FastCache _cache = FastCache(maxSize: 75);
+  final FastCache _cache = FastCache();
 
   // Prefijos para las claves de caché
   static const String _prefixListaMovimientos = 'transferencias_lista_';
