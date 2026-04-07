@@ -49,12 +49,12 @@ class _SlideSucursalState extends ConsumerState<SlideSucursal>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 250), // Reducido de 300ms
+      duration: const Duration(milliseconds: 250),
       vsync: this,
     );
     _animation = CurvedAnimation(
       parent: _animationController,
-      curve: Curves.easeOutCubic, // Curva más suave
+      curve: Curves.easeOutCubic,
     );
     _animationController.forward();
   }
@@ -65,7 +65,6 @@ class _SlideSucursalState extends ConsumerState<SlideSucursal>
     super.dispose();
   }
 
-  // Método para agrupar las sucursales
   Map<String, List<Sucursal>> _agruparSucursales() {
     final Map<String, List<Sucursal>> grupos = <String, List<Sucursal>>{
       'Centrales': <Sucursal>[],
@@ -80,7 +79,6 @@ class _SlideSucursalState extends ConsumerState<SlideSucursal>
       }
     }
 
-    // Ordenamos por nombre dentro de cada grupo
     grupos['Centrales']!
         .sort((Sucursal a, Sucursal b) => a.nombre.compareTo(b.nombre));
     grupos['Sucursales']!
@@ -141,7 +139,6 @@ class _SlideSucursalState extends ConsumerState<SlideSucursal>
       );
     }
 
-    // Agrupar las sucursales si es necesario
     final Map<String, List<Sucursal>>? sucursalesAgrupadas =
         mostrarAgrupados ? _agruparSucursales() : null;
 
@@ -150,7 +147,6 @@ class _SlideSucursalState extends ConsumerState<SlideSucursal>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          // Lista de sucursales con transición suave
           Expanded(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 200),
@@ -180,71 +176,44 @@ class _SlideSucursalState extends ConsumerState<SlideSucursal>
   }
 
   Widget _buildAgrupadas(Map<String, List<Sucursal>> grupos) {
+    final List<dynamic> flatList = <dynamic>[];
+    
+    if (grupos['Centrales']!.isNotEmpty) {
+      flatList..add({'type': 'header', 'title': 'Centrales', 'count': grupos['Centrales']!.length})
+      ..addAll(grupos['Centrales']!);
+    }
+    
+    if (grupos['Centrales']!.isNotEmpty && grupos['Sucursales']!.isNotEmpty) {
+      flatList.add({'type': 'spacer'});
+    }
+    
+    if (grupos['Sucursales']!.isNotEmpty) {
+      flatList..add({'type': 'header', 'title': 'Sucursales', 'count': grupos['Sucursales']!.length})
+      ..addAll(grupos['Sucursales']!);
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: _getAgrupadasItemCount(grupos),
+      itemCount: flatList.length,
       itemBuilder: (BuildContext context, int index) {
-        return _buildAgrupadasItem(grupos, index);
+        final dynamic item = flatList[index];
+        
+        if (item is Map) {
+          if (item['type'] == 'header') {
+            return _buildGrupoHeader(item['title'] as String, item['count'] as int);
+          }
+          if (item['type'] == 'spacer') {
+            return const SizedBox(height: 16);
+          }
+        }
+        
+        if (item is Sucursal) {
+          return _buildSucursalItem(item);
+        }
+        
+        return const SizedBox.shrink();
       },
     );
-  }
-
-  int _getAgrupadasItemCount(Map<String, List<Sucursal>> grupos) {
-    int count = 0;
-    if (grupos['Centrales']!.isNotEmpty) {
-      count += 1 + grupos['Centrales']!.length; // Header + items
-    }
-    if (grupos['Sucursales']!.isNotEmpty) {
-      if (grupos['Centrales']!.isNotEmpty) {
-        count += 1; // Separador
-      }
-      count += 1 + grupos['Sucursales']!.length; // Header + items
-    }
-    return count;
-  }
-
-  Widget _buildAgrupadasItem(Map<String, List<Sucursal>> grupos, int index) {
-    int currentIndex = 0;
-
-    // Centrales
-    if (grupos['Centrales']!.isNotEmpty) {
-      if (index == currentIndex) {
-        return _buildGrupoHeader('Centrales', grupos['Centrales']!.length);
-      }
-      currentIndex++;
-
-      for (int i = 0; i < grupos['Centrales']!.length; i++) {
-        if (index == currentIndex) {
-          return _buildSucursalItem(grupos['Centrales']![i]);
-        }
-        currentIndex++;
-      }
-    }
-
-    // Separador
-    if (grupos['Centrales']!.isNotEmpty && grupos['Sucursales']!.isNotEmpty) {
-      if (index == currentIndex) {
-        return const SizedBox(height: 16);
-      }
-      currentIndex++;
-    }
-
-    // Sucursales
-    if (grupos['Sucursales']!.isNotEmpty) {
-      if (index == currentIndex) {
-        return _buildGrupoHeader('Sucursales', grupos['Sucursales']!.length);
-      }
-      currentIndex++;
-
-      for (int i = 0; i < grupos['Sucursales']!.length; i++) {
-        if (index == currentIndex) {
-          return _buildSucursalItem(grupos['Sucursales']![i]);
-        }
-        currentIndex++;
-      }
-    }
-
-    return const SizedBox.shrink();
   }
 
   Widget _buildGrupoHeader(String titulo, int cantidad) {
@@ -293,8 +262,6 @@ class _SlideSucursalState extends ConsumerState<SlideSucursal>
 
   Widget _buildSucursalItem(Sucursal sucursal) {
     final bool isSelected = widget.sucursalSeleccionada?.id == sucursal.id;
-
-    // Cache de valores para evitar recálculos
     final IconData icon = SucursalUtils.getIconForSucursal(sucursal);
     final Color iconColor = SucursalUtils.getColorForSucursal(sucursal);
     final Color iconBgColor = SucursalUtils.getIconBackgroundColor(sucursal);
@@ -307,8 +274,8 @@ class _SlideSucursalState extends ConsumerState<SlideSucursal>
           onTap: () => widget.onSucursalSelected(sucursal),
           borderRadius: BorderRadius.circular(8),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150), // Reducido de 200ms
-            curve: Curves.easeOutCubic, // Curva más suave
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeOutCubic,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: isSelected
@@ -324,14 +291,12 @@ class _SlideSucursalState extends ConsumerState<SlideSucursal>
             ),
             child: Row(
               children: <Widget>[
-                // Optimizado: Un solo AnimatedContainer en lugar de AnimatedScale anidado
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
                   curve: Curves.easeOutCubic,
                   transform: Matrix4.identity()
                     ..setEntry(0, 0, isSelected ? 1.1 : 1.0)
-                    ..setEntry(
-                        1, 1, isSelected ? 1.1 : 1.0), // Reducido de 1.2 a 1.1
+                    ..setEntry(1, 1, isSelected ? 1.1 : 1.0),
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: isSelected ? const Color(0xFFE31E24) : iconBgColor,
@@ -387,16 +352,6 @@ class _SlideSucursalState extends ConsumerState<SlideSucursal>
                         ),
                       ],
                     ],
-                  ),
-                ),
-                // Optimizado: AnimatedOpacity en lugar de condicional
-                AnimatedOpacity(
-                  duration: const Duration(milliseconds: 150),
-                  opacity: isSelected ? 1.0 : 0.0,
-                  child: const FaIcon(
-                    FontAwesomeIcons.circleCheck,
-                    color: Color(0xFFE31E24),
-                    size: 18,
                   ),
                 ),
               ],

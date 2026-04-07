@@ -170,6 +170,7 @@ class ProformaComputer extends _$ProformaComputer {
       final response = await _proformaRepository.getProformas(
         sucursalId: sucursalIdStr,
         page: state.currentPage,
+        pageSize: 25, // Estandarizado a 25
         forceRefresh: true,
         useCache: false,
       );
@@ -183,17 +184,24 @@ class ProformaComputer extends _$ProformaComputer {
         if (paginacionJson != null) {
           final total = paginacionJson['total'] as int? ?? 0;
           final int currentPage = paginacionJson['page'] as int? ?? 1;
-          final int pageSize = paginacionJson['pageSize'] as int? ?? 10;
+          final int pageSize = paginacionJson['pageSize'] as int? ?? 25;
           final int totalPages = (total / pageSize).ceil();
           final bool hasNext = currentPage < totalPages;
           final bool hasPrev = currentPage > 1;
 
+          // Ajuste inteligente
+          int actualPageSize = pageSize;
+          if (total > 0 && total < actualPageSize) {
+            actualPageSize = total;
+          }
+
           paginacionObj = Paginacion(
             totalItems: total,
-            totalPages: totalPages,
-            currentPage: currentPage,
+            totalPages: totalPages > 0 ? totalPages : 1,
+            currentPage: currentPage > 0 ? currentPage : 1,
             hasNext: hasNext,
             hasPrev: hasPrev,
+            pageSize: actualPageSize, // Incluir el ajuste
           );
         }
 

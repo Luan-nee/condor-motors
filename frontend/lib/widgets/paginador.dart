@@ -23,7 +23,7 @@ class Paginador extends StatelessWidget {
   });
 
   /// Opciones de tamaño de página disponibles
-  static const List<int> opcionesTamanoPagina = [10, 25, 50, 100, 200];
+  static const List<int> opcionesTamanoPagina = [25, 50, 100, 200];
 
   /// Callback al cambiar de página
   final Function()? onPageChange;
@@ -227,16 +227,22 @@ class Paginador extends StatelessWidget {
 
   /// Calcula el número de items por página basado en la paginación
   int _calcularItemsPorPagina() {
+    // Si la paginación ya trae el pageSize explícito, lo usamos
+    if (paginacion.pageSize != null) {
+      return paginacion.pageSize!;
+    }
+
     if (paginacion.totalItems == 0) {
-      return 10;
+      return 25;
     }
 
     final int calculated = paginacion.totalItems ~/ paginacion.totalPages;
-    // Encontrar la opción más cercana en opcionesTamanoPagina
-    int closest = opcionesTamanoPagina.first;
+    // Encontrar la opción más cercana en baseOpciones
+    const List<int> baseOpciones = [25, 50, 100, 200];
+    int closest = baseOpciones.first;
     int minDifference = (calculated - closest).abs();
 
-    for (int option in opcionesTamanoPagina) {
+    for (int option in baseOpciones) {
       final difference = (calculated - option).abs();
       if (difference < minDifference) {
         minDifference = difference;
@@ -252,6 +258,40 @@ class Paginador extends StatelessWidget {
     final Color bgColor = backgroundColor ?? const Color(0xFF2D2D2D);
     final Color txtColor = textColor ?? Colors.white;
     final Color accent = accentColor ?? const Color(0xFFE31E24);
+
+    // Base de opciones estándar (sin el 10)
+    const List<int> baseOpciones = [25, 50, 100, 200];
+    
+    // Filtrar opciones que sean menores al total
+    final List<int> opcionesFiltradas = baseOpciones
+        .where((opt) => opt < paginacion.totalItems)
+        .toList();
+
+    // Agregar el total exacto si es <= 200 y no está ya incluido
+    if (paginacion.totalItems > 0 && paginacion.totalItems <= 200) {
+      if (!opcionesFiltradas.contains(paginacion.totalItems)) {
+        opcionesFiltradas.add(paginacion.totalItems);
+      }
+    } else if (paginacion.totalItems > 200) {
+      // Si hay más de 200, aseguramos que 200 sea la opción máxima
+      if (!opcionesFiltradas.contains(200)) {
+        opcionesFiltradas.add(200);
+      }
+    }
+
+    // Siempre garantizar que haya al menos la opción de 25
+    if (!opcionesFiltradas.contains(25)) {
+      opcionesFiltradas.add(25);
+    }
+    
+    // Aseguramos que el valor actual esté en la lista para evitar errores de Dropdown
+    final int itemsActuales = _calcularItemsPorPagina();
+    if (!opcionesFiltradas.contains(itemsActuales)) {
+      opcionesFiltradas.add(itemsActuales);
+    }
+
+    // Ordenar y limpiar duplicados
+    final List<int> opcionesFinales = opcionesFiltradas.toSet().toList()..sort();
 
     final int visiblePages = forceCompactMode ? 3 : maxVisiblePages;
 
@@ -285,7 +325,7 @@ class Paginador extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<int>(
-                        value: _calcularItemsPorPagina(),
+                        value: itemsActuales,
                         isDense: true,
                         style: TextStyle(
                           color: txtColor,
@@ -296,7 +336,7 @@ class Paginador extends StatelessWidget {
                           color: txtColor.withValues(alpha: 0.8),
                           size: 16,
                         ),
-                        items: opcionesTamanoPagina.map((int value) {
+                        items: opcionesFinales.map((int value) {
                           return DropdownMenuItem<int>(
                             value: value,
                             child: Text('$value / pág'),
@@ -327,7 +367,7 @@ class Paginador extends StatelessWidget {
                         onPageSizeChanged?.call(value);
                         onPageChange?.call();
                       },
-                      itemBuilder: (context) => opcionesTamanoPagina
+                      itemBuilder: (context) => opcionesFinales
                           .map((int value) => PopupMenuItem<int>(
                                 value: value,
                                 child: Text('$value / pág'),
@@ -358,45 +398,58 @@ class Paginador extends StatelessWidget {
                     ),
                   ),
 
-                // Botones de navegación
-                if (paginacion.hasPrev)
-                  IconButton(
-                    icon: Icon(Icons.chevron_left, color: txtColor),
-                    onPressed: () {
-                      final prevPage = paginacion.currentPage - 1;
-                      if (prevPage >= 1) {
-                        onPageChanged?.call(prevPage);
-                        onPageChange?.call();
-                      }
-                    },
-                    tooltip: 'Página anterior',
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
-                    ),
-                    padding: EdgeInsets.zero,
+                // Botón Anterior
+                IconButton(
+                  icon: Icon(
+                    Icons.chevron_left,
+                    color: paginacion.hasPrev
+                        ? txtColor
+                        : txtColor.withValues(alpha: 0.1),
                   ),
+                  onPressed: paginacion.hasPrev
+                      ? () {
+                          final prevPage = paginacion.currentPage - 1;
+                          if (prevPage >= 1) {
+                            onPageChanged?.call(prevPage);
+                            onPageChange?.call();
+                          }
+                        }
+                      : null,
+                  tooltip: paginacion.hasPrev ? 'Página anterior' : null,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  padding: EdgeInsets.zero,
+                ),
 
                 // Números de página
                 ..._buildPageNumbers(visiblePages, txtColor, accent),
 
-                if (paginacion.hasNext)
-                  IconButton(
-                    icon: Icon(Icons.chevron_right, color: txtColor),
-                    onPressed: () {
-                      final nextPage = paginacion.currentPage + 1;
-                      if (nextPage <= paginacion.totalPages) {
-                        onPageChanged?.call(nextPage);
-                        onPageChange?.call();
-                      }
-                    },
-                    tooltip: 'Página siguiente',
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
-                    ),
-                    padding: EdgeInsets.zero,
+                // Botón Siguiente
+                IconButton(
+                  icon: Icon(
+                    Icons.chevron_right,
+                    color: paginacion.hasNext
+                        ? txtColor
+                        : txtColor.withValues(alpha: 0.1),
                   ),
+                  onPressed: paginacion.hasNext
+                      ? () {
+                          final nextPage = paginacion.currentPage + 1;
+                          if (nextPage <= paginacion.totalPages) {
+                            onPageChanged?.call(nextPage);
+                            onPageChange?.call();
+                          }
+                        }
+                      : null,
+                  tooltip: paginacion.hasNext ? 'Página siguiente' : null,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  padding: EdgeInsets.zero,
+                ),
 
                 // Controles de ordenación
                 if (mostrarOrdenacion && camposParaOrdenar != null)

@@ -30,7 +30,7 @@ class StocksAdminState {
     this.errorMessage,
     this.searchQuery = '',
     this.currentPage = 1,
-    this.pageSize = 10,
+    this.pageSize = 25,
     this.sortBy = 'nombre',
     this.order = 'desc',
     this.filtroEstadoStock,
@@ -144,8 +144,17 @@ class StocksAdmin extends _$StocksAdmin {
         stockBajo: stockBajoFilter,
       );
 
+      // Ajuste inteligente del tamaño de página si hay pocos elementos
+      int actualPageSize = state.pageSize;
+      if (response.totalItems > 0 && response.totalItems < actualPageSize) {
+        actualPageSize = response.totalItems;
+      }
+
       state = state.copyWith(
-        paginatedProductos: response,
+        paginatedProductos: response.copyWithPaginacion(
+          response.paginacion.copyWith(pageSize: actualPageSize),
+        ),
+        pageSize: actualPageSize,
         isLoadingProductos: false,
       );
     } catch (e) {

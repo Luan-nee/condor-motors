@@ -161,28 +161,59 @@ class _CategoriasAdminScreenState extends ConsumerState<CategoriasAdminScreen> {
                 ),
                 Row(
                   children: <Widget>[
-                    ElevatedButton.icon(
-                      icon: state.isLoading
-                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : const FaIcon(FontAwesomeIcons.arrowsRotate, size: 16, color: Colors.white),
-                      label: Text(state.isLoading ? 'Recargando...' : 'Recargar', style: const TextStyle(color: Colors.white)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2D2D2D),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    SizedBox(
+                      height: 46,
+                      width: 46,
+                      child: Tooltip(
+                        message: state.isLoading
+                            ? 'Recargando...'
+                            : 'Recargar categorías',
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2D2D2D),
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            elevation: 0,
+                          ),
+                          onPressed: state.isLoading
+                              ? null
+                              : () =>
+                                  notifier.cargarCategorias(forceRefresh: true),
+                          child: state.isLoading
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                      color: Colors.white, strokeWidth: 2),
+                                )
+                              : const FaIcon(FontAwesomeIcons.arrowsRotate,
+                                  size: 16),
+                        ),
                       ),
-                      onPressed: state.isLoading ? null : () => notifier.cargarCategorias(forceRefresh: true),
                     ),
                     const SizedBox(width: 12),
-                    ElevatedButton.icon(
-                      icon: const FaIcon(FontAwesomeIcons.plus, size: 16, color: Colors.white),
-                      label: const Text('Nueva Categoría'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE31E24),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    SizedBox(
+                      height: 46,
+                      child: ElevatedButton.icon(
+                        icon: const FaIcon(FontAwesomeIcons.plus,
+                            size: 14, color: Colors.white),
+                        label: const Text('Nuevo',
+                            style: TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE31E24),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                        ),
+                        onPressed: () => _mostrarFormularioCategoria(notifier),
                       ),
-                      onPressed: () => _mostrarFormularioCategoria(notifier),
                     ),
                   ],
                 ),

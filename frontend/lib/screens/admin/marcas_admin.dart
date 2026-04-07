@@ -43,11 +43,15 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
               children: <Widget>[
                 Row(
                   children: <Widget>[
-                    const FaIcon(FontAwesomeIcons.trademark, color: Colors.red, size: 20),
+                    const FaIcon(FontAwesomeIcons.trademark,
+                        color: Colors.red, size: 20),
                     const SizedBox(width: 12),
                     Text(
                       marca == null ? 'Crear nueva marca' : 'Editar marca',
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white),
                     ),
                   ],
                 ),
@@ -59,10 +63,15 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
                     labelText: 'Nombre de la marca',
                     labelStyle: TextStyle(color: Colors.white70),
                     border: OutlineInputBorder(),
-                    enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFE31E24), width: 2)),
+                    enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white24)),
+                    focusedBorder: OutlineInputBorder(
+                        borderSide:
+                            BorderSide(color: Color(0xFFE31E24), width: 2)),
                   ),
-                  validator: (value) => (value == null || value.isEmpty) ? 'Por favor ingrese un nombre' : null,
+                  validator: (value) => (value == null || value.isEmpty)
+                      ? 'Por favor ingrese un nombre'
+                      : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -73,8 +82,11 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
                     labelText: 'Descripción',
                     labelStyle: TextStyle(color: Colors.white70),
                     border: OutlineInputBorder(),
-                    enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFE31E24), width: 2)),
+                    enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white24)),
+                    focusedBorder: OutlineInputBorder(
+                        borderSide:
+                            BorderSide(color: Color(0xFFE31E24), width: 2)),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -83,14 +95,16 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
                   children: <Widget>[
                     TextButton(
                       onPressed: () => Navigator.pop(dialogContext),
-                      child: const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+                      child: const Text('Cancelar',
+                          style: TextStyle(color: Colors.white54)),
                     ),
                     const SizedBox(width: 16),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFE31E24),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 12),
                       ),
                       onPressed: () async {
                         if (_formKey.currentState!.validate()) {
@@ -98,13 +112,18 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
                             await notifier.guardarMarca(
                               marca: marca,
                               nombre: _nombreController.text.trim(),
-                              descripcion: _descripcionController.text.trim().isNotEmpty ? _descripcionController.text.trim() : null,
+                              descripcion:
+                                  _descripcionController.text.trim().isNotEmpty
+                                      ? _descripcionController.text.trim()
+                                      : null,
                             );
                             if (mounted) {
                               Navigator.pop(dialogContext);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text(marca == null ? 'Marca creada' : 'Marca actualizada'),
+                                  content: Text(marca == null
+                                      ? 'Marca creada'
+                                      : 'Marca actualizada'),
                                   backgroundColor: Colors.green,
                                 ),
                               );
@@ -142,18 +161,24 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
               children: <Widget>[
                 Row(
                   children: <Widget>[
-                    const FaIcon(FontAwesomeIcons.tags, color: Colors.white, size: 24),
+                    const FaIcon(FontAwesomeIcons.tags,
+                        color: Colors.white, size: 24),
                     const SizedBox(width: 16),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         const Text(
                           'INVENTARIO',
-                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                          style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white),
                         ),
                         Text(
                           'marcas',
-                          style: TextStyle(fontSize: 16, color: Colors.white.withValues(alpha: 0.7)),
+                          style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.white.withValues(alpha: 0.7)),
                         ),
                       ],
                     ),
@@ -161,28 +186,56 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
                 ),
                 Row(
                   children: <Widget>[
-                    ElevatedButton.icon(
-                      icon: state.isLoading
-                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : const FaIcon(FontAwesomeIcons.arrowsRotate, size: 16, color: Colors.white),
-                      label: Text(state.isLoading ? 'Recargando...' : 'Recargar', style: const TextStyle(color: Colors.white)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2D2D2D),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    SizedBox(
+                      height: 46,
+                      width: 46,
+                      child: Tooltip(
+                        message: state.isLoading
+                            ? 'Recargando...'
+                            : 'Recargar marcas',
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2D2D2D),
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            elevation: 0,
+                          ),
+                          onPressed: state.isLoading
+                              ? null
+                              : () => notifier.cargarMarcas(forceRefresh: true),
+                          child: state.isLoading
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                      color: Colors.white, strokeWidth: 2),
+                                )
+                              : const FaIcon(FontAwesomeIcons.arrowsRotate,
+                                  size: 16),
+                        ),
                       ),
-                      onPressed: state.isLoading ? null : () => notifier.cargarMarcas(forceRefresh: true),
                     ),
                     const SizedBox(width: 12),
-                    ElevatedButton.icon(
-                      icon: const FaIcon(FontAwesomeIcons.plus, size: 16, color: Colors.white),
-                      label: const Text('Nueva Marca'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE31E24),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    SizedBox(
+                      height: 46,
+                      child: ElevatedButton.icon(
+                        icon: const FaIcon(FontAwesomeIcons.plus,
+                            size: 16, color: Colors.white),
+                        label: const Text('Nueva Marca'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE31E24),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                        ),
+                        onPressed: () => _mostrarFormularioMarca(notifier),
                       ),
-                      onPressed: () => _mostrarFormularioMarca(notifier),
                     ),
                   ],
                 ),
@@ -196,7 +249,8 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF1A1A1A),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                  border:
+                      Border.all(color: Colors.white.withValues(alpha: 0.1)),
                 ),
                 child: state.isLoading
                     ? const Center(child: CircularProgressIndicator())
@@ -224,7 +278,8 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
         children: <Widget>[
           const Icon(Icons.error_outline, color: Colors.red),
           const SizedBox(width: 16),
-          Expanded(child: Text(message, style: const TextStyle(color: Colors.red))),
+          Expanded(
+              child: Text(message, style: const TextStyle(color: Colors.red))),
           IconButton(
             icon: const Icon(Icons.close, color: Colors.red),
             onPressed: notifier.limpiarError,
@@ -241,7 +296,8 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
         children: <Widget>[
           const FaIcon(FontAwesomeIcons.tag, color: Colors.grey, size: 48),
           const SizedBox(height: 16),
-          Text('No hay marcas registradas', style: TextStyle(color: Colors.grey[400], fontSize: 16)),
+          Text('No hay marcas registradas',
+              style: TextStyle(color: Colors.grey[400], fontSize: 16)),
           const SizedBox(height: 8),
           ElevatedButton.icon(
             icon: const FaIcon(FontAwesomeIcons.plus, size: 14),
@@ -266,18 +322,39 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
             child: const Row(
               children: <Widget>[
-                Expanded(flex: 35, child: Text('Marca', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
-                Expanded(flex: 45, child: Text('Descripción', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
-                Expanded(flex: 10, child: Text('Productos', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
-                Expanded(flex: 10, child: Text('Acciones', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+                Expanded(
+                    flex: 35,
+                    child: Text('Marca',
+                        style: TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold))),
+                Expanded(
+                    flex: 45,
+                    child: Text('Descripción',
+                        style: TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold))),
+                Expanded(
+                    flex: 10,
+                    child: Text('Productos',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold))),
+                Expanded(
+                    flex: 10,
+                    child: Text('Acciones',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold))),
               ],
             ),
           ),
           ...marcas.map((marca) => Container(
                 decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
+                  border: Border(
+                      bottom: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.1))),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                 child: Row(
                   children: <Widget>[
                     Expanded(
@@ -287,33 +364,46 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
                           Container(
                             width: 32,
                             height: 32,
-                            decoration: BoxDecoration(color: const Color(0xFF2D2D2D), borderRadius: BorderRadius.circular(8)),
-                            child: const Center(child: FaIcon(FontAwesomeIcons.tag, color: Color(0xFFE31E24), size: 14)),
+                            decoration: BoxDecoration(
+                                color: const Color(0xFF2D2D2D),
+                                borderRadius: BorderRadius.circular(8)),
+                            child: const Center(
+                                child: FaIcon(FontAwesomeIcons.tag,
+                                    color: Color(0xFFE31E24), size: 14)),
                           ),
                           const SizedBox(width: 12),
-                          Text(marca.nombre, style: const TextStyle(color: Colors.white)),
+                          Text(marca.nombre,
+                              style: const TextStyle(color: Colors.white)),
                         ],
                       ),
                     ),
                     Expanded(
                       flex: 45,
-                      child: Text(marca.descripcion ?? 'Sin descripción', style: TextStyle(color: Colors.white.withValues(alpha: 0.7))),
+                      child: Text(marca.descripcion ?? 'Sin descripción',
+                          style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.7))),
                     ),
                     Expanded(
                       flex: 10,
                       child: Center(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE31E24).withValues(alpha: 0.1),
+                            color:
+                                const Color(0xFFE31E24).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: <Widget>[
-                              const FaIcon(FontAwesomeIcons.box, size: 12, color: Color(0xFFE31E24)),
+                              const FaIcon(FontAwesomeIcons.box,
+                                  size: 12, color: Color(0xFFE31E24)),
                               const SizedBox(width: 6),
-                              Text(marca.totalProductos.toString(), style: const TextStyle(color: Color(0xFFE31E24), fontWeight: FontWeight.bold)),
+                              Text(marca.totalProductos.toString(),
+                                  style: const TextStyle(
+                                      color: Color(0xFFE31E24),
+                                      fontWeight: FontWeight.bold)),
                             ],
                           ),
                         ),
@@ -322,8 +412,10 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
                     Expanded(
                       flex: 10,
                       child: IconButton(
-                        icon: const FaIcon(FontAwesomeIcons.penToSquare, color: Colors.white54, size: 16),
-                        onPressed: () => _mostrarFormularioMarca(notifier, marca),
+                        icon: const FaIcon(FontAwesomeIcons.penToSquare,
+                            color: Colors.white54, size: 16),
+                        onPressed: () =>
+                            _mostrarFormularioMarca(notifier, marca),
                       ),
                     ),
                   ],

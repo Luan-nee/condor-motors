@@ -37,7 +37,10 @@ class SucursalTable extends StatelessWidget {
             color: const Color(0xFF2A2A2A),
             child: Row(
               children: [
-                const SizedBox(width: 36),
+                const SizedBox(width: 16), // Padding inicial alineado con Row
+                const SizedBox(width: 36), // Ancho del icono en la fila
+                const SizedBox(
+                    width: 12), // Espacio entre icono y texto en fila
                 Expanded(
                   flex: 4,
                   child: Text(

@@ -70,52 +70,106 @@ class _DashboardAdminScreenState extends ConsumerState<DashboardAdminScreen> {
     final notifier = ref.read(dashboardAdminProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Dashboard de Administración',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: const Color(0xFF222222),
-        actions: <Widget>[
-          IconButton(
-            icon: const FaIcon(FontAwesomeIcons.rotate),
-            onPressed: notifier.recargarDatos,
-            tooltip: 'Recargar datos',
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
+      backgroundColor: const Color(0xFF111111),
       body: isLoading
           ? const Center(
               child: CircularProgressIndicator(
                 color: Color(0xFFE31E24),
               ),
             )
-          : ColoredBox(
-              color: const Color(0xFF111111),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSummaryCards(state),
-                    const SizedBox(height: 24),
-                    _buildCharts(state),
-                    const SizedBox(height: 24),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: _buildRecentSales(state),
+          : Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Dashboard Header (Sincronizado con otros módulos)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const FaIcon(
+                            FontAwesomeIcons.gaugeHigh,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 16),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'DASHBOARD',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              Text(
+                                'resumen general del negocio',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      // Botón Recargar (Compacto)
+                      SizedBox(
+                        height: 46,
+                        width: 46,
+                        child: Tooltip(
+                          message: 'Recargar estadísticas',
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF2D2D2D),
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.zero,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              elevation: 0,
+                            ),
+                            onPressed: notifier.recargarDatos,
+                            child: const FaIcon(FontAwesomeIcons.arrowsRotate,
+                                size: 16),
+                          ),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _buildStockBajoSection(state),
-                        ),
-                      ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSummaryCards(state),
+                          const SizedBox(height: 24),
+                          _buildCharts(state),
+                          const SizedBox(height: 24),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                flex: 5,
+                                child: _buildRecentSales(state),
+                              ),
+                              const SizedBox(width: 24),
+                              Expanded(
+                                flex: 5,
+                                child: _buildStockBajoSection(state),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
     );
@@ -557,37 +611,36 @@ class _DashboardAdminScreenState extends ConsumerState<DashboardAdminScreen> {
   }
 
   Widget _buildStockBajoSucursales(EstadisticasProductos estadisticas) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: 650),
+    return LayoutBuilder(builder: (context, constraints) {
+      return SizedBox(
+        width: constraints.maxWidth,
         child: DataTable(
           headingRowColor: WidgetStateProperty.all(const Color(0xFF222222)),
-          columnSpacing: 20,
-          horizontalMargin: 12,
+          columnSpacing: 10,
+          horizontalMargin: 8,
           columns: const [
             DataColumn(
               label: Text(
                 'Sucursal',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: Colors.white, fontSize: 13),
               ),
             ),
             DataColumn(
               label: Text(
-                'Stock Bajo',
-                style: TextStyle(color: Colors.white),
+                'Stock',
+                style: TextStyle(color: Colors.white, fontSize: 13),
               ),
             ),
             DataColumn(
               label: Text(
-                'Liquidación',
-                style: TextStyle(color: Colors.white),
+                'Liq.',
+                style: TextStyle(color: Colors.white, fontSize: 13),
               ),
             ),
             DataColumn(
               label: Text(
                 'Estado',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: Colors.white, fontSize: 13),
               ),
             ),
           ],
@@ -600,53 +653,40 @@ class _DashboardAdminScreenState extends ConsumerState<DashboardAdminScreen> {
               cells: [
                 DataCell(Text(
                   sucursal.nombre,
-                  style: const TextStyle(color: Colors.grey),
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
                 )),
-                DataCell(Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withAlpha(26),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '${sucursal.stockBajo}',
-                        style: const TextStyle(
-                          color: Colors.redAccent,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                DataCell(Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withAlpha(26),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '${sucursal.stockBajo}',
+                    style: const TextStyle(
+                      color: Colors.redAccent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
                     ),
-                    const SizedBox(width: 4),
-                    const Text(
-                      'productos',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ],
+                  ),
                 )),
-                DataCell(Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withAlpha(26),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '${sucursal.liquidacion}',
-                        style: const TextStyle(
-                          color: Colors.orangeAccent,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                DataCell(Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withAlpha(26),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '${sucursal.liquidacion}',
+                    style: const TextStyle(
+                      color: Colors.orangeAccent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
                     ),
-                    const SizedBox(width: 4),
-                    const Text(
-                      'productos',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ],
+                  ),
                 )),
                 DataCell(Container(
                   padding: const EdgeInsets.symmetric(
@@ -664,7 +704,7 @@ class _DashboardAdminScreenState extends ConsumerState<DashboardAdminScreen> {
                     style: TextStyle(
                       color:
                           sucursal.stockBajo > 2 ? Colors.red : Colors.orange,
-                      fontSize: 12,
+                      fontSize: 11,
                     ),
                   ),
                 )),
@@ -672,8 +712,8 @@ class _DashboardAdminScreenState extends ConsumerState<DashboardAdminScreen> {
             );
           }).toList(),
         ),
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildRecentSales(DashboardAdminState state) {
@@ -696,48 +736,41 @@ class _DashboardAdminScreenState extends ConsumerState<DashboardAdminScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: state.ventasRecientes.isEmpty
-                ? const Center(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20.0),
-                      child: Text(
-                        'No hay ventas recientes disponibles',
-                        style: TextStyle(color: Colors.grey),
+          LayoutBuilder(builder: (context, constraints) {
+            return SizedBox(
+              width: constraints.maxWidth,
+              child: state.ventasRecientes.isEmpty
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 20.0),
+                        child: Text(
+                          'No hay ventas recientes disponibles',
+                          style: TextStyle(color: Colors.grey),
+                        ),
                       ),
-                    ),
-                  )
-                : ConstrainedBox(
-                    constraints: const BoxConstraints(minWidth: 650),
-                    child: DataTable(
+                    )
+                  : DataTable(
                       headingRowColor:
                           WidgetStateProperty.all(const Color(0xFF222222)),
-                      columnSpacing: 16,
-                      horizontalMargin: 12,
+                      columnSpacing: 10,
+                      horizontalMargin: 8,
                       columns: const [
                         DataColumn(
                           label: Text(
-                            'Fecha/Hora',
-                            style: TextStyle(color: Colors.white),
+                            'Fecha',
+                            style: TextStyle(color: Colors.white, fontSize: 13),
                           ),
                         ),
                         DataColumn(
                           label: Text(
-                            'Documento',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                        DataColumn(
-                          label: Text(
-                            'Sucursal',
-                            style: TextStyle(color: Colors.white),
+                            'Doc.',
+                            style: TextStyle(color: Colors.white, fontSize: 13),
                           ),
                         ),
                         DataColumn(
                           label: Text(
                             'Monto',
-                            style: TextStyle(color: Colors.white),
+                            style: TextStyle(color: Colors.white, fontSize: 13),
                           ),
                         ),
                       ],
@@ -746,45 +779,28 @@ class _DashboardAdminScreenState extends ConsumerState<DashboardAdminScreen> {
                           cells: [
                             DataCell(Text(
                               venta.fecha,
-                              style: const TextStyle(color: Colors.grey),
-                            )),
-                            DataCell(Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  venta.factura,
-                                  style: const TextStyle(color: Colors.grey),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                if (venta.tipoDocumento != null &&
-                                    venta.tipoDocumento!.isNotEmpty)
-                                  Text(
-                                    venta.tipoDocumento!,
-                                    style: const TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 10,
-                                      fontStyle: FontStyle.italic,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                              ],
+                              style: const TextStyle(
+                                  color: Colors.grey, fontSize: 12),
                             )),
                             DataCell(Text(
-                              venta.sucursalNombre ?? 'No especificada',
-                              style: const TextStyle(color: Colors.grey),
+                              venta.factura,
+                              style: const TextStyle(
+                                  color: Colors.grey, fontSize: 12),
                               overflow: TextOverflow.ellipsis,
                             )),
                             DataCell(Text(
                               _formatoMoneda.format(venta.monto),
-                              style: const TextStyle(color: Colors.grey),
+                              style: const TextStyle(
+                                  color: Colors.redAccent,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12),
                             )),
                           ],
                         );
                       }).toList(),
                     ),
-                  ),
-          ),
+            );
+          }),
         ],
       ),
     );

@@ -53,7 +53,7 @@ class TransferenciasColabState {
     this.precioMinimo,
     this.precioMaximo,
     this.paginaActual = 1,
-    this.tamanoPagina = 20,
+    this.tamanoPagina = 25,
     this.paginacion,
   });
 
@@ -168,9 +168,17 @@ class TransferenciasColab extends _$TransferenciasColab {
         forceRefresh: forceRefresh,
       );
 
+      // Ajuste inteligente del tamaño de página si hay pocos elementos
+      int actualPageSize = state.tamanoPagina;
+      if (paginatedResponse.totalItems > 0 &&
+          paginatedResponse.totalItems < actualPageSize) {
+        actualPageSize = paginatedResponse.totalItems;
+      }
+
       state = state.copyWith(
         transferencias: paginatedResponse.items,
-        paginacion: paginatedResponse.paginacion,
+        paginacion: paginatedResponse.paginacion.copyWith(pageSize: actualPageSize),
+        tamanoPagina: actualPageSize,
         isLoading: false,
       );
     } catch (e) {

@@ -36,7 +36,7 @@ class TransferenciasAdminState {
     this.sortBy = 'fechaCreacion',
     this.order = 'desc',
     this.currentPage = 1,
-    this.pageSize = 10,
+    this.pageSize = 25,
     this.paginacion = Paginacion.emptyPagination,
     this.detalleTransferenciaActual,
   });
@@ -167,9 +167,16 @@ class TransferenciasAdmin extends _$TransferenciasAdmin {
         forceRefresh: forceRefresh,
       );
 
+      // Ajuste inteligente del tamaño de página si hay pocos elementos
+      int actualPageSize = state.pageSize;
+      if (paginatedResponse.totalItems > 0 && paginatedResponse.totalItems < actualPageSize) {
+        actualPageSize = paginatedResponse.totalItems;
+      }
+
       state = state.copyWith(
         transferencias: paginatedResponse.items,
-        paginacion: paginatedResponse.paginacion,
+        pageSize: actualPageSize,
+        paginacion: paginatedResponse.paginacion.copyWith(pageSize: actualPageSize),
         isLoading: false,
       );
     } catch (e) {

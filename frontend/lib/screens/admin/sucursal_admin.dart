@@ -8,9 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-// La clase Sucursal ha sido reemplazada por la importación de '../../models/sucursal.model.dart'
-// La clase SucursalRequest ha sido movida al provider de sucursales
-
 class SucursalAdminScreen extends ConsumerStatefulWidget {
   const SucursalAdminScreen({super.key});
 
@@ -25,18 +22,11 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
   late AnimationController _animationController;
   late Animation<double> _animation;
 
-  // Estado para controlar el modo edición
-
   // Controladores para la lista
   final ScrollController _scrollController = ScrollController();
 
-  // Filtros avanzados
-  bool _mostrarFiltrosAvanzados = false;
-  String _filtroTipo = 'Todos';
-
   // Estado de la lista
   bool _isListScrollable = false;
-
   bool _isInitialized = false;
 
   @override
@@ -72,6 +62,9 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
 
   void _onScroll() {
     // Actualizar estado para mostrar/ocultar botón de scroll
+    if (!_scrollController.hasClients) {
+      return;
+    }
     final bool isScrollable = _scrollController.position.maxScrollExtent > 0;
     if (isScrollable != _isListScrollable) {
       setState(() {
@@ -242,28 +235,11 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
     }
   }
 
-  void _toggleFiltrosAvanzados() {
-    setState(() {
-      _mostrarFiltrosAvanzados = !_mostrarFiltrosAvanzados;
-    });
-  }
-
-  List<Sucursal> _aplicarFiltrosAvanzados(List<Sucursal> sucursales) {
-    if (_filtroTipo == 'Todos') {
-      return sucursales;
-    }
-
-    bool esCentral = _filtroTipo == 'Central';
-    return sucursales.where((s) => s.sucursalCentral == esCentral).toList();
-  }
-
   @override
   Widget build(BuildContext context) {
-    debugPrint('[SucursalAdminScreen] build ejecutado');
     final state = ref.watch(sucursalAdminProvider);
     final notifier = ref.read(sucursalAdminProvider.notifier);
 
-    // Pantalla principal de listado de sucursales
     return Scaffold(
       body: Column(
         children: <Widget>[
@@ -274,20 +250,14 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
             onSearchChanged: notifier.actualizarBusqueda,
             onReload: _recargarDatos,
             onAddNew: _mostrarFormularioSucursal,
-            onToggleFiltros: _toggleFiltrosAvanzados,
-            mostrarFiltrosAvanzados: _mostrarFiltrosAvanzados,
-            filtroTipo: _filtroTipo,
-            onFiltroTipoChanged: (String? value) {
-              if (value != null) {
-                setState(() => _filtroTipo = value);
-              }
-            },
+            onToggleFiltros: () {},
+            mostrarFiltrosAvanzados: false,
+            filtroTipo: 'Todos',
+            onFiltroTipoChanged: (String? value) {},
             mostrarAgrupados: _mostrarAgrupados,
             onToggleAgrupados: (bool value) =>
                 setState(() => _mostrarAgrupados = value),
           ),
-
-          // Sección de resultados y contenido principal
           Expanded(
             child: Stack(
               children: [
@@ -387,7 +357,6 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
                         : _buildListaCompleta(state),
                   ),
 
-                // Botón flotante para subir cuando la lista es larga
                 if (_isListScrollable)
                   Positioned(
                     right: 20,
@@ -404,7 +373,6 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
                     ),
                   ),
 
-                // Indicador de carga cuando está actualizando pero ya tiene datos
                 if (state.isLoading && state.sucursales.isNotEmpty)
                   const Positioned(
                     top: 0,
@@ -424,20 +392,10 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFFE31E24),
-        foregroundColor: Colors.white,
-        onPressed: _mostrarFormularioSucursal,
-        tooltip: 'Agregar sucursal',
-        child: const Icon(Icons.add),
-      ),
     );
   }
 
   Widget _buildAgrupadas(SucursalAdminState state, SucursalAdmin notifier) {
-    final List<Sucursal> sucursalesFiltradas =
-        _aplicarFiltrosAvanzados(state.sucursales);
-
     final Map<String, List<Sucursal>> grupos =
         notifier.agruparSucursalesPorTipo();
     final List<Sucursal> sucursalesCentrales =
@@ -449,8 +407,8 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(vertical: 8),
       children: <Widget>[
-        if (_filtroTipo != 'Todos' || state.terminoBusqueda.isNotEmpty)
-          _buildFiltroHeader(state, notifier, sucursalesFiltradas.length),
+        if (state.terminoBusqueda.isNotEmpty)
+          _buildFiltroHeader(state, notifier, state.sucursales.length),
 
         if (sucursalesCentrales.isNotEmpty) ...<Widget>[
           _buildGrupoHeader('Sucursales Centrales', sucursalesCentrales.length),
@@ -505,7 +463,6 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
             ),
             onPressed: () {
               notifier.limpiarBusqueda();
-              setState(() => _filtroTipo = 'Todos');
             },
             icon: const Icon(Icons.clear, size: 14),
             label: const Text('Limpiar filtros', style: TextStyle(fontSize: 12)),
@@ -514,7 +471,6 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
       ),
     );
   }
-
 
   void _mostrarDetallesSucursal(Sucursal sucursal) {
     showDialog(
@@ -593,22 +549,19 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
   }
 
   Widget _buildListaCompleta(SucursalAdminState state) {
-    final List<Sucursal> sucursalesFiltradas =
-        _aplicarFiltrosAvanzados(state.sucursales);
-
     return Column(
       children: [
-        if (_filtroTipo != 'Todos' || state.terminoBusqueda.isNotEmpty)
+        if (state.terminoBusqueda.isNotEmpty)
           _buildFiltroHeader(
               state,
               ref.read(sucursalAdminProvider.notifier),
-              sucursalesFiltradas.length),
+              state.sucursales.length),
         Expanded(
           child: Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: SucursalTable(
-              sucursales: sucursalesFiltradas,
+              sucursales: state.sucursales,
               onDetails: _mostrarDetallesSucursal,
               onEdit: _mostrarFormularioSucursal,
               onDelete: _confirmarEliminarSucursal,
@@ -620,5 +573,3 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
     );
   }
 }
-
-

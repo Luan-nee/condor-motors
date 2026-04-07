@@ -10,6 +10,7 @@ class Paginacion extends Equatable {
   final bool hasPrev;
   final int? rangoInicio;
   final int? rangoFin;
+  final int? pageSize;
 
   // Caché para cálculos costosos
 
@@ -21,6 +22,7 @@ class Paginacion extends Equatable {
     required this.hasPrev,
     this.rangoInicio,
     this.rangoFin,
+    this.pageSize,
   });
 
   @override
@@ -32,6 +34,7 @@ class Paginacion extends Equatable {
         hasPrev,
         rangoInicio,
         rangoFin,
+        pageSize,
       ];
 
   factory Paginacion.fromJson(Map<String, dynamic> json) {
@@ -43,6 +46,7 @@ class Paginacion extends Equatable {
       hasPrev: json['hasPrev'] as bool? ?? false,
       rangoInicio: json['rangoInicio'] as int?,
       rangoFin: json['rangoFin'] as int?,
+      pageSize: json['pageSize'] as int?,
     );
   }
 
@@ -89,6 +93,7 @@ class Paginacion extends Equatable {
       currentPage: safeCurrentPage,
       hasNext: safeCurrentPage < safeTotalPages,
       hasPrev: safeCurrentPage > 1,
+      pageSize: pageSize,
     );
   }
 
@@ -164,6 +169,7 @@ class Paginacion extends Equatable {
         'hasPrev': hasPrev,
         'rangoInicio': rangoInicio,
         'rangoFin': rangoFin,
+        'pageSize': pageSize,
       };
 
   /// Obtiene un resumen detallado de la paginación (útil para depuración)
@@ -180,6 +186,7 @@ class Paginacion extends Equatable {
     bool? hasPrev,
     int? rangoInicio,
     int? rangoFin,
+    int? pageSize,
   }) {
     return Paginacion(
       totalItems: totalItems ?? this.totalItems,
@@ -189,6 +196,7 @@ class Paginacion extends Equatable {
       hasPrev: hasPrev ?? this.hasPrev,
       rangoInicio: rangoInicio ?? this.rangoInicio,
       rangoFin: rangoFin ?? this.rangoFin,
+      pageSize: pageSize ?? this.pageSize,
     );
   }
 }

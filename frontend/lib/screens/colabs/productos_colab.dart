@@ -45,7 +45,7 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
   ];
 
   // Tamaño de página para la paginación
-  int _pageSize = 20;
+  int _pageSize = 25;
 
   // Repositorio de productos
   final ProductoRepository _productoRepository = ProductoRepository.instance;
@@ -184,13 +184,20 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
         return;
       }
 
+      // Ajuste inteligente del tamaño de página si hay pocos elementos
+      int actualPageSize = _pageSize;
+      if (response.totalItems > 0 && response.totalItems < actualPageSize) {
+        actualPageSize = response.totalItems;
+      }
+
       // Guardar en caché
       _productosCache[targetPage] = response.items;
-      _paginacionCache[targetPage] = response.paginacion;
+      _paginacionCache[targetPage] = response.paginacion.copyWith(pageSize: actualPageSize);
 
       setState(() {
         _productos = response.items;
-        _paginacion = response.paginacion;
+        _paginacion = response.paginacion.copyWith(pageSize: actualPageSize);
+        _pageSize = actualPageSize;
         _categorias = categoriasProcesadas;
         _marcas = marcasProcesadas;
         _isLoading = false;

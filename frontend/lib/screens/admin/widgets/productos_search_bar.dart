@@ -290,7 +290,7 @@ class ProductosAdminSearchBar extends ConsumerWidget {
           color: isSelected ? color : Colors.transparent,
         ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       onSelected: (_) => onSelected(),
     );
   }

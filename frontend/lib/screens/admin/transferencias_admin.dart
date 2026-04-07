@@ -55,64 +55,6 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
     }
   }
 
-  // Botón de refrescar
-  Widget _buildRefreshButton(TransferenciasAdminState state, TransferenciasAdmin notifier) {
-    return ElevatedButton.icon(
-      icon: state.isLoading
-          ? const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 2,
-              ),
-            )
-          : const FaIcon(
-              FontAwesomeIcons.arrowsRotate,
-              size: 16,
-              color: Colors.white,
-            ),
-      label: Text(
-        state.isLoading ? 'Recargando...' : 'Recargar',
-        style: const TextStyle(color: Colors.white),
-      ),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF2D2D2D),
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
-        ),
-      ),
-      onPressed: state.isLoading
-          ? null
-          : () async {
-              final scaffoldMessenger = ScaffoldMessenger.of(context);
-              await notifier.recargarDatos();
-
-              if (!mounted) {
-                return;
-              }
-
-              final currentState = ref.read(transferenciasAdminProvider);
-              if (currentState.errorMessage != null) {
-                scaffoldMessenger.showSnackBar(
-                  SnackBar(
-                    content: Text(currentState.errorMessage!),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              } else {
-                scaffoldMessenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('Datos recargados exitosamente'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              }
-            },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -162,48 +104,88 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
                 // Filtros
                 Row(
                   children: <Widget>[
-                    // Filtro por estado
-                    Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2D2D2D),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      margin: const EdgeInsets.only(right: 12),
-                      child: Row(
-                        children: <Widget>[
-                          const FaIcon(
-                            FontAwesomeIcons.filter,
-                            color: Color(0xFFE31E24),
-                            size: 14,
+                    // Filtro por estado (Compacto como Productos Admin)
+                    SizedBox(
+                      height: 46,
+                      width: 46,
+                      child: Tooltip(
+                        message: 'Filtrar por estado',
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: state.selectedFilter != 'Todos'
+                                ? const Color(0xFFE31E24).withValues(alpha: 0.1)
+                                : const Color(0xFF2D2D2D),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: state.selectedFilter != 'Todos'
+                                  ? const Color(0xFFE31E24)
+                                  : Colors.transparent,
+                            ),
                           ),
-                          const SizedBox(width: 8),
-                          DropdownButton<String>(
-                            value: state.selectedFilter,
-                            dropdownColor: const Color(0xFF2D2D2D),
-                            style: const TextStyle(color: Colors.white),
-                            underline: const SizedBox(),
-                            items: <DropdownMenuItem<String>>[
-                              const DropdownMenuItem(
-                                  value: 'Todos',
-                                  child: Text('Todos los estados')),
-                              ...['Pedido', 'Enviado', 'Recibido']
-                                  .map(
-                                    (String filter) => DropdownMenuItem(
-                                        value: filter, child: Text(filter)),
-                                  ),
+                          child: PopupMenuButton<String>(
+                            initialValue: state.selectedFilter,
+                            icon: FaIcon(
+                              FontAwesomeIcons.filter,
+                              size: 14,
+                              color: state.selectedFilter != 'Todos'
+                                  ? const Color(0xFFE31E24)
+                                  : Colors.white54,
+                            ),
+                            onSelected: notifier.cambiarFiltro,
+                            offset: const Offset(0, 46),
+                            itemBuilder: (context) => [
+                              const PopupMenuItem(
+                                value: 'Todos',
+                                child: Text('Todos los estados',
+                                    style: TextStyle(
+                                        color: Colors.white, fontSize: 13)),
+                              ),
+                              ...['Pedido', 'Enviado', 'Recibido'].map(
+                                (f) => PopupMenuItem(
+                                  value: f,
+                                  child: Text(f,
+                                      style: const TextStyle(
+                                          color: Colors.white, fontSize: 13)),
+                                ),
+                              ),
                             ],
-                            onChanged: (String? value) {
-                              if (value != null) {
-                                notifier.cambiarFiltro(value);
-                              }
-                            },
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                    // Botón de refrescar (solo uno)
-                    _buildRefreshButton(state, notifier),
+                    const SizedBox(width: 8),
+                    // Botón Recargar (Compacto como Productos Admin)
+                    SizedBox(
+                      height: 46,
+                      width: 46,
+                      child: Tooltip(
+                        message:
+                            state.isLoading ? 'Recargando...' : 'Recargar datos',
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2D2D2D),
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            elevation: 0,
+                          ),
+                          onPressed: state.isLoading
+                              ? null
+                              : notifier.recargarDatos,
+                          child: state.isLoading
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                      color: Colors.white, strokeWidth: 2),
+                                )
+                              : const FaIcon(FontAwesomeIcons.arrowsRotate,
+                                  size: 16),
+                        ),
+                      ),
+                    ),
                     const SizedBox(width: 16),
                   ],
                 ),

@@ -245,8 +245,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
       elevation: 10,
       child: Container(
         width: 800,
-        height:
-            580, // Aumentamos la altura para acomodar la sección de liquidación
+        height: 700, // Aumentamos la altura para permitir más visibilidad sin tanto scroll
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -273,7 +272,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
 
             const SizedBox(height: 8),
 
-            Divider(color: Colors.white.withValues(alpha: 0.2)),
+            Divider(color: Colors.white.withAlpha(51)),
 
             const SizedBox(height: 16),
 
@@ -309,7 +308,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                                 ],
                               ),
 
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 24), // Espacio aumentado
 
                               // Información de stock
                               _buildInfoSection(
@@ -326,7 +325,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                                 ],
                               ),
 
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 24), // Espacio aumentado
 
                               // Información de precios y liquidación
                               _buildInfoSection(
@@ -383,7 +382,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                       ],
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24), // Espacio aumentado
 
                     // Sección para gestionar liquidación
                     _buildGestionLiquidacion(),

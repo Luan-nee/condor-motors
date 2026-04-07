@@ -43,7 +43,7 @@ class ProductosAdminState {
     this.sortBy = 'nombre',
     this.order = 'asc',
     this.currentPage = 1,
-    this.pageSize = 100,
+    this.pageSize = 25,
     this.paginacion = Paginacion.emptyPagination,
     this.errorMessage,
   });
@@ -192,12 +192,19 @@ class ProductosAdmin extends _$ProductosAdmin {
         forceRefresh: forceRefresh,
       );
 
+      // Ajuste inteligente del tamaño de página si hay pocos elementos
+      int actualPageSize = state.pageSize;
+      if (response.totalItems > 0 && response.totalItems < actualPageSize) {
+        actualPageSize = response.totalItems;
+      }
+
       state = state.copyWith(
         productos: response.items,
         productosFiltrados: response.items,
+        pageSize: actualPageSize,
         paginacion: Paginacion.fromParams(
           totalItems: response.totalItems,
-          pageSize: state.pageSize,
+          pageSize: actualPageSize,
           currentPage: response.currentPage,
         ),
         isLoading: false,

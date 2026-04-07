@@ -42,7 +42,7 @@ class VentasComputerState {
     this.isVentaDetalleLoading = false,
     this.ventaDetalleErrorMessage = '',
     this.paginacion = Paginacion.emptyPagination,
-    this.itemsPerPage = 10,
+    this.itemsPerPage = 25,
     this.orden = 'desc',
     this.ordenarPor = 'fechaCreacion',
   });
@@ -297,7 +297,23 @@ class VentasComputer extends _$VentasComputer {
             .toList();
       }
 
-      state = state.copyWith(ventas: nuevasVentas);
+      // Ajuste inteligente del tamaño de página si hay pocos elementos
+      int actualPageSize = state.itemsPerPage;
+      int serverTotalItems = 0;
+
+      if (response.containsKey('pagination') && response['pagination'] is Map) {
+        serverTotalItems = (response['pagination'] as Map)['totalItems'] as int? ?? 0;
+      } else if (response.containsKey('total')) {
+        serverTotalItems = int.tryParse(response['total'].toString()) ?? nuevasVentas.length;
+      } else {
+        serverTotalItems = nuevasVentas.length;
+      }
+
+      if (serverTotalItems > 0 && serverTotalItems < actualPageSize) {
+        actualPageSize = serverTotalItems;
+      }
+
+      state = state.copyWith(ventas: nuevasVentas, itemsPerPage: actualPageSize);
 
       if (response.containsKey('pagination') && response['pagination'] is Map) {
         final Map<String, dynamic> paginationMap =
@@ -314,6 +330,7 @@ class VentasComputer extends _$VentasComputer {
               currentPage: currentPage > 0 ? currentPage : 1,
               hasNext: currentPage < totalPages,
               hasPrev: currentPage > 1,
+              pageSize: actualPageSize, // Incluir el ajuste
             ),
           );
         } catch (e) {

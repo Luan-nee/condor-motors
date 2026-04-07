@@ -26,12 +26,8 @@ class ProductosAdminScreen extends ConsumerStatefulWidget {
 }
 
 class _ProductosAdminScreenState extends ConsumerState<ProductosAdminScreen> {
-  final ValueNotifier<String> _productosKey =
-      ValueNotifier<String>('productos_inicial');
-
   @override
   void dispose() {
-    _productosKey.dispose();
     super.dispose();
   }
 
@@ -49,10 +45,6 @@ class _ProductosAdminScreenState extends ConsumerState<ProductosAdminScreen> {
         sucursales: state.sucursales,
         sucursalSeleccionada: state.selectedSucursal,
         onSave: (Map<String, dynamic> productoData) async {
-          setState(() {
-            _productosKey.value =
-                'productos_${state.selectedSucursal?.id}_refresh_${DateTime.now().millisecondsSinceEpoch}';
-          });
           await ref.read(productosAdminProvider.notifier).cargarProductos(forceRefresh: true);
         },
       ),
@@ -67,10 +59,6 @@ class _ProductosAdminScreenState extends ConsumerState<ProductosAdminScreen> {
       producto: producto,
       sucursales: state.sucursales,
       onSave: (Producto productoActualizado) async {
-        setState(() {
-          _productosKey.value =
-              'productos_${state.selectedSucursal?.id}_refresh_${DateTime.now().millisecondsSinceEpoch}';
-        });
         await ref.read(productosAdminProvider.notifier).cargarProductos(forceRefresh: true);
       },
     );
@@ -151,15 +139,24 @@ class _ProductosAdminScreenState extends ConsumerState<ProductosAdminScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(productosAdminProvider);
-    final notifier = ref.read(productosAdminProvider.notifier);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _productosKey.value =
-            'productos_${state.selectedSucursal?.id}_page_${state.currentPage}_${DateTime.now().millisecondsSinceEpoch}';
+    // Escuchamos errores de forma aislada para mostrar Toasts sin reconstruir todo
+    ref.listen(productosAdminProvider.select((s) => s.errorMessage), (previous, next) {
+      if (next != null && next.isNotEmpty) {
+        context.showErrorToast(next);
       }
     });
+
+    final selectedSucursal = ref.watch(productosAdminProvider.select((s) => s.selectedSucursal));
+    final isLoadingSucursales = ref.watch(productosAdminProvider.select((s) => s.isLoadingSucursales));
+    final totalPages = ref.watch(productosAdminProvider.select((s) => s.paginacion.totalPages));
+    final isLoading = ref.watch(productosAdminProvider.select((s) => s.isLoading));
+    final productos = ref.watch(productosAdminProvider.select((s) => s.productosFiltrados));
+    final errorMessage = ref.watch(productosAdminProvider.select((s) => s.errorMessage));
+
+    final notifier = ref.read(productosAdminProvider.notifier);
+
+    // Mantenemos una key estable para evitar destruir el estado interno de la tabla durante la navegación
+    final String baseKey = 'productos_${selectedSucursal?.id}_page_${ref.read(productosAdminProvider).currentPage}';
 
     return Scaffold(
       body: Row(
@@ -169,33 +166,38 @@ class _ProductosAdminScreenState extends ConsumerState<ProductosAdminScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                _buildSearchBar(state, notifier),
+                const _ProductosAdminHeader(),
                 Expanded(
-                  child: Column(
-                    children: <Widget>[
-                      if (state.selectedSucursal == null && !state.isLoadingSucursales)
-                        _buildEmptyState(state)
-                      else ...[
-                        Expanded(
-                          child: ValueListenableBuilder<String>(
-                            valueListenable: _productosKey,
-                            builder: (BuildContext context, String key, Widget? child) {
-                              return ProductosTable(
-                                key: ValueKey<String>(key),
-                                productos: state.productosFiltrados,
-                                sucursales: state.sucursales,
+                  child: Builder(
+                    builder: (context) {
+                      if (selectedSucursal == null && !isLoadingSucursales) {
+                        return _buildEmptyState(isLoadingSucursales);
+                      }
+
+                      if (errorMessage != null && productos.isEmpty && !isLoading) {
+                        return _buildErrorState(errorMessage, notifier);
+                      }
+
+                      return Column(
+                        children: <Widget>[
+                          Expanded(
+                            child: RepaintBoundary(
+                              child: ProductosTable(
+                                key: ValueKey<String>(baseKey),
+                                productos: productos,
+                                sucursales: ref.read(productosAdminProvider).sucursales,
                                 onEdit: _showProductDialog,
                                 onViewDetails: _showProductoDetalleDialog,
                                 onSort: notifier.ordenarPor,
-                                sortBy: state.sortBy,
-                                sortOrder: state.order,
-                                isLoading: state.isLoading,
+                                sortBy: ref.read(productosAdminProvider).sortBy,
+                                sortOrder: ref.read(productosAdminProvider).order,
+                                isLoading: isLoading,
                                 onEnable: (producto) async {
                                   final currentContext = context;
                                   await ProductoAgregarDialog.show(
                                     currentContext,
                                     producto: producto,
-                                    sucursalNombre: state.selectedSucursal?.nombre,
+                                    sucursalNombre: selectedSucursal?.nombre,
                                     onSave: (Map<String, dynamic> productoData) async {
                                       await notifier.habilitarProducto(producto.id, productoData);
                                       if (mounted) {
@@ -209,61 +211,37 @@ class _ProductosAdminScreenState extends ConsumerState<ProductosAdminScreen> {
                                     },
                                   );
                                 },
-                              );
-                            },
-                          ),
-                        ),
-                        if (state.paginacion.totalPages > 0)
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            child: Paginador(
-                              paginacion: state.paginacion,
-                              onPageChanged: notifier.cambiarPagina,
-                              onPageSizeChanged: notifier.cambiarTamanioPagina,
+                              ),
                             ),
                           ),
-                      ],
-                    ],
+                          if (totalPages > 0)
+                            const _ProductosAdminPagination(),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ],
             ),
           ),
-          Container(
-            width: 350,
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
-              border: Border(
-                left: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.1),
-                ),
-              ),
-            ),
-            child: SlideSucursal(
-              sucursales: state.sucursales,
-              sucursalSeleccionada: state.selectedSucursal,
-              onSucursalSelected: notifier.seleccionarSucursal,
-              onRecargarSucursales: notifier.cargarSucursales,
-              isLoading: state.isLoadingSucursales,
-            ),
-          ),
+          const _ProductosAdminSidebar(),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyState(ProductosAdminState state) {
+  Widget _buildEmptyState(bool isLoadingSucursales) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (state.isLoadingSucursales)
+          if (isLoadingSucursales)
             const CircularProgressIndicator(color: Color(0xFFE31E24))
           else
             const FaIcon(FontAwesomeIcons.warehouse, color: Colors.white54, size: 48),
           const SizedBox(height: 16),
           Text(
-            state.isLoadingSucursales
+            isLoadingSucursales
                 ? 'Cargando sucursales...'
                 : 'Seleccione una sucursal para ver los productos',
             style: TextStyle(
@@ -276,11 +254,102 @@ class _ProductosAdminScreenState extends ConsumerState<ProductosAdminScreen> {
     );
   }
 
+  Widget _buildErrorState(String message, ProductosAdmin notifier) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const FaIcon(FontAwesomeIcons.circleExclamation, color: Color(0xFFE31E24), size: 48),
+            const SizedBox(height: 16),
+            const Text(
+              'Ocurrió un problema',
+              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => notifier.cargarProductos(forceRefresh: true),
+              icon: const FaIcon(FontAwesomeIcons.arrowsRotate, size: 14),
+              label: const Text('Reintentar'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE31E24),
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
-  Widget _buildSearchBar(ProductosAdminState state, ProductosAdmin notifier) {
+// Sub-widgets para optimizar re-renders
+class _ProductosAdminHeader extends ConsumerWidget {
+  const _ProductosAdminHeader();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Solo se reconstruye si el buscador o las acciones cambian
     return ProductosAdminSearchBar(
-      onExport: _exportarProductos,
-      onNew: () => _showProductDialog(null),
+      onExport: () => context.findAncestorStateOfType<_ProductosAdminScreenState>()?._exportarProductos(),
+      onNew: () => context.findAncestorStateOfType<_ProductosAdminScreenState>()?._showProductDialog(null),
+    );
+  }
+}
+
+class _ProductosAdminPagination extends ConsumerWidget {
+  const _ProductosAdminPagination();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final paginacion = ref.watch(productosAdminProvider.select((s) => s.paginacion));
+    final notifier = ref.read(productosAdminProvider.notifier);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Paginador(
+        paginacion: paginacion,
+        onPageChanged: notifier.cambiarPagina,
+        onPageSizeChanged: notifier.cambiarTamanioPagina,
+      ),
+    );
+  }
+}
+
+class _ProductosAdminSidebar extends ConsumerWidget {
+  const _ProductosAdminSidebar();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sucursales = ref.watch(productosAdminProvider.select((s) => s.sucursales));
+    final selectedSucursal = ref.watch(productosAdminProvider.select((s) => s.selectedSucursal));
+    final isLoadingSucursales = ref.watch(productosAdminProvider.select((s) => s.isLoadingSucursales));
+    final notifier = ref.read(productosAdminProvider.notifier);
+
+    return Container(
+      width: 350,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        border: Border(
+          left: BorderSide(
+            color: Colors.white.withValues(alpha: 0.1),
+          ),
+        ),
+      ),
+      child: SlideSucursal(
+        sucursales: sucursales,
+        sucursalSeleccionada: selectedSucursal,
+        onSucursalSelected: notifier.seleccionarSucursal,
+        onRecargarSucursales: notifier.cargarSucursales,
+        isLoading: isLoadingSucursales,
+      ),
     );
   }
 }

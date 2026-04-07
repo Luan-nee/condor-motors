@@ -110,9 +110,9 @@ class _EmpleadosTableState extends State<EmpleadosTable> {
                         vertical: 16, horizontal: 20),
                     child: const Row(
                       children: <Widget>[
-                        // Nombre (25% del ancho)
+                        // Nombre (30% del ancho)
                         Expanded(
-                          flex: 25,
+                          flex: 30,
                           child: Text(
                             'Nombre',
                             style: TextStyle(
@@ -143,9 +143,9 @@ class _EmpleadosTableState extends State<EmpleadosTable> {
                             ),
                           ),
                         ),
-                        // Sucursal (25% del ancho)
+                        // Sucursal (30% del ancho)
                         Expanded(
-                          flex: 25,
+                          flex: 30,
                           child: Text(
                             'Sucursal',
                             style: TextStyle(
@@ -154,20 +154,9 @@ class _EmpleadosTableState extends State<EmpleadosTable> {
                             ),
                           ),
                         ),
-                        // Estado (10% del ancho)
+                        // Acciones (5% del ancho - Ajustado para coincidir con ListItem)
                         Expanded(
-                          flex: 10,
-                          child: Text(
-                            'Estado',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        // Acciones (5% del ancho)
-                        SizedBox(
-                          width: 32,
+                          flex: 15,
                           child: Center(
                             child: Text(
                               'Acciones',
