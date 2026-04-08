@@ -7,6 +7,7 @@ import 'package:condorsmotors/repositories/color.repository.dart';
 import 'package:condorsmotors/screens/colabs/widgets/list_busqueda_producto.dart';
 import 'package:condorsmotors/utils/busqueda_producto_utils.dart'
     show BusquedaProductoUtils, TipoDescuento;
+import 'package:condorsmotors/widgets/active_filter_chip.widget.dart';
 import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -668,7 +669,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
         children: <Widget>[
           // Mostrar filtro activo si hay uno
           if (_filtroCategoria != 'Todos')
-            _buildActiveFilter(
+            ActiveFilterChip(
               icon: Icons.filter_list,
               label: 'Categoría: $_filtroCategoria',
               color: Colors.blue,
@@ -677,7 +678,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
 
           // Mostrar filtro de búsqueda si hay uno
           if (_searchController.text.isNotEmpty)
-            _buildActiveFilter(
+            ActiveFilterChip(
               icon: Icons.search,
               label: 'Búsqueda: "${_searchController.text}"',
               color: Colors.orange,
@@ -689,7 +690,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
 
           // Mostrar filtro de promoción si hay uno activo
           if (_tipoDescuentoSeleccionado != TipoDescuento.todos)
-            _buildActiveFilter(
+            ActiveFilterChip(
               icon: _tipoDescuentoSeleccionado == TipoDescuento.promoGratis
                   ? Icons.card_giftcard
                   : Icons.percent,
@@ -712,50 +713,6 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
               color: Colors.white70,
               fontSize: 12,
               fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActiveFilter({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onClear,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(
-            icon,
-            size: 14,
-            color: Colors.white70,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.white70,
-            ),
-          ),
-          const SizedBox(width: 4),
-          InkWell(
-            onTap: onClear,
-            child: const Icon(
-              Icons.close,
-              size: 14,
-              color: Colors.white70,
             ),
           ),
         ],

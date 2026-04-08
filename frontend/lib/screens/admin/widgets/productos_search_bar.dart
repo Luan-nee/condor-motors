@@ -1,5 +1,5 @@
-import 'dart:async';
 import 'package:condorsmotors/providers/admin/productos.admin.riverpod.dart';
+import 'package:condorsmotors/utils/debouncer.util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -20,7 +20,8 @@ class ProductosAdminSearchBar extends ConsumerStatefulWidget {
 
 class _ProductosAdminSearchBarState extends ConsumerState<ProductosAdminSearchBar> {
   late final TextEditingController _searchController;
-  Timer? _debounceTimer;
+  final Debouncer _searchDebouncer =
+      Debouncer(delay: const Duration(milliseconds: 350));
 
   @override
   void initState() {
@@ -32,19 +33,13 @@ class _ProductosAdminSearchBarState extends ConsumerState<ProductosAdminSearchBa
 
   @override
   void dispose() {
-    _debounceTimer?.cancel();
+    _searchDebouncer.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
   void _onSearchChanged(String query) {
-    // Cancelar el temporizador previo si el usuario sigue escribiendo
-    if (_debounceTimer?.isActive ?? false) {
-      _debounceTimer?.cancel();
-    }
-
-    // Iniciar un nuevo temporizador de 350ms antes de disparar la búsqueda
-    _debounceTimer = Timer(const Duration(milliseconds: 350), () {
+    _searchDebouncer.run(() {
       if (mounted) {
         ref.read(productosAdminProvider.notifier).actualizarBusqueda(query);
       }

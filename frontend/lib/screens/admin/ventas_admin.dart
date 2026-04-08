@@ -1,8 +1,8 @@
-import 'dart:async';
 import 'package:condorsmotors/models/ventas.model.dart';
 import 'package:condorsmotors/providers/admin/ventas.admin.riverpod.dart';
 import 'package:condorsmotors/screens/admin/widgets/slide_sucursal.dart';
 import 'package:condorsmotors/screens/admin/widgets/venta/venta_detalle_dialog.dart';
+import 'package:condorsmotors/utils/debouncer.util.dart';
 import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:condorsmotors/widgets/toast_manager.dart';
 import 'package:flutter/material.dart';
@@ -19,7 +19,8 @@ class VentasAdminScreen extends ConsumerStatefulWidget {
 
 class _VentasAdminScreenState extends ConsumerState<VentasAdminScreen> {
   late final TextEditingController _searchController;
-  Timer? _debounceTimer;
+  final Debouncer _searchDebouncer =
+      Debouncer(delay: const Duration(milliseconds: 350));
 
   @override
   void initState() {
@@ -30,16 +31,13 @@ class _VentasAdminScreenState extends ConsumerState<VentasAdminScreen> {
 
   @override
   void dispose() {
-    _debounceTimer?.cancel();
+    _searchDebouncer.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
   void _onSearchChanged(String query) {
-    if (_debounceTimer?.isActive ?? false) {
-      _debounceTimer?.cancel();
-    }
-    _debounceTimer = Timer(const Duration(milliseconds: 350), () {
+    _searchDebouncer.run(() {
       if (mounted) {
         ref.read(ventasAdminProvider.notifier).actualizarBusqueda(query);
       }
@@ -49,18 +47,20 @@ class _VentasAdminScreenState extends ConsumerState<VentasAdminScreen> {
   @override
   Widget build(BuildContext context) {
     // Escuchar mensajes de error
-    ref..listen(ventasAdminProvider.select((s) => s.errorMessage), (prev, next) {
-      if (next != null && next.isNotEmpty) {
-        context.showErrorToast(next);
-      }
-    })
+    ref
+      ..listen(ventasAdminProvider.select((s) => s.errorMessage), (prev, next) {
+        if (next != null && next.isNotEmpty) {
+          context.showErrorToast(next);
+        }
+      })
 
-    // Escuchar mensajes de éxito
-    ..listen(ventasAdminProvider.select((s) => s.successMessage), (prev, next) {
-      if (next != null && next.isNotEmpty) {
-        context.showSuccessToast(next);
-      }
-    });
+      // Escuchar mensajes de éxito
+      ..listen(ventasAdminProvider.select((s) => s.successMessage),
+          (prev, next) {
+        if (next != null && next.isNotEmpty) {
+          context.showSuccessToast(next);
+        }
+      });
 
     return Scaffold(
       body: Row(
@@ -160,7 +160,8 @@ class _VentasAdminHeader extends ConsumerWidget {
     );
   }
 
-  Widget _buildSearchField(VentasAdminState state, VentasAdmin notifier, BuildContext context) {
+  Widget _buildSearchField(
+      VentasAdminState state, VentasAdmin notifier, BuildContext context) {
     return Container(
       height: 40,
       decoration: BoxDecoration(
@@ -176,7 +177,8 @@ class _VentasAdminHeader extends ConsumerWidget {
         decoration: InputDecoration(
           contentPadding: const EdgeInsets.symmetric(horizontal: 16),
           hintText: 'Buscar por cliente, documento o serie...',
-          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
+          hintStyle: TextStyle(
+              color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
           border: InputBorder.none,
           prefixIcon: Icon(
             Icons.search,
@@ -185,7 +187,8 @@ class _VentasAdminHeader extends ConsumerWidget {
           ),
           suffixIcon: searchController.text.isNotEmpty
               ? IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white70, size: 16),
+                  icon:
+                      const Icon(Icons.close, color: Colors.white70, size: 16),
                   onPressed: () {
                     searchController.clear();
                     onSearchChanged('');
@@ -219,7 +222,8 @@ class _VentasAdminHeader extends ConsumerWidget {
           value: '${state.sortBy}_${state.order}',
           dropdownColor: const Color(0xFF1A1A1A),
           style: const TextStyle(color: Colors.white, fontSize: 13),
-          icon: const Icon(Icons.arrow_drop_down, color: Colors.white70, size: 18),
+          icon: const Icon(Icons.arrow_drop_down,
+              color: Colors.white70, size: 18),
           isDense: true,
           items: const [
             DropdownMenuItem(
@@ -269,7 +273,8 @@ class _VentasAdminHeader extends ConsumerWidget {
             ),
             elevation: 0,
           ),
-          onPressed: state.isLoadingVentas ? null : () => notifier.cargarVentas(),
+          onPressed:
+              state.isLoadingVentas ? null : () => notifier.cargarVentas(),
           child: state.isLoadingVentas
               ? const SizedBox(
                   width: 18,
@@ -338,7 +343,8 @@ class _VentasAdminContent extends ConsumerWidget {
     );
   }
 
-  Widget _buildVentasTable(BuildContext context, VentasAdminState state, VentasAdmin notifier, WidgetRef ref) {
+  Widget _buildVentasTable(BuildContext context, VentasAdminState state,
+      VentasAdmin notifier, WidgetRef ref) {
     if (state.ventas.isEmpty && !state.isLoadingVentas) {
       return const Center(
         child: Text('No se encontraron ventas',
@@ -474,9 +480,9 @@ class _VentaTableRow extends ConsumerWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color:
-                      _getEstadoColor(venta.declarada ? 'ACEPTADO' : 'PENDIENTE')
-                          .withAlpha(25),
+                  color: _getEstadoColor(
+                          venta.declarada ? 'ACEPTADO' : 'PENDIENTE')
+                      .withAlpha(25),
                   borderRadius: BorderRadius.circular(4),
                   border: Border.all(
                       color: _getEstadoColor(
@@ -507,7 +513,8 @@ class _VentaTableRow extends ConsumerWidget {
                       ? null
                       : () => _mostrarDetalle(context, venta, ref),
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  constraints:
+                      const BoxConstraints(minWidth: 32, minHeight: 32),
                 ),
                 if (!venta.declarada)
                   SizedBox(
@@ -528,8 +535,8 @@ class _VentaTableRow extends ConsumerWidget {
                                 .read(ventasAdminProvider.notifier)
                                 .declararVenta(venta.id.toString()),
                             padding: EdgeInsets.zero,
-                            constraints:
-                                const BoxConstraints(minWidth: 32, minHeight: 32),
+                            constraints: const BoxConstraints(
+                                minWidth: 32, minHeight: 32),
                           ),
                   ),
               ],

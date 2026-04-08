@@ -4,7 +4,9 @@ import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:condorsmotors/screens/colabs/selector_colab.dart';
 import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/busqueda_producto_utils.dart';
+import 'package:condorsmotors/utils/debouncer.util.dart';
 import 'package:condorsmotors/utils/stock_utils.dart';
+import 'package:condorsmotors/widgets/active_filter_chip.widget.dart';
 import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -60,11 +62,19 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
   bool _isMarcaExpanded = false;
   bool _isPromocionExpanded = false;
   bool _isSearchExpanded = false;
+  final Debouncer _searchDebouncer =
+      Debouncer(delay: const Duration(milliseconds: 300));
 
   @override
   void initState() {
     super.initState();
     _cargarDatos();
+  }
+
+  @override
+  void dispose() {
+    _searchDebouncer.dispose();
+    super.dispose();
   }
 
   /// Verifica si necesita recargar la página (filtros o parámetros cambiaron)
@@ -196,7 +206,8 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
 
       // Guardar en caché
       _productosCache[targetPage] = response.items;
-      _paginacionCache[targetPage] = response.paginacion.copyWith(pageSize: actualPageSize);
+      _paginacionCache[targetPage] =
+          response.paginacion.copyWith(pageSize: actualPageSize);
 
       setState(() {
         _productos = response.items;
@@ -339,6 +350,19 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
     _cargarDatos();
   }
 
+  void _onSearchChanged(String value) {
+    setState(() {
+      _searchQuery = value;
+    });
+
+    _searchDebouncer.run(() {
+      if (!mounted) {
+        return;
+      }
+      _cargarDatos();
+    });
+  }
+
   // NUEVO: Barra de filtros móvil compacta y desplegable
   Widget _buildCompactFilterBar() {
     final bool hayFiltrosActivos = _selectedCategory != 'Todos' ||
@@ -421,7 +445,8 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
               spacing: 8,
               children: <Widget>[
                 if (_selectedCategory != 'Todos')
-                  _buildActiveFilter(
+                  ActiveFilterChip(
+                    variant: ActiveFilterChipVariant.card,
                     icon: Icons.category,
                     label: 'Categoría: $_selectedCategory',
                     color: Colors.blue,
@@ -433,7 +458,8 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                     },
                   ),
                 if (_selectedBrand != 'Todas')
-                  _buildActiveFilter(
+                  ActiveFilterChip(
+                    variant: ActiveFilterChipVariant.card,
                     icon: Icons.local_offer,
                     label: 'Marca: $_selectedBrand',
                     color: Colors.green,
@@ -445,7 +471,8 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                     },
                   ),
                 if (_selectedPromotion != 'Todas')
-                  _buildActiveFilter(
+                  ActiveFilterChip(
+                    variant: ActiveFilterChipVariant.card,
                     icon: Icons.percent,
                     label: 'Promo: $_selectedPromotion',
                     color: Colors.purple,
@@ -457,7 +484,8 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                     },
                   ),
                 if (_searchQuery.isNotEmpty)
-                  _buildActiveFilter(
+                  ActiveFilterChip(
+                    variant: ActiveFilterChipVariant.card,
                     icon: Icons.search,
                     label: 'Búsqueda: "$_searchQuery"',
                     color: Colors.orange,
@@ -736,61 +764,7 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
-        onChanged: (String value) {
-          setState(() {
-            _searchQuery = value;
-          });
-          _cargarDatos();
-        },
-      ),
-    );
-  }
-
-  Widget _buildActiveFilter({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onClear,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(right: 8, bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-        boxShadow: AppTheme.commonShadows,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: color,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(width: 6),
-          GestureDetector(
-            onTap: onClear,
-            child: Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Icon(
-                Icons.close,
-                size: 12,
-                color: color,
-              ),
-            ),
-          ),
-        ],
+        onChanged: _onSearchChanged,
       ),
     );
   }

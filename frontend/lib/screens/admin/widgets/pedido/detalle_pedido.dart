@@ -29,11 +29,14 @@ class DetallePedidoWidget extends StatefulWidget {
 
 class _DetallePedidoWidgetState extends State<DetallePedidoWidget> {
   late final ScrollController _tableScrollController;
+  late Future<Cliente?> _clienteFuture;
 
   @override
   void initState() {
     super.initState();
     _tableScrollController = ScrollController();
+    _clienteFuture =
+        ClienteRepository.instance.obtenerCliente(widget.pedido.clienteId.toString());
   }
 
   @override
@@ -165,8 +168,7 @@ class _DetallePedidoWidgetState extends State<DetallePedidoWidget> {
 
   Widget _buildDatosCliente(BuildContext context) {
     return FutureBuilder<Cliente?>(
-      future: ClienteRepository.instance
-          .obtenerCliente(widget.pedido.clienteId.toString()),
+      future: _clienteFuture,
       builder: (context, snapshot) {
         final cliente = snapshot.data;
 

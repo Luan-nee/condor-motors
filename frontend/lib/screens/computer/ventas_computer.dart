@@ -1,8 +1,8 @@
-import 'dart:async';
 import 'package:condorsmotors/models/ventas.model.dart';
 import 'package:condorsmotors/providers/computer/ventas.computer.riverpod.dart';
 import 'package:condorsmotors/providers/print.riverpod.dart';
 import 'package:condorsmotors/screens/computer/widgets/venta/venta_detalle_computer.dart';
+import 'package:condorsmotors/utils/debouncer.util.dart';
 import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -34,7 +34,8 @@ class VentasComputerScreen extends ConsumerStatefulWidget {
 
 class _VentasComputerScreenState extends ConsumerState<VentasComputerScreen> {
   late TextEditingController _searchController;
-  Timer? _debounceTimer;
+  final Debouncer _searchDebouncer =
+      Debouncer(delay: const Duration(milliseconds: 350));
 
   @override
   void initState() {
@@ -45,16 +46,13 @@ class _VentasComputerScreenState extends ConsumerState<VentasComputerScreen> {
 
   @override
   void dispose() {
-    _debounceTimer?.cancel();
+    _searchDebouncer.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
   void _onSearchChanged(String value) {
-    if (_debounceTimer?.isActive ?? false) {
-      _debounceTimer!.cancel();
-    }
-    _debounceTimer = Timer(const Duration(milliseconds: 350), () {
+    _searchDebouncer.run(() {
       if (mounted) {
         ref.read(ventasComputerProvider.notifier).actualizarBusqueda(value);
       }

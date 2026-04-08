@@ -1,5 +1,6 @@
 import 'package:condorsmotors/models/cliente.model.dart';
 import 'package:condorsmotors/utils/busqueda_cliente_utils.dart';
+import 'package:condorsmotors/widgets/active_filter_chip.widget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -447,7 +448,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
         children: <Widget>[
           // Mostrar filtro de tipo de documento si hay uno activo
           if (_tipoDocumentoSeleccionado != TipoDocumento.todos)
-            _buildActiveFilter(
+            ActiveFilterChip(
               icon: _getIconForTipoDocumento(_tipoDocumentoSeleccionado),
               label:
                   'Tipo: ${BusquedaClienteUtils.getNombreTipoDocumento(_tipoDocumentoSeleccionado)}',
@@ -462,7 +463,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
 
           // Mostrar filtro de búsqueda si hay uno
           if (_searchController.text.isNotEmpty)
-            _buildActiveFilter(
+            ActiveFilterChip(
               icon: Icons.search,
               label: 'Búsqueda: "${_searchController.text}"',
               color: Colors.orange,
@@ -478,50 +479,6 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
               color: Colors.white70,
               fontSize: 12,
               fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActiveFilter({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onClear,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(
-            icon,
-            size: 14,
-            color: Colors.white70,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.white70,
-            ),
-          ),
-          const SizedBox(width: 4),
-          InkWell(
-            onTap: onClear,
-            child: const Icon(
-              Icons.close,
-              size: 14,
-              color: Colors.white70,
             ),
           ),
         ],

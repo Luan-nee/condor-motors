@@ -136,12 +136,9 @@ class TransferenciaProductCard extends StatelessWidget {
           SizedBox(
             width: 45,
             height: 32,
-            child: TextField(
-              controller: TextEditingController(
-                text: cantidadSeleccionada > 0 ? cantidadSeleccionada.toString() : '',
-              )..selection = TextSelection.fromPosition(
-                  TextPosition(offset: (cantidadSeleccionada > 0 ? cantidadSeleccionada.toString() : '').length),
-                ),
+            child: TextFormField(
+              initialValue:
+                  cantidadSeleccionada > 0 ? cantidadSeleccionada.toString() : '',
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.white),
@@ -155,7 +152,7 @@ class TransferenciaProductCard extends StatelessWidget {
                   borderSide: BorderSide(color: Color(0xFFE31E24)),
                 ),
               ),
-              onSubmitted: (value) {
+              onFieldSubmitted: (value) {
                 final newCantidad = int.tryParse(value) ?? 0;
                 onCantidadChanged(newCantidad);
               },

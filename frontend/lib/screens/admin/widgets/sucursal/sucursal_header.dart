@@ -1,4 +1,4 @@
-import 'dart:async';
+import 'package:condorsmotors/utils/debouncer.util.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -38,7 +38,8 @@ class SucursalHeader extends StatefulWidget {
 
 class _SucursalHeaderState extends State<SucursalHeader> {
   late final TextEditingController _searchController;
-  Timer? _debounceTimer;
+  final Debouncer _searchDebouncer =
+      Debouncer(delay: const Duration(milliseconds: 350));
 
   @override
   void initState() {
@@ -48,16 +49,13 @@ class _SucursalHeaderState extends State<SucursalHeader> {
 
   @override
   void dispose() {
-    _debounceTimer?.cancel();
+    _searchDebouncer.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
   void _handleSearch(String query) {
-    if (_debounceTimer?.isActive ?? false) {
-      _debounceTimer?.cancel();
-    }
-    _debounceTimer = Timer(const Duration(milliseconds: 350), () {
+    _searchDebouncer.run(() {
       widget.onSearchChanged(query);
     });
   }
