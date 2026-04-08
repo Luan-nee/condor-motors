@@ -285,76 +285,143 @@ class _CategoriasAdminScreenState extends ConsumerState<CategoriasAdminScreen> {
   }
 
   Widget _buildTable(List<Categoria> categorias, CategoriasAdmin notifier) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF2D2D2D),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+          child: const Row(
+            children: <Widget>[
+              Expanded(
+                  flex: 30,
+                  child: Text('Categoría',
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold))),
+              Expanded(
+                  flex: 40,
+                  child: Text('Descripción',
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold))),
+              Expanded(
+                  flex: 15,
+                  child: Text('Cant. de productos',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold))),
+              Expanded(
+                  flex: 15,
+                  child: Text('Acciones',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold))),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            itemCount: categorias.length,
+            padding: EdgeInsets.zero,
+            itemBuilder: (context, index) {
+              return _CategoriaAdminRow(
+                categoria: categorias[index],
+                onEdit: (cat) => _mostrarFormularioCategoria(notifier, cat),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CategoriaAdminRow extends ConsumerWidget {
+  final Categoria categoria;
+  final Function(Categoria) onEdit;
+
+  const _CategoriaAdminRow({
+    required this.categoria,
+    required this.onEdit,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isCreating =
+        ref.watch(categoriasAdminProvider.select((s) => s.isCreating));
+
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+            bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+      child: Row(
         children: <Widget>[
-          Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFF2D2D2D),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-            child: const Row(
+          Expanded(
+            flex: 30,
+            child: Row(
               children: <Widget>[
-                Expanded(flex: 30, child: Text('Categoría', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
-                Expanded(flex: 40, child: Text('Descripción', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
-                Expanded(flex: 15, child: Text('Cant. de productos', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
-                Expanded(flex: 15, child: Text('Acciones', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+                const FaIcon(FontAwesomeIcons.folder,
+                    color: Color(0xFFE31E24), size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    categoria.nombre,
+                    style: const TextStyle(color: Colors.white),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
           ),
-          ...categorias.map((categoria) => Container(
+          Expanded(
+            flex: 40,
+            child: Text(
+              categoria.descripcion ?? '',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+          Expanded(
+            flex: 15,
+            child: Center(
+              child: Container(
                 decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
+                  color: const Color(0xFFE31E24).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    Expanded(
-                      flex: 30,
-                      child: Row(
-                        children: <Widget>[
-                          const FaIcon(FontAwesomeIcons.folder, color: Color(0xFFE31E24), size: 20),
-                          const SizedBox(width: 12),
-                          Text(categoria.nombre, style: const TextStyle(color: Colors.white)),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      flex: 40,
-                      child: Text(categoria.descripcion ?? '', style: TextStyle(color: Colors.white.withValues(alpha: 0.7))),
-                    ),
-                    Expanded(
-                      flex: 15,
-                      child: Center(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE31E24).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              const FaIcon(FontAwesomeIcons.box, size: 12, color: Color(0xFFE31E24)),
-                              const SizedBox(width: 6),
-                              Text(categoria.totalProductos.toString(), style: const TextStyle(color: Color(0xFFE31E24), fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 15,
-                      child: IconButton(
-                        icon: const FaIcon(FontAwesomeIcons.penToSquare, color: Colors.white54, size: 16),
-                        onPressed: () => _mostrarFormularioCategoria(notifier, categoria),
-                      ),
+                    const FaIcon(FontAwesomeIcons.box,
+                        size: 12, color: Color(0xFFE31E24)),
+                    const SizedBox(width: 6),
+                    Text(
+                      categoria.totalProductos.toString(),
+                      style: const TextStyle(
+                          color: Color(0xFFE31E24), fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
-              )),
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 15,
+            child: Center(
+              child: IconButton(
+                icon: const FaIcon(FontAwesomeIcons.penToSquare,
+                    color: Colors.white54, size: 16),
+                onPressed: isCreating ? null : () => onEdit(categoria),
+                tooltip: 'Editar categoría',
+              ),
+            ),
+          ),
         ],
       ),
     );

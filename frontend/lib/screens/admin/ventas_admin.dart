@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:condorsmotors/models/ventas.model.dart';
 import 'package:condorsmotors/providers/admin/ventas.admin.riverpod.dart';
 import 'package:condorsmotors/screens/admin/widgets/slide_sucursal.dart';
@@ -17,6 +18,33 @@ class VentasAdminScreen extends ConsumerStatefulWidget {
 }
 
 class _VentasAdminScreenState extends ConsumerState<VentasAdminScreen> {
+  late final TextEditingController _searchController;
+  Timer? _debounceTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    final initialQuery = ref.read(ventasAdminProvider).searchQuery;
+    _searchController = TextEditingController(text: initialQuery);
+  }
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String query) {
+    if (_debounceTimer?.isActive ?? false) {
+      _debounceTimer?.cancel();
+    }
+    _debounceTimer = Timer(const Duration(milliseconds: 350), () {
+      if (mounted) {
+        ref.read(ventasAdminProvider.notifier).actualizarBusqueda(query);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,13 +66,16 @@ class _VentasAdminScreenState extends ConsumerState<VentasAdminScreen> {
       body: Row(
         children: [
           // Panel izquierdo: Contenido principal (70%)
-          const Expanded(
+          Expanded(
             flex: 7,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _VentasAdminHeader(),
-                Expanded(
+                _VentasAdminHeader(
+                  searchController: _searchController,
+                  onSearchChanged: _onSearchChanged,
+                ),
+                const Expanded(
                   child: _VentasAdminContent(),
                 ),
               ],
@@ -73,7 +104,13 @@ class _VentasAdminScreenState extends ConsumerState<VentasAdminScreen> {
 // --- SUB-WIDGETS PARA OPTIMIZACIÓN ---
 
 class _VentasAdminHeader extends ConsumerWidget {
-  const _VentasAdminHeader();
+  final TextEditingController searchController;
+  final ValueChanged<String> onSearchChanged;
+
+  const _VentasAdminHeader({
+    required this.searchController,
+    required this.onSearchChanged,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -110,7 +147,7 @@ class _VentasAdminHeader extends ConsumerWidget {
           ),
           const SizedBox(width: 24),
           Expanded(
-            child: _buildSearchField(state, notifier),
+            child: _buildSearchField(state, notifier, context),
           ),
           const SizedBox(width: 16),
           // Selector de ordenamiento
@@ -123,7 +160,7 @@ class _VentasAdminHeader extends ConsumerWidget {
     );
   }
 
-  Widget _buildSearchField(VentasAdminState state, VentasAdmin notifier) {
+  Widget _buildSearchField(VentasAdminState state, VentasAdmin notifier, BuildContext context) {
     return Container(
       height: 40,
       decoration: BoxDecoration(
@@ -134,6 +171,7 @@ class _VentasAdminHeader extends ConsumerWidget {
         ),
       ),
       child: TextField(
+        controller: searchController,
         style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
           contentPadding: const EdgeInsets.symmetric(horizontal: 16),
@@ -145,14 +183,23 @@ class _VentasAdminHeader extends ConsumerWidget {
             color: Colors.white.withValues(alpha: 0.5),
             size: 18,
           ),
-          suffixIcon: state.searchQuery.isNotEmpty
+          suffixIcon: searchController.text.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.close, color: Colors.white70, size: 16),
-                  onPressed: () => notifier.actualizarBusqueda(''),
+                  onPressed: () {
+                    searchController.clear();
+                    onSearchChanged('');
+                    // Forzar re-render de la cabecera para ocultar el icono X
+                    (context as Element).markNeedsBuild();
+                  },
                 )
               : null,
         ),
-        onChanged: notifier.actualizarBusqueda,
+        onChanged: (value) {
+          onSearchChanged(value);
+          // Forzar re-render de la cabecera para mostrar el icono X
+          (context as Element).markNeedsBuild();
+        },
       ),
     );
   }
@@ -294,96 +341,202 @@ class _VentasAdminContent extends ConsumerWidget {
   Widget _buildVentasTable(BuildContext context, VentasAdminState state, VentasAdmin notifier, WidgetRef ref) {
     if (state.ventas.isEmpty && !state.isLoadingVentas) {
       return const Center(
-        child: Text('No se encontraron ventas', style: TextStyle(color: Colors.white54)),
+        child: Text('No se encontraron ventas',
+            style: TextStyle(color: Colors.white54)),
       );
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Table(
-        columnWidths: const {
-          0: FlexColumnWidth(1.2), // Fecha
-          1: FlexColumnWidth(1.5), // Documento
-          2: FlexColumnWidth(2),   // Cliente
-          3: FlexColumnWidth(),   // Total
-          4: FlexColumnWidth(1.5), // Estado
-          5: FixedColumnWidth(80),  // Acciones
-        },
+    return Column(
+      children: [
+        _buildTableHeaderLayout(),
+        Expanded(
+          child: ListView.builder(
+            itemCount: state.ventas.length,
+            itemBuilder: (context, index) {
+              return _VentaTableRow(venta: state.ventas[index]);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTableHeaderLayout() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: const BoxDecoration(
+        color: Color(0xFF1A1A1A),
+        border: Border(bottom: BorderSide(color: Colors.white12)),
+      ),
+      child: const Row(
         children: [
-          _buildTableHeader(),
-          ...state.ventas.map((v) => _buildTableRow(context, v, notifier, state, ref)),
+          Expanded(
+              flex: 12,
+              child: Text('FECHA',
+                  style: TextStyle(
+                      color: Colors.white54,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12))),
+          Expanded(
+              flex: 15,
+              child: Text('DOCUMENTO',
+                  style: TextStyle(
+                      color: Colors.white54,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12))),
+          Expanded(
+              flex: 20,
+              child: Text('CLIENTE',
+                  style: TextStyle(
+                      color: Colors.white54,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12))),
+          Expanded(
+              flex: 10,
+              child: Text('TOTAL',
+                  style: TextStyle(
+                      color: Colors.white54,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12))),
+          Expanded(
+              flex: 15,
+              child: Text('ESTADO',
+                  style: TextStyle(
+                      color: Colors.white54,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12))),
+          SizedBox(
+              width: 80,
+              child: Text('',
+                  style: TextStyle(
+                      color: Colors.white54,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12))),
         ],
       ),
     );
   }
+}
 
-  TableRow _buildTableHeader() {
-    return const TableRow(
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.white12)),
-      ),
-      children: [
-        Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Text('FECHA', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, fontSize: 12))),
-        Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Text('DOCUMENTO', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, fontSize: 12))),
-        Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Text('CLIENTE', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, fontSize: 12))),
-        Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Text('TOTAL', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, fontSize: 12))),
-        Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Text('ESTADO', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, fontSize: 12))),
-        Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Text('', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, fontSize: 12))),
-      ],
-    );
-  }
+class _VentaTableRow extends ConsumerWidget {
+  final Venta venta;
 
-  TableRow _buildTableRow(BuildContext context, Venta v, VentasAdmin notifier, VentasAdminState state, WidgetRef ref) {
+  const _VentaTableRow({required this.venta});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
-    final currencyFormat = NumberFormat.currency(symbol: 'S/ ', decimalDigits: 2);
+    final currencyFormat =
+        NumberFormat.currency(symbol: 'S/ ', decimalDigits: 2);
 
-    return TableRow(
+    // ESCUCHA GRANULAR: Solo se reconstruye si el ID de esta fila es el que está cargando
+    final bool isRowLoading = ref.watch(ventasAdminProvider
+        .select((s) => s.loadingVentaId == venta.id.toString()));
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: Colors.white10)),
       ),
-      children: [
-        Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Text(dateFormat.format(v.fechaCreacion), style: const TextStyle(color: Colors.white, fontSize: 13))),
-        Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Text('${v.serieDocumento}-${v.numeroDocumento}', style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold))),
-        Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Text(v.nombreCliente ?? 'CLIENTE VARIOS', style: const TextStyle(color: Colors.white70, fontSize: 13), overflow: TextOverflow.ellipsis)),
-        Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Text(currencyFormat.format(v.calcularTotal()), style: const TextStyle(color: Color(0xFFE31E24), fontSize: 13, fontWeight: FontWeight.bold))),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: _getEstadoColor(v.declarada ? 'ACEPTADO' : 'PENDIENTE').withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: _getEstadoColor(v.declarada ? 'ACEPTADO' : 'PENDIENTE').withValues(alpha: 0.2)),
-            ),
-            child: Text(
-              (v.declarada ? 'ACEPTADO-SUNAT' : 'PENDIENTE'),
-              style: TextStyle(color: _getEstadoColor(v.declarada ? 'ACEPTADO' : 'PENDIENTE'), fontSize: 10, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
+      child: Row(
+        children: [
+          Expanded(
+            flex: 12,
+            child: Text(dateFormat.format(venta.fechaCreacion),
+                style: const TextStyle(color: Colors.white, fontSize: 13)),
+          ),
+          Expanded(
+            flex: 15,
+            child: Text('${venta.serieDocumento}-${venta.numeroDocumento}',
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold)),
+          ),
+          Expanded(
+            flex: 20,
+            child: Text(venta.nombreCliente ?? 'CLIENTE VARIOS',
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
+                overflow: TextOverflow.ellipsis),
+          ),
+          Expanded(
+            flex: 10,
+            child: Text(currencyFormat.format(venta.calcularTotal()),
+                style: const TextStyle(
+                    color: Color(0xFFE31E24),
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold)),
+          ),
+          Expanded(
+            flex: 15,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color:
+                      _getEstadoColor(venta.declarada ? 'ACEPTADO' : 'PENDIENTE')
+                          .withAlpha(25),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                      color: _getEstadoColor(
+                              venta.declarada ? 'ACEPTADO' : 'PENDIENTE')
+                          .withAlpha(51)),
+                ),
+                child: Text(
+                  (venta.declarada ? 'ACEPTADO-SUNAT' : 'PENDIENTE'),
+                  style: TextStyle(
+                      color: _getEstadoColor(
+                          venta.declarada ? 'ACEPTADO' : 'PENDIENTE'),
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+              ),
             ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.visibility, color: Colors.white54, size: 18),
-                onPressed: () => _mostrarDetalle(context, v, ref),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              ),
-              if (!v.declarada)
+          SizedBox(
+            width: 80,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
                 IconButton(
-                  icon: const FaIcon(FontAwesomeIcons.fileSignature, color: Colors.blue, size: 16),
-                  onPressed: state.isActionLoading ? null : () => notifier.declararVenta(v.id.toString()),
+                  icon: const Icon(Icons.visibility,
+                      color: Colors.white54, size: 18),
+                  onPressed: isRowLoading
+                      ? null
+                      : () => _mostrarDetalle(context, venta, ref),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                 ),
-            ],
+                if (!venta.declarada)
+                  SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: isRowLoading
+                        ? const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.blue,
+                            ),
+                          )
+                        : IconButton(
+                            icon: const FaIcon(FontAwesomeIcons.fileSignature,
+                                color: Colors.blue, size: 16),
+                            onPressed: () => ref
+                                .read(ventasAdminProvider.notifier)
+                                .declararVenta(venta.id.toString()),
+                            padding: EdgeInsets.zero,
+                            constraints:
+                                const BoxConstraints(minWidth: 32, minHeight: 32),
+                          ),
+                  ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -407,7 +560,8 @@ class _VentasAdminContent extends ConsumerWidget {
       context: context,
       builder: (context) => VentaDetalleDialog(
         venta: v,
-        onDeclararPressed: (id) => ref.read(ventasAdminProvider.notifier).declararVenta(id),
+        onDeclararPressed: (id) =>
+            ref.read(ventasAdminProvider.notifier).declararVenta(id),
       ),
     );
   }

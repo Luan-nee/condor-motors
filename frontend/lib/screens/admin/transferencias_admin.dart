@@ -280,15 +280,17 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
                         ),
                       ),
                       Expanded(
-                        child: SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: <Widget>[
-                              ...state.transferencias
-                                  .map(_buildTransferenciaRow),
-                            ],
-                          ),
-                        ),
+                        child: state.transferencias.isEmpty && !state.isLoading
+                            ? _buildEmptyState(state, notifier)
+                            : SingleChildScrollView(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: <Widget>[
+                                    ...state.transferencias
+                                        .map(_buildTransferenciaRow),
+                                  ],
+                                ),
+                              ),
                       ),
                     ],
                   ),
@@ -550,6 +552,59 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
                 minHeight: 32,
               ),
               splashRadius: 20,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Widget para mostrar cuando no hay datos
+  Widget _buildEmptyState(TransferenciasAdminState state, TransferenciasAdmin notifier) {
+    final bool isFiltered = state.selectedFilter != 'Todos';
+    
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          FaIcon(
+            isFiltered ? FontAwesomeIcons.filterCircleXmark : FontAwesomeIcons.boxOpen,
+            color: Colors.white10,
+            size: 64,
+          ),
+          const SizedBox(height: 24),
+          Text(
+            isFiltered
+                ? 'Sin transferencias en estado "${state.selectedFilter}"'
+                : 'No se encontraron transferencias de inventario',
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            isFiltered
+                ? 'Intenta cambiando el filtro de estado'
+                : 'Aún no se han registrado movimientos entre sucursales',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.4),
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            icon: const FaIcon(FontAwesomeIcons.arrowsRotate, size: 14),
+            label: const Text('Verificar de nuevo'),
+            onPressed: notifier.recargarDatos,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2D2D2D),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
           ),
         ],

@@ -80,52 +80,13 @@ class _ProductosTableState extends State<ProductosTable>
   @override
   void didUpdateWidget(ProductosTable oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // Solo actualizar el controlador de carga si el estado de carga realmente cambió
     if (oldWidget.isLoading != widget.isLoading) {
       if (widget.isLoading) {
         _loadingController.repeat();
       } else {
         _loadingController.stop();
       }
-    }
-    // Verificar si realmente los productos han cambiado (por contenido, no solo por referencia)
-    bool productosHanCambiado =
-        oldWidget.productos.length != widget.productos.length;
-
-    if (!productosHanCambiado && widget.productos.isNotEmpty) {
-      // Verificar más profundamente comparando varios productos
-      // Tomar una muestra de productos para comparar (hasta 5)
-      final int sampleSize =
-          widget.productos.length > 5 ? 5 : widget.productos.length;
-
-      for (int i = 0; i < sampleSize; i++) {
-        final Producto oldProducto = oldWidget.productos[i];
-        final Producto newProducto = widget.productos.firstWhere(
-            (Producto p) => p.id == oldProducto.id,
-            orElse: () => oldProducto);
-
-        // Si algún campo importante cambió, consideramos que los productos cambiaron
-        if (oldProducto.nombre != newProducto.nombre ||
-            oldProducto.stock != newProducto.stock ||
-            oldProducto.precioVenta != newProducto.precioVenta ||
-            oldProducto.precioCompra != newProducto.precioCompra ||
-            oldProducto.precioOferta != newProducto.precioOferta ||
-            oldProducto.marca != newProducto.marca ||
-            oldProducto.categoria != newProducto.categoria) {
-          productosHanCambiado = true;
-          break;
-        }
-      }
-    }
-
-    // Si la key cambió significa que hubo una operación que requiere reconstrucción
-    final bool keyDiferente = oldWidget.key != widget.key;
-
-    if (productosHanCambiado || keyDiferente) {
-      debugPrint(
-          'ProductosTable: Actualización detectada. Productos cambiados: $productosHanCambiado, Key diferente: $keyDiferente');
-
-      // Forzar reconstrucción del widget
-      setState(() {});
     }
   }
 
@@ -163,7 +124,7 @@ class _ProductosTableState extends State<ProductosTable>
             Text(
               'No hay productos para mostrar',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
+                color: Colors.white.withAlpha(178),
               ),
             ),
           ],
@@ -174,453 +135,367 @@ class _ProductosTableState extends State<ProductosTable>
     return Stack(
       children: [
         Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
+            _TableHeader(
+              sortBy: widget.sortBy,
+              sortOrder: widget.sortOrder,
+              onSort: widget.onSort,
+            ),
             Expanded(
-              child: _buildProductosTabla(widget.productos),
+              child: ListView.builder(
+                itemCount: widget.productos.length,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemBuilder: (context, index) {
+                  return _ProductoTableRow(
+                    producto: widget.productos[index],
+                    onEdit: widget.onEdit,
+                    onViewDetails: widget.onViewDetails,
+                    onEnable: widget.onEnable,
+                    isLast: index == widget.productos.length - 1,
+                  );
+                },
+              ),
             ),
           ],
         ),
         if (widget.isLoading)
           Positioned.fill(
             child: ColoredBox(
-              color: Colors.black54,
-              child: AnimatedBuilder(
-                animation: _loadingAnimation,
-                builder: (context, child) {
-                  return Center(
-                    child: SizedBox(
+              color: Colors.black26,
+              child: Center(
+                child: AnimatedBuilder(
+                  animation: _loadingAnimation,
+                  builder: (context, child) {
+                    return SizedBox(
                       width: 40,
                       height: 40,
                       child: CircularProgressIndicator(
                         strokeWidth: 3,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          const Color(0xFFE31E24).withValues(
-                              alpha: 0.8 + (0.2 * _loadingAnimation.value)),
+                          const Color(0xFFE31E24).withAlpha(
+                              (204 + (51 * _loadingAnimation.value)).toInt()),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
           ),
       ],
     );
   }
+}
 
-  Widget _buildProductosTabla(List<Producto> productosLista) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: SizedBox(
-          width: double.infinity,
-          child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: const Color(0xFF222222),
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: <BoxShadow>[
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Theme(
-              data: Theme.of(context).copyWith(
-                dividerColor: Colors.white.withValues(alpha: 0.1),
-              ),
-              child: _buildDataTable(context, productosLista),
+class _TableHeader extends StatelessWidget {
+  final String? sortBy;
+  final String? sortOrder;
+  final Function(String)? onSort;
+
+  const _TableHeader({this.sortBy, this.sortOrder, this.onSort});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      decoration: const BoxDecoration(
+        color: Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
+      ),
+      child: Row(
+        children: [
+          Expanded(flex: 4, child: _buildHeaderCell('Producto', 'nombre')),
+          Expanded(flex: 2, child: _buildHeaderCell('SKU', 'sku')),
+          Expanded(flex: 2, child: _buildHeaderCell('Categoría', 'categoria')),
+          Expanded(
+              flex: 2,
+              child: _buildHeaderCell('Stock', 'stock', textAlign: TextAlign.right)),
+          Expanded(
+              flex: 2,
+              child: _buildHeaderCell('Precio', 'precioVenta',
+                  textAlign: TextAlign.right)),
+          const Expanded(
+            flex: 2,
+            child: Text(
+              'Acciones',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             ),
           ),
-        ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildDataTable(BuildContext context, List<Producto> productosLista) {
-    return DataTable(
-      headingRowColor: WidgetStateProperty.all(const Color(0xFF1A1A1A)),
-      dataRowColor: WidgetStateProperty.resolveWith<Color>(
-        (Set<WidgetState> states) {
-          if (states.contains(WidgetState.selected)) {
-            return const Color(0xFFE31E24).withValues(alpha: 0.1);
-          }
-          return const Color(0xFF222222);
-        },
-      ),
-      dividerThickness: 1,
-      columnSpacing: 16,
-      horizontalMargin: 16,
-      headingTextStyle: const TextStyle(
-        color: Colors.white,
-        fontWeight: FontWeight.bold,
-      ),
-      dataTextStyle: const TextStyle(
-        color: Colors.white70,
-      ),
-      columns: <DataColumn>[
-        DataColumn(
-          label: Row(
-            children: <Widget>[
-              const Text('Producto'),
-              const SizedBox(width: 4),
-              if (widget.sortBy == 'nombre')
-                Icon(
-                  widget.sortOrder == 'asc'
-                      ? Icons.arrow_upward
-                      : Icons.arrow_downward,
-                  size: 16,
-                  color: Colors.white,
-                ),
-            ],
-          ),
-          tooltip: 'Nombre del producto',
-          onSort: widget.onSort != null
-              ? (_, __) => widget.onSort!('nombre')
-              : null,
-        ),
-        DataColumn(
-          label: Row(
-            children: <Widget>[
-              const Text('SKU'),
-              const SizedBox(width: 4),
-              if (widget.sortBy == 'sku')
-                Icon(
-                  widget.sortOrder == 'asc'
-                      ? Icons.arrow_upward
-                      : Icons.arrow_downward,
-                  size: 16,
-                  color: Colors.white,
-                ),
-            ],
-          ),
-          tooltip: 'Código único del producto',
-          onSort:
-              widget.onSort != null ? (_, __) => widget.onSort!('sku') : null,
-        ),
-        DataColumn(
-          label: Row(
-            children: <Widget>[
-              const Text('Categoría'),
-              const SizedBox(width: 4),
-              if (widget.sortBy == 'categoria')
-                Icon(
-                  widget.sortOrder == 'asc'
-                      ? Icons.arrow_upward
-                      : Icons.arrow_downward,
-                  size: 16,
-                  color: Colors.white,
-                ),
-            ],
-          ),
-          tooltip: 'Categoría del producto',
-          onSort: widget.onSort != null
-              ? (_, __) => widget.onSort!('categoria')
-              : null,
-        ),
-        DataColumn(
-          label: Row(
-            children: <Widget>[
-              const Text('Stock'),
-              const SizedBox(width: 4),
-              if (widget.sortBy == 'stock')
-                Icon(
-                  widget.sortOrder == 'asc'
-                      ? Icons.arrow_upward
-                      : Icons.arrow_downward,
-                  size: 16,
-                  color: Colors.white,
-                ),
-            ],
-          ),
-          tooltip: 'Cantidad disponible',
-          numeric: true,
-          onSort:
-              widget.onSort != null ? (_, __) => widget.onSort!('stock') : null,
-        ),
-        DataColumn(
-          label: Row(
-            children: <Widget>[
-              const Text('Precio'),
-              const SizedBox(width: 4),
-              if (widget.sortBy == 'precioVenta')
-                Icon(
-                  widget.sortOrder == 'asc'
-                      ? Icons.arrow_upward
-                      : Icons.arrow_downward,
-                  size: 16,
-                  color: Colors.white,
-                ),
-            ],
-          ),
-          tooltip: 'Precio de venta',
-          numeric: true,
-          onSort: widget.onSort != null
-              ? (_, __) => widget.onSort!('precioVenta')
-              : null,
-        ),
-        const DataColumn(
-          label: Text('Acciones'),
-          tooltip: 'Acciones disponibles',
-        ),
-      ],
-      rows: productosLista.map((Producto producto) {
-        final bool stockBajo = producto.tieneStockBajo();
-        final bool agotado = producto.stock == 0;
-
-        return DataRow(
-          cells: <DataCell>[
-            // Nombre
-            DataCell(
-              Row(
-                children: <Widget>[
-                  // Miniatura de imagen de producto
-                  if (ProductoRepository.getProductoImageUrl(producto) !=
-                          null &&
-                      ProductoRepository.getProductoImageUrl(producto)!
-                          .isNotEmpty)
-                    Container(
-                      width: 32,
-                      height: 32,
-                      margin: const EdgeInsets.only(right: 10),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(6),
-                        color: Colors.black26,
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
-                        child: Image.network(
-                          ProductoRepository.getProductoImageUrl(producto)!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Icon(Icons.image,
-                                  color: Colors.white24, size: 18),
-                        ),
-                      ),
-                    )
-                  else
-                    Container(
-                      width: 32,
-                      height: 32,
-                      margin: const EdgeInsets.only(right: 10),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(6),
-                        color: Colors.black26,
-                      ),
-                      child: const Icon(Icons.image,
-                          color: Colors.white24, size: 18),
-                    ),
-                  // Indicador de estado
-                  Container(
-                    width: 8,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: agotado
-                          ? const Color(0xFF4A4A4A) // Gris oscuro para agotados
-                          : stockBajo
-                              ? const Color(0xFFE31E24) // Rojo para stock bajo
-                              : const Color(
-                                  0xFF4CAF50), // Verde para disponibles
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Flexible(
-                    child: Text(
-                      producto.nombre,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        decoration: TextDecoration.none,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // SKU
-            DataCell(
-              Text(
-                producto.sku,
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  letterSpacing: 1.0,
-                ),
-              ),
-            ),
-
-            // Categoría
-            DataCell(
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2D2D2D),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                  ),
-                ),
-                child: Text(
-                  producto.categoria,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-
-            // Stock
-            DataCell(
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: <Widget>[
-                  Text(
-                    '${producto.stock}',
-                    style: TextStyle(
-                      color: agotado
-                          ? const Color(0xFF4A4A4A) // Gris oscuro para agotados
-                          : stockBajo
-                              ? const Color(0xFFE31E24) // Rojo para stock bajo
-                              : Colors.white, // Normal para disponibles
-                      fontWeight: (stockBajo || agotado)
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                    ),
-                  ),
-                  if (stockBajo) ...<Widget>[
-                    const SizedBox(width: 4),
-                    Tooltip(
-                      message:
-                          'Stock bajo: Mínimo ${producto.stockMinimo ?? 0}',
-                      child: const Icon(
-                        Icons.warning_amber_rounded,
-                        color: Color(0xFFE31E24),
-                        size: 16,
-                      ),
-                    ),
-                  ],
-                  if (agotado) ...<Widget>[
-                    const SizedBox(width: 4),
-                    const Tooltip(
-                      message: 'Producto agotado',
-                      child: Icon(
-                        FontAwesomeIcons.ban,
-                        color: Color(0xFF4A4A4A),
-                        size: 16,
-                      ),
-                    ),
-                  ]
-                ],
-              ),
-            ),
-
-            // Precio
-            DataCell(
-              Builder(
-                builder: (context) {
-                  final double precioActivo = producto.getPrecioActual();
-                  final double ganancia = precioActivo - producto.precioCompra;
-                  final double margen = producto.precioCompra > 0 
-                      ? (ganancia / producto.precioCompra) * 100 
-                      : 0;
-                  
-                  return Tooltip(
-                    message:
-                        'Ganancia: S/ ${ganancia.toStringAsFixed(2)}\n'
-                        'Margen: ${margen.toStringAsFixed(2)}%',
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: <Widget>[
-                        if (producto.liquidacion && producto.precioOferta != null) ...[
-                          Text(
-                            producto.getPrecioOfertaFormateado() ?? '',
-                            style: TextStyle(
-                              color: Colors.amber[400],
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            producto.getPrecioVentaFormateado(),
-                            style: const TextStyle(
-                              color: Colors.white54,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ] else ...[
-                          Text(
-                            producto.getPrecioVentaFormateado(),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          if (producto.estaEnOferta())
-                            Text(
-                              producto.getPrecioOfertaFormateado() ?? '',
-                              style: TextStyle(
-                                color: Colors.amber[400],
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                        ],
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-
-            // Acciones
-            DataCell(
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  if (producto.stock == 0 &&
-                      (producto.precioVenta == 0 ||
-                          producto.precioVenta == 0.0))
-                    IconButton(
-                      icon: const FaIcon(FontAwesomeIcons.boxOpen,
-                          color: Color.fromARGB(255, 235, 151, 41), size: 22),
-                      tooltip: 'Habilitar producto',
-                      onPressed: widget.onEnable != null
-                          ? () => widget.onEnable!(producto)
-                          : null,
-                    ),
-                  IconButton(
-                    icon: const FaIcon(
-                      FontAwesomeIcons.magnifyingGlass,
-                      color: Colors.blue,
-                      size: 20,
-                    ),
-                    tooltip: 'Ver detalles',
-                    onPressed: () => widget.onViewDetails(producto),
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      FontAwesomeIcons.penToSquare,
-                      color: Colors.white70,
-                      size: 20,
-                    ),
-                    tooltip: 'Editar producto',
-                    onPressed: () => widget.onEdit(producto),
-                  ),
-                ],
-              ),
+  Widget _buildHeaderCell(String label, String field,
+      {TextAlign textAlign = TextAlign.left}) {
+    final isSorted = sortBy == field;
+    return InkWell(
+      onTap: onSort != null ? () => onSort!(field) : null,
+      child: Row(
+        mainAxisAlignment: textAlign == TextAlign.right
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
+        children: [
+          Text(label,
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.bold)),
+          if (isSorted) ...[
+            const SizedBox(width: 4),
+            Icon(
+              sortOrder == 'asc' ? Icons.arrow_upward : Icons.arrow_downward,
+              size: 14,
+              color: const Color(0xFFE31E24),
             ),
           ],
-        );
-      }).toList(),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProductoTableRow extends StatelessWidget {
+  final Producto producto;
+  final Function(Producto) onEdit;
+  final Function(Producto) onViewDetails;
+  final Function(Producto)? onEnable;
+  final bool isLast;
+
+  const _ProductoTableRow({
+    required this.producto,
+    required this.onEdit,
+    required this.onViewDetails,
+    this.onEnable,
+    required this.isLast,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bool stockBajo = producto.tieneStockBajo();
+    final bool agotado = producto.stock == 0;
+    final String? imageUrl = ProductoRepository.getProductoImageUrl(producto);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF222222),
+        border: Border(
+          bottom: BorderSide(color: Colors.white.withAlpha(25)),
+        ),
+        borderRadius: isLast
+            ? const BorderRadius.vertical(bottom: Radius.circular(8))
+            : null,
+      ),
+      child: Row(
+        children: [
+          // Producto
+          Expanded(
+            flex: 4,
+            child: Row(
+              children: [
+                _buildProductImage(imageUrl),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    producto.nombre,
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // SKU
+          Expanded(
+            flex: 2,
+            child: Text(
+              producto.sku,
+              style: const TextStyle(
+                  color: Colors.white70, fontFamily: 'monospace', fontSize: 12),
+            ),
+          ),
+
+          // Categoría
+          Expanded(
+            flex: 2,
+            child: Text(
+              producto.categoria,
+              style: const TextStyle(color: Colors.white70, fontSize: 13),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+
+          // Stock
+          Expanded(
+            flex: 2,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  '${producto.stock}',
+                  style: TextStyle(
+                    color: agotado
+                        ? Colors.white24
+                        : stockBajo
+                            ? const Color(0xFFE31E24)
+                            : Colors.white,
+                    fontWeight: (stockBajo || agotado) ? FontWeight.bold : null,
+                  ),
+                ),
+                if (stockBajo || agotado) ...[
+                  const SizedBox(width: 4),
+                  Icon(
+                    agotado ? FontAwesomeIcons.ban : Icons.warning_amber_rounded,
+                    size: 14,
+                    color: agotado ? Colors.white24 : const Color(0xFFE31E24),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          // Precio
+          Expanded(
+            flex: 2,
+            child: _buildPriceCell(),
+          ),
+
+          // Acciones
+          Expanded(
+            flex: 2,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (producto.stock == 0 && producto.precioVenta == 0)
+                  _ActionButton(
+                    icon: FontAwesomeIcons.boxOpen,
+                    color: Colors.orange,
+                    onPressed: onEnable != null ? () => onEnable!(producto) : null,
+                    tooltip: 'Habilitar',
+                  ),
+                _ActionButton(
+                  icon: FontAwesomeIcons.magnifyingGlass,
+                  color: Colors.white54,
+                  onPressed: () => onViewDetails(producto),
+                  tooltip: 'Detalles',
+                ),
+                _ActionButton(
+                  icon: FontAwesomeIcons.penToSquare,
+                  color: Colors.white54,
+                  onPressed: () => onEdit(producto),
+                  tooltip: 'Editar',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProductImage(String? url) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(6),
+        color: Colors.black26,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: url != null && url.isNotEmpty
+            ? Image.network(
+                url,
+                fit: BoxFit.cover,
+                cacheWidth: 72,
+                errorBuilder: (_, __, ___) =>
+                    const Icon(Icons.image, color: Colors.white12, size: 18),
+              )
+            : const Icon(Icons.image, color: Colors.white12, size: 18),
+      ),
+    );
+  }
+
+  Widget _buildPriceCell() {
+    final double precioActivo = producto.getPrecioActual();
+    final double ganancia = precioActivo - producto.precioCompra;
+    final double margen = producto.precioCompra > 0 
+        ? (ganancia / producto.precioCompra) * 100 
+        : 0;
+
+    return Tooltip(
+      message: 'Ganancia: S/ ${ganancia.toStringAsFixed(2)}\nMargen: ${margen.toStringAsFixed(2)}%',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (producto.liquidacion && producto.precioOferta != null) ...[
+            Text(
+              producto.getPrecioOfertaFormateado()!,
+              style: const TextStyle(
+                color: Color(0xFFFFC107), // Ámbar brillante para el precio activo
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+            Text(
+              producto.getPrecioVentaFormateado(),
+              style: TextStyle(
+                color: Colors.white.withAlpha(102), // 40% opacidad (oscurito)
+                fontSize: 11,
+              ),
+            ),
+          ] else ...[
+            Text(
+              producto.getPrecioVentaFormateado(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+            if (producto.estaEnOferta())
+              Text(
+                producto.getPrecioOfertaFormateado()!,
+                style: const TextStyle(
+                  color: Colors.greenAccent,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onPressed;
+  final String tooltip;
+
+  const _ActionButton({
+    required this.icon,
+    required this.color,
+    this.onPressed,
+    required this.tooltip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: FaIcon(icon, color: color, size: 16),
+      onPressed: onPressed,
+      tooltip: tooltip,
+      splashRadius: 20,
+      constraints: const BoxConstraints(),
+      padding: const EdgeInsets.all(8),
     );
   }
 }

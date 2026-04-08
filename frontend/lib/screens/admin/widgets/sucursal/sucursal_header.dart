@@ -1,7 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-class SucursalHeader extends StatelessWidget {
+class SucursalHeader extends StatefulWidget {
   final int totalSucursales;
   final bool isLoading;
   final String terminoBusqueda;
@@ -30,6 +31,36 @@ class SucursalHeader extends StatelessWidget {
     required this.mostrarAgrupados,
     required this.onToggleAgrupados,
   });
+
+  @override
+  State<SucursalHeader> createState() => _SucursalHeaderState();
+}
+
+class _SucursalHeaderState extends State<SucursalHeader> {
+  late final TextEditingController _searchController;
+  Timer? _debounceTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController(text: widget.terminoBusqueda);
+  }
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _handleSearch(String query) {
+    if (_debounceTimer?.isActive ?? false) {
+      _debounceTimer?.cancel();
+    }
+    _debounceTimer = Timer(const Duration(milliseconds: 350), () {
+      widget.onSearchChanged(query);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +100,7 @@ class SucursalHeader extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      totalSucursales.toString(),
+                      widget.totalSucursales.toString(),
                       style: const TextStyle(
                         fontSize: 12,
                         color: Colors.white70,
@@ -83,7 +114,7 @@ class SucursalHeader extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       FaIcon(
-                        mostrarAgrupados
+                        widget.mostrarAgrupados
                             ? FontAwesomeIcons.layerGroup
                             : FontAwesomeIcons.list,
                         color: Colors.white70,
@@ -104,8 +135,8 @@ class SucursalHeader extends StatelessWidget {
                         child: Transform.scale(
                           scale: 0.8,
                           child: Switch(
-                            value: mostrarAgrupados,
-                            onChanged: onToggleAgrupados,
+                            value: widget.mostrarAgrupados,
+                            onChanged: widget.onToggleAgrupados,
                             activeThumbColor: const Color(0xFFE31E24),
                             activeTrackColor:
                                 const Color(0xFFE31E24).withValues(alpha: 0.3),
@@ -115,9 +146,8 @@ class SucursalHeader extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(width: 16),
-                  // Botón Recargar
                   ElevatedButton.icon(
-                    icon: isLoading
+                    icon: widget.isLoading
                         ? const SizedBox(
                             width: 14,
                             height: 14,
@@ -132,7 +162,7 @@ class SucursalHeader extends StatelessWidget {
                             color: Colors.white,
                           ),
                     label: Text(
-                      isLoading ? 'Recargando...' : 'Recargar',
+                      widget.isLoading ? 'Recargando...' : 'Recargar',
                       style: const TextStyle(color: Colors.white, fontSize: 13),
                     ),
                     style: ElevatedButton.styleFrom(
@@ -146,7 +176,7 @@ class SucursalHeader extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    onPressed: isLoading ? null : onReload,
+                    onPressed: widget.isLoading ? null : widget.onReload,
                   ),
                   const SizedBox(width: 12),
                   // Botón Nueva Sucursal
@@ -168,15 +198,26 @@ class SucursalHeader extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    onPressed: onAddNew,
+                    onPressed: widget.onAddNew,
                   ),
                 ],
               ),
               const SizedBox(height: 16),
               TextField(
+                controller: _searchController,
                 decoration: InputDecoration(
                   labelText: 'Buscar sucursal',
                   prefixIcon: const Icon(Icons.search, size: 20),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 16, color: Colors.white54),
+                          onPressed: () {
+                            _searchController.clear();
+                            _handleSearch('');
+                            setState(() {});
+                          },
+                        )
+                      : null,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide.none,
@@ -191,7 +232,10 @@ class SucursalHeader extends StatelessWidget {
                       TextStyle(color: Colors.white.withValues(alpha: 0.7)),
                 ),
                 style: const TextStyle(color: Colors.white, fontSize: 14),
-                onChanged: onSearchChanged,
+                onChanged: (value) {
+                  _handleSearch(value);
+                  setState(() {});
+                },
               ),
             ],
           ),

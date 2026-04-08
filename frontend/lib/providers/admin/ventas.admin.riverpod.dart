@@ -9,7 +9,7 @@ part 'ventas.admin.riverpod.g.dart';
 class VentasAdminState {
   final bool isLoadingVentas;
   final bool isLoadingSucursales;
-  final bool isActionLoading;
+  final String? loadingVentaId; // ID de la venta que se está procesando (ej. declarando)
   final List<Sucursal> sucursales;
   final Sucursal? selectedSucursal;
   final List<Venta> ventas;
@@ -25,7 +25,7 @@ class VentasAdminState {
   VentasAdminState({
     this.isLoadingVentas = false,
     this.isLoadingSucursales = false,
-    this.isActionLoading = false,
+    this.loadingVentaId,
     this.sucursales = const [],
     this.selectedSucursal,
     this.ventas = const [],
@@ -42,7 +42,7 @@ class VentasAdminState {
   VentasAdminState copyWith({
     bool? isLoadingVentas,
     bool? isLoadingSucursales,
-    bool? isActionLoading,
+    String? loadingVentaId,
     List<Sucursal>? sucursales,
     Sucursal? selectedSucursal,
     List<Venta>? ventas,
@@ -60,7 +60,7 @@ class VentasAdminState {
     return VentasAdminState(
       isLoadingVentas: isLoadingVentas ?? this.isLoadingVentas,
       isLoadingSucursales: isLoadingSucursales ?? this.isLoadingSucursales,
-      isActionLoading: isActionLoading ?? this.isActionLoading,
+      loadingVentaId: loadingVentaId, // Si viene null, se limpia
       sucursales: sucursales ?? this.sucursales,
       selectedSucursal: selectedSucursal ?? this.selectedSucursal,
       ventas: ventas ?? this.ventas,
@@ -229,7 +229,7 @@ class VentasAdmin extends _$VentasAdmin {
       return;
     }
 
-    state = state.copyWith(isActionLoading: true, clearError: true, clearSuccess: true);
+    state = state.copyWith(loadingVentaId: ventaId, clearError: true, clearSuccess: true);
     try {
       final result = await _ventaRepository.declararVenta(
         ventaId,
@@ -240,19 +240,16 @@ class VentasAdmin extends _$VentasAdmin {
       if (result['status'] == 'success') {
         state = state.copyWith(
           successMessage: 'Venta declarada exitosamente',
-          isActionLoading: false,
         );
         await cargarVentas();
       } else {
         state = state.copyWith(
           errorMessage: result['message'] ?? 'Error al declarar la venta',
-          isActionLoading: false,
         );
       }
     } catch (e) {
       state = state.copyWith(
         errorMessage: 'Error al declarar venta: $e',
-        isActionLoading: false,
       );
     }
   }

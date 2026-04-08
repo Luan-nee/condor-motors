@@ -29,6 +29,7 @@ class VentasComputerState {
   final int userPreferredPageSize;
   final String orden;
   final String? ordenarPor;
+  final bool isActionLoading;
 
   const VentasComputerState({
     this.errorMessage = '',
@@ -47,6 +48,7 @@ class VentasComputerState {
     this.userPreferredPageSize = 25,
     this.orden = 'desc',
     this.ordenarPor = 'fechaCreacion',
+    this.isActionLoading = false,
   });
 
   VentasComputerState copyWith({
@@ -66,6 +68,7 @@ class VentasComputerState {
     int? userPreferredPageSize,
     String? orden,
     String? ordenarPor,
+    bool? isActionLoading,
   }) {
     return VentasComputerState(
       errorMessage: errorMessage ?? this.errorMessage,
@@ -86,6 +89,7 @@ class VentasComputerState {
       userPreferredPageSize: userPreferredPageSize ?? this.userPreferredPageSize,
       orden: orden ?? this.orden,
       ordenarPor: ordenarPor ?? this.ordenarPor,
+      isActionLoading: isActionLoading ?? this.isActionLoading,
     );
   }
 }
@@ -602,17 +606,17 @@ class VentasComputer extends _$VentasComputer {
     VoidCallback? onSuccess,
     Function(String)? onError,
   }) async {
-    state = state.copyWith(isVentasLoading: true);
+    state = state.copyWith(isActionLoading: true);
 
     try {
       if (state.sucursalSeleccionada == null) {
         const errorMsg = 'No hay una sucursal seleccionada';
-        if (onError != null) {
-          onError(errorMsg);
-        } else {
+        onError?.call(errorMsg);
+        if (onError == null) {
           mostrarMensaje(mensaje: errorMsg, backgroundColor: Colors.red);
         }
-        throw Exception(errorMsg);
+        state = state.copyWith(isActionLoading: false);
+        return false;
       }
 
       final result = await _ventaRepository.declararVenta(
@@ -623,12 +627,11 @@ class VentasComputer extends _$VentasComputer {
 
       if (result['status'] != 'success') {
         final errorMsg = result['message'] ?? 'Error al declarar la venta';
-        if (onError != null) {
-          onError(errorMsg);
-        } else {
+        onError?.call(errorMsg);
+        if (onError == null) {
           mostrarMensaje(mensaje: errorMsg, backgroundColor: Colors.red);
         }
-        state = state.copyWith(isVentasLoading: false);
+        state = state.copyWith(isActionLoading: false);
         return false;
       }
 
@@ -647,17 +650,16 @@ class VentasComputer extends _$VentasComputer {
             backgroundColor: Colors.green);
       }
 
-      state = state.copyWith(isVentasLoading: false);
+      state = state.copyWith(isActionLoading: false);
       return true;
     } catch (e) {
       final errorMsg = 'Error al declarar venta: $e';
-      if (onError != null) {
-        onError(errorMsg);
-      } else {
+      onError?.call(errorMsg);
+      if (onError == null) {
         mostrarMensaje(mensaje: errorMsg, backgroundColor: Colors.red);
       }
-      state =
-          state.copyWith(ventasErrorMessage: errorMsg, isVentasLoading: false);
+      state = state.copyWith(
+          ventasErrorMessage: errorMsg, isActionLoading: false);
       return false;
     }
   }

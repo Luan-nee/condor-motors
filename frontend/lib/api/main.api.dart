@@ -168,9 +168,9 @@ class ApiClient {
         headers: Map<String, String>.from(_defaultHeaders),
         validateStatus: (status) => status != null && status < 300,
         followRedirects: true,
-        receiveTimeout: const Duration(seconds: 30),
-        sendTimeout: const Duration(seconds: 30),
-        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 15),
+        sendTimeout: const Duration(seconds: 15),
+        connectTimeout: const Duration(seconds: 15),
       )
       ..interceptors.addAll([
         _createLogInterceptor(),
