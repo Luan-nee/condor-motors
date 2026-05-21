@@ -300,7 +300,7 @@ class _SlidesComputerScreenState extends ConsumerState<SlidesComputerScreen> {
                   final int index = entry.key;
                   final Map<String, dynamic> item = entry.value;
                   return _buildMenuItem(
-                    icon: item['icon'] as IconData,
+                    icon: item['icon'] as FaIconData,
                     text: item['title'] as String,
                     description: item['description'] as String,
                     isSelected: _selectedIndex == index,
@@ -350,7 +350,7 @@ class _SlidesComputerScreenState extends ConsumerState<SlidesComputerScreen> {
   }
 
   Widget _buildMenuItem({
-    required IconData icon,
+    required FaIconData icon,
     required String text,
     required String description,
     required bool isSelected,

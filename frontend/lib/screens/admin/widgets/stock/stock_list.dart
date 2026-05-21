@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-// Export InventarioResumen from stock_table.dart
-export 'stock_table.dart' show TableProducts, InventarioResumen;
+// Export TableProducts from stock_table.dart
+export 'stock_table.dart' show TableProducts;
 
 /// Widget para mostrar un resumen del inventario
 class InventarioResumen extends StatefulWidget {
@@ -139,7 +139,7 @@ class _InventarioResumenState extends State<InventarioResumen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color,
+  Widget _buildStatCard(String title, String value, FaIconData icon, Color color,
       String subtitle, bool highlight) {
     return Container(
       padding: const EdgeInsets.all(7),

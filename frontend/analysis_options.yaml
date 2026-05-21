@@ -26,7 +26,6 @@ linter:
     - avoid_init_to_null
     - use_string_buffers
     - use_late_for_private_fields_and_variables
-    - avoid_null_checks_in_equality_operators
     - avoid_positional_boolean_parameters
     - avoid_print
     - avoid_redundant_argument_values

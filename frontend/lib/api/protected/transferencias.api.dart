@@ -56,10 +56,10 @@ class TransferenciasInventarioApi {
         sortBy: defaultSortBy,
         order: defaultOrder,
         extraParams: <String, String>{
-          if (sucursalId != null) 'sucursalId': sucursalId,
-          if (estado != null) 'estado': estado,
-          if (fechaInicio != null) 'fechaInicio': fechaInicio.toIso8601String(),
-          if (fechaFin != null) 'fechaFin': fechaFin.toIso8601String(),
+          'sucursalId': ?sucursalId,
+          'estado': ?estado,
+          'fechaInicio': ?fechaInicio?.toIso8601String(),
+          'fechaFin': ?fechaFin?.toIso8601String(),
         },
       );
       final String cacheKey = PaginacionUtils.generateCacheKey(
@@ -173,7 +173,7 @@ class TransferenciasInventarioApi {
       final Map<String, dynamic> data = <String, dynamic>{
         'sucursalDestinoId': sucursalDestinoId,
         'items': items,
-        if (observaciones != null) 'observaciones': observaciones,
+        'observaciones': ?observaciones,
       };
 
       final Map<String, dynamic> response = await _api.authenticatedRequest(
@@ -411,11 +411,11 @@ class TransferenciasInventarioApi {
     try {
       // Preparar parámetros de consulta
       final Map<String, String> queryParams = <String, String>{
-        if (estado != null) 'estado': estado,
-        if (page != null) 'page': page.toString(),
-        if (pageSize != null) 'page_size': pageSize.toString(),
-        if (sortBy != null) 'sort_by': sortBy,
-        if (order != null) 'order': order,
+        'estado': ?estado,
+        'page': ?page?.toString(),
+        'page_size': ?pageSize?.toString(),
+        'sort_by': ?sortBy,
+        'order': ?order,
       };
 
       // Realizar petición

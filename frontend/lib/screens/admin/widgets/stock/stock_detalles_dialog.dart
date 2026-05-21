@@ -234,7 +234,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
   @override
   Widget build(BuildContext context) {
     final Color statusColor = _getStockStatusColor(_stockActual, _stockMinimo);
-    final IconData statusIcon = _getStockStatusIcon(_stockActual, _stockMinimo);
+    final FaIconData statusIcon = _getStockStatusIcon(_stockActual, _stockMinimo);
     final String statusText = _getStockStatusText(_stockActual, _stockMinimo);
 
     return Dialog(
@@ -397,7 +397,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
   }
 
   // Sección de información con título y lista de filas
-  Widget _buildInfoSection(String title, IconData icon, List<Widget> children) {
+  Widget _buildInfoSection(String title, FaIconData icon, List<Widget> children) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -427,7 +427,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
 
   // Fila de información con etiqueta y valor
   Widget _buildInfoRow(String label, String value,
-      {IconData? icon, Color? color}) {
+      {FaIconData? icon, Color? color}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -1145,7 +1145,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
     }
   }
 
-  IconData _getStockStatusIcon(int stockActual, int stockMinimo) {
+  FaIconData _getStockStatusIcon(int stockActual, int stockMinimo) {
     final StockStatus status =
         StockUtils.getStockStatus(stockActual, stockMinimo);
     switch (status) {

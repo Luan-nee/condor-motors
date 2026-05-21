@@ -248,7 +248,7 @@ class SelectorColabScreen extends ConsumerWidget {
     BuildContext context,
     String title,
     String subtitle,
-    IconData icon,
+    FaIconData icon,
     Widget screen,
     Color color,
     String description,

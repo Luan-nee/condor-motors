@@ -324,16 +324,12 @@ class PaginacionService<T> {
   final T Function(Map<String, dynamic>) _fromJson;
 
   PaginacionService({
-    required ApiClient api,
-    required FastCache cache,
-    required String baseEndpoint,
-    required String cachePrefix,
-    required T Function(Map<String, dynamic>) fromJson,
-  })  : _api = api,
-        _cache = cache,
-        _baseEndpoint = baseEndpoint,
-        _cachePrefix = cachePrefix,
-        _fromJson = fromJson;
+    required this._api,
+    required this._cache,
+    required this._baseEndpoint,
+    required this._cachePrefix,
+    required this._fromJson,
+  });
 
   /// Obtiene elementos paginados
   ///

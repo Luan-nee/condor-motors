@@ -276,7 +276,7 @@ class _SettingsAdminScreenState extends ConsumerState<SettingsAdminScreen> {
                   'Muestra las sucursales divididas en "Centrales" y "Sucursales" en el panel lateral.',
                   style: TextStyle(color: Colors.white70, fontSize: 12),
                 ),
-                secondary: const Icon(
+                secondary: const FaIcon(
                   FontAwesomeIcons.layerGroup,
                   color: Color(0xFFE31E24),
                   size: 20,

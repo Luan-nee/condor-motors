@@ -406,15 +406,14 @@ class ProformaVentaApi {
   }) async {
     try {
       final Map<String, Object> body = <String, Object>{
-        if (nombre != null) 'nombre': nombre,
+        'nombre': ?nombre,
         'total': total,
         'detalles': detalles.map((DetalleProforma d) => d.toJson()).toList(),
         'empleadoId': empleadoId,
         'sucursalId': int.parse(sucursalId),
-        if (clienteId != null) 'clienteId': clienteId,
-        if (estado != null) 'estado': estado,
-        if (fechaExpiracion != null)
-          'fechaExpiracion': fechaExpiracion.toIso8601String(),
+        'clienteId': ?clienteId,
+        'estado': ?estado,
+        'fechaExpiracion': ?fechaExpiracion?.toIso8601String(),
       };
 
       final Map<String, dynamic> response = await _api.authenticatedRequest(

@@ -441,6 +441,7 @@ class _BusquedaClienteFormState extends State<BusquedaClienteForm> {
                   label: const Text('Guardar'),
                   onPressed: () async {
                     if (formKey.currentState!.validate()) {
+                      final messenger = ScaffoldMessenger.of(context);
                       try {
                         // Crear el mapa de datos del cliente solo con campos requeridos
                         final Map<String, dynamic> clienteData = {
@@ -481,7 +482,7 @@ class _BusquedaClienteFormState extends State<BusquedaClienteForm> {
                         // Si se provee, refresca la lista global de clientes
                         widget.onRefrescarClientes?.call();
                       } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        messenger.showSnackBar(
                           SnackBar(
                             content: Text('Error al crear cliente: $e'),
                             backgroundColor: Colors.red,

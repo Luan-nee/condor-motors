@@ -229,26 +229,29 @@ class ProformaComputerScreenState extends ConsumerState<ProformaComputerScreen>
                       : Colors.orange,
                 ),
                 onPressed: () async {
+                  final messenger = ScaffoldMessenger.of(context);
                   await notifier
                       .toggleActualizacionAutomatica(widget.sucursalId);
                   _suscribirseAStreamProformas();
 
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          state.actualizacionAutomaticaActiva
-                              ? 'Actualización automática pausada'
-                              // El texto arriba es engañoso, porque se llamaba toggle. Verificamos el NUEVO estado:
-                              : 'Actualización automática activada', // The actual state here flips! Let's just say we toggled it.
-                        ),
-                        backgroundColor: state.actualizacionAutomaticaActiva
-                            ? Colors.orange
-                            : Colors.green,
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
+                  if (!mounted) {
+                    return;
                   }
+
+                  final estaActivo = ref.read(proformaComputerProvider).actualizacionAutomaticaActiva;
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        estaActivo
+                            ? 'Actualización automática activada'
+                            : 'Actualización automática pausada',
+                      ),
+                      backgroundColor: estaActivo
+                          ? Colors.green
+                          : Colors.orange,
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
                 },
                 tooltip: state.actualizacionAutomaticaActiva
                     ? 'Pausar actualizaciones'

@@ -64,7 +64,7 @@ class TransferenciaInfoCard extends StatelessWidget {
 class TransferenciaInfoItem {
   final String? label;
   final String? value;
-  final IconData icon;
+  final FaIconData icon;
 
   const TransferenciaInfoItem({
     this.label,

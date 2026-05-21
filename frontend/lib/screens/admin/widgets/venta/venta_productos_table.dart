@@ -70,7 +70,7 @@ class VentaProductosTable extends StatelessWidget {
               shrinkWrap: true,
               itemCount: detalles.length,
               physics: const ClampingScrollPhysics(),
-              separatorBuilder: (_, __) => const Divider(color: Color(0xFF2D2D2D), height: 1),
+              separatorBuilder: (_, _) => const Divider(color: Color(0xFF2D2D2D), height: 1),
               itemBuilder: (context, index) {
                 final detalle = detalles[index];
                 return Padding(

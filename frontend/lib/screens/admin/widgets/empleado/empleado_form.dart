@@ -566,7 +566,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                               labelText: 'Sucursal',
                               labelStyle:
                                   const TextStyle(color: Colors.white70),
-                              prefixIcon: Icon(
+                              prefixIcon: FaIcon(
                                 _esSucursalCentral
                                     ? FontAwesomeIcons.building
                                     : FontAwesomeIcons.store,

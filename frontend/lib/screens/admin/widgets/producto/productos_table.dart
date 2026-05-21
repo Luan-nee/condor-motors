@@ -1,11 +1,10 @@
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/repositories/producto.repository.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-class ProductosTable extends StatefulWidget {
+class ProductosTable extends StatelessWidget {
   final List<Producto> productos;
   final List<Sucursal> sucursales;
   final Function(Producto) onEdit;
@@ -32,157 +31,112 @@ class ProductosTable extends StatefulWidget {
   });
 
   @override
-  State<ProductosTable> createState() => _ProductosTableState();
-
-  @override
-  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
-    properties
-      ..add(IterableProperty<Producto>('productos', productos))
-      ..add(IterableProperty<Sucursal>('sucursales', sucursales))
-      ..add(ObjectFlagProperty<Function(Producto)>.has('onEdit', onEdit))
-      ..add(ObjectFlagProperty<Function(Producto)>.has('onDelete', onDelete))
-      ..add(ObjectFlagProperty<Function(Producto)>.has(
-          'onViewDetails', onViewDetails))
-      ..add(ObjectFlagProperty<Function(String)?>.has('onSort', onSort))
-      ..add(StringProperty('sortBy', sortBy))
-      ..add(StringProperty('sortOrder', sortOrder))
-      ..add(DiagnosticsProperty<bool>('isLoading', isLoading))
-      ..add(
-          ObjectFlagProperty<Function(Producto p1)?>.has('onEnable', onEnable));
-  }
-}
-
-class _ProductosTableState extends State<ProductosTable>
-    with TickerProviderStateMixin {
-  late AnimationController _loadingController;
-  late Animation<double> _loadingAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadingController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat();
-    _loadingAnimation = CurvedAnimation(
-      parent: _loadingController,
-      curve: Curves.easeInOut,
-    );
-  }
-
-  @override
-  void dispose() {
-    _loadingController.dispose();
-    super.dispose();
-  }
-
-  @override
-  void didUpdateWidget(ProductosTable oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Solo actualizar el controlador de carga si el estado de carga realmente cambió
-    if (oldWidget.isLoading != widget.isLoading) {
-      if (widget.isLoading) {
-        _loadingController.repeat();
-      } else {
-        _loadingController.stop();
-      }
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (widget.isLoading && widget.productos.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            CircularProgressIndicator(
-              color: Color(0xFFE31E24),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Cargando productos...',
-              style: TextStyle(color: Colors.white54),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (widget.productos.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const FaIcon(
-              FontAwesomeIcons.boxOpen,
-              color: Colors.white24,
-              size: 48,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No hay productos para mostrar',
-              style: TextStyle(
-                color: Colors.white.withAlpha(178),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Stack(
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            _TableHeader(
-              sortBy: widget.sortBy,
-              sortOrder: widget.sortOrder,
-              onSort: widget.onSort,
-            ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: widget.productos.length,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemBuilder: (context, index) {
-                  return _ProductoTableRow(
-                    producto: widget.productos[index],
-                    onEdit: widget.onEdit,
-                    onViewDetails: widget.onViewDetails,
-                    onEnable: widget.onEnable,
-                    isLast: index == widget.productos.length - 1,
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-        if (widget.isLoading)
-          Positioned.fill(
-            child: ColoredBox(
-              color: Colors.black26,
-              child: Center(
-                child: AnimatedBuilder(
-                  animation: _loadingAnimation,
-                  builder: (context, child) {
-                    return SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 3,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          const Color(0xFFE31E24).withAlpha(
-                              (204 + (51 * _loadingAnimation.value)).toInt()),
-                        ),
-                      ),
-                    );
-                  },
-                ),
+    if (isLoading && productos.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          _TableHeader(
+            sortBy: sortBy,
+            sortOrder: sortOrder,
+            onSort: onSort,
+          ),
+          const Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  CircularProgressIndicator(
+                    color: Color(0xFFE31E24),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Cargando productos...',
+                    style: TextStyle(color: Colors.white54),
+                  ),
+                ],
               ),
             ),
           ),
+        ],
+      );
+    }
+
+    if (productos.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          _TableHeader(
+            sortBy: sortBy,
+            sortOrder: sortOrder,
+            onSort: onSort,
+          ),
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  const FaIcon(
+                    FontAwesomeIcons.boxOpen,
+                    color: Colors.white24,
+                    size: 48,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No hay productos para mostrar',
+                    style: TextStyle(
+                      color: Colors.white.withAlpha(178),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        _TableHeader(
+          sortBy: sortBy,
+          sortOrder: sortOrder,
+          onSort: onSort,
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: SizedBox(
+            height: 2,
+            child: isLoading
+                ? const LinearProgressIndicator(
+                    backgroundColor: Colors.white12,
+                    color: Color(0xFFE31E24),
+                    minHeight: 2,
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ),
+        Expanded(
+          child: AnimatedOpacity(
+            opacity: isLoading ? 0.5 : 1.0,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            child: ListView.builder(
+              itemCount: productos.length,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemBuilder: (context, index) {
+                return _ProductoTableRow(
+                  producto: productos[index],
+                  onEdit: onEdit,
+                  onViewDetails: onViewDetails,
+                  onEnable: onEnable,
+                  isLast: index == productos.length - 1,
+                );
+              },
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -349,7 +303,7 @@ class _ProductoTableRow extends StatelessWidget {
                 if (stockBajo || agotado) ...[
                   const SizedBox(width: 4),
                   Icon(
-                    agotado ? FontAwesomeIcons.ban : Icons.warning_amber_rounded,
+                    agotado ? FontAwesomeIcons.ban.data : Icons.warning_amber_rounded,
                     size: 14,
                     color: agotado ? Colors.white24 : const Color(0xFFE31E24),
                   ),
@@ -412,7 +366,7 @@ class _ProductoTableRow extends StatelessWidget {
                 url,
                 fit: BoxFit.cover,
                 cacheWidth: 72,
-                errorBuilder: (_, __, ___) =>
+                errorBuilder: (_, _, _) =>
                     const Icon(Icons.image, color: Colors.white12, size: 18),
               )
             : const Icon(Icons.image, color: Colors.white12, size: 18),
@@ -475,7 +429,7 @@ class _ProductoTableRow extends StatelessWidget {
 }
 
 class _ActionButton extends StatelessWidget {
-  final IconData icon;
+  final FaIconData icon;
   final Color color;
   final VoidCallback? onPressed;
   final String tooltip;

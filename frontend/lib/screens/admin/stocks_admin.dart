@@ -233,7 +233,7 @@ class _StocksAdminFilters extends ConsumerWidget {
     );
   }
 
-  Widget _buildChip(WidgetRef ref, String label, IconData icon, Color color, StockStatus status, StockStatus? current, StocksAdmin notifier) {
+  Widget _buildChip(WidgetRef ref, String label, FaIconData icon, Color color, StockStatus status, StockStatus? current, StocksAdmin notifier) {
     final isSelected = current == status;
     return InkWell(
       onTap: () => notifier.filtrarPorEstadoStock(status),

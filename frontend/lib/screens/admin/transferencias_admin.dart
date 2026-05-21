@@ -653,7 +653,7 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
                           ),
                         ),
                         FaIcon(
-                          step['icon'] as IconData,
+                          step['icon'] as FaIconData,
                           size: iconSize,
                           color: step['isCompleted'] as bool
                               ? step['color'] as Color

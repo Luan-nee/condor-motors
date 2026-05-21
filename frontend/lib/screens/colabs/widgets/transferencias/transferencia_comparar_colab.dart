@@ -133,7 +133,7 @@ class TransferenciaCompararColab extends StatelessWidget {
     );
   }
 
-  Widget _buildSucursalRow(String label, String nombre, IconData icon) {
+  Widget _buildSucursalRow(String label, String nombre, FaIconData icon) {
     return Row(
       children: [
         Container(
@@ -368,7 +368,7 @@ class TransferenciaCompararColab extends StatelessWidget {
   Widget _buildStockInfo(
     String label,
     String value,
-    IconData icon,
+    FaIconData icon,
     Color color, {
     bool showIcon = false,
     bool stockBajo = false,

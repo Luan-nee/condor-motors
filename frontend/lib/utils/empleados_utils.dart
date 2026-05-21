@@ -18,7 +18,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 /// y funcionan como utilidades UI para los componentes de la aplicación.
 class EmpleadosUtils {
   /// Obtiene el icono correspondiente al rol del empleado
-  static IconData getRolIcon(String rol) {
+  static FaIconData getRolIcon(String rol) {
     switch (rol.toLowerCase()) {
       case 'administrador':
         return FontAwesomeIcons.userGear;
@@ -153,7 +153,7 @@ class EmpleadosUtils {
 
   /// Obtiene un ícono para el estado de un empleado (activo/inactivo)
   static IconData getIconoEstadoEmpleado({required bool activo}) {
-    return activo ? FontAwesomeIcons.userCheck : FontAwesomeIcons.userXmark;
+    return activo ? FontAwesomeIcons.userCheck.data : FontAwesomeIcons.userXmark.data;
   }
 
   /// Obtiene el color para el estado de un empleado (activo/inactivo)
@@ -166,7 +166,7 @@ class EmpleadosUtils {
   /// Retorna un widget con un estilo adecuado para cada tipo de grupo
   static Widget getEtiquetaGrupoEmpleados(String grupo, int cantidad) {
     late final Color color;
-    late final IconData icono;
+    late final FaIconData icono;
     late final String texto;
 
     switch (grupo) {

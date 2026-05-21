@@ -452,7 +452,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     );
   }
 
-  Widget _buildSectionTitle(String title, IconData icon) {
+  Widget _buildSectionTitle(String title, FaIconData icon) {
     return Row(
       children: <Widget>[
         FaIcon(
@@ -679,7 +679,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
                 ? const Tooltip(
                     message:
                         'El stock solo puede ser modificado mediante entradas de inventario',
-                    child: Icon(
+                    child: FaIcon(
                       FontAwesomeIcons.circleInfo,
                       size: 16,
                       color: Colors.amber,
@@ -1314,7 +1314,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
   }
 
   Widget _buildPromoTypeOption(String value, String title, String description,
-      IconData icon, Color color) {
+      FaIconData icon, Color color) {
     final bool isSelected = _tipoPromocionSeleccionada == value;
 
     return InkWell(
@@ -1846,7 +1846,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     );
   }
 
-  Widget _buildCounter(String label, String count, IconData icon, Color color) {
+  Widget _buildCounter(String label, String count, FaIconData icon, Color color) {
     return Column(
       children: <Widget>[
         Container(
@@ -1889,7 +1889,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
 
     Color statusColor = Colors.green;
     String statusText = 'Disponible';
-    IconData statusIcon = FontAwesomeIcons.check;
+    FaIconData statusIcon = FontAwesomeIcons.check;
 
     if (!item.disponible) {
       statusColor = Colors.red.shade800;
@@ -2050,7 +2050,7 @@ class _ProductosFormDialogAdminState extends State<ProductosFormDialogAdmin> {
     );
   }
 
-  Widget _buildProductInfoRow(String label, String value, IconData icon) {
+  Widget _buildProductInfoRow(String label, String value, FaIconData icon) {
     return Row(
       children: <Widget>[
         FaIcon(

@@ -4,6 +4,7 @@ import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_cuenta_dia
 import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_detalles_dialog.dart';
 import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_form.dart';
 import 'package:condorsmotors/screens/admin/widgets/empleado/empleados_table.dart';
+import 'package:condorsmotors/widgets/common/error_banner.widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -81,7 +82,10 @@ class _ColaboradoresAdminScreenState extends ConsumerState<ColaboradoresAdminScr
             ),
             const SizedBox(height: 32),
             if (state.errorMessage != null && state.errorMessage!.isNotEmpty)
-              _buildErrorBanner(state.errorMessage!, notifier),
+              ErrorBanner(
+                message: state.errorMessage!,
+                onClose: notifier.limpiarError,
+              ),
             Expanded(
               child: state.isLoading
                   ? const Center(child: CircularProgressIndicator(color: Color(0xFFE31E24)))
@@ -99,30 +103,6 @@ class _ColaboradoresAdminScreenState extends ConsumerState<ColaboradoresAdminScr
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildErrorBanner(String message, EmpleadosAdmin notifier) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.red.withValues(alpha: 0.1),
-        border: Border.all(color: Colors.red),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.error, color: Colors.red),
-          const SizedBox(width: 8),
-          Expanded(child: Text(message, style: const TextStyle(color: Colors.red))),
-          IconButton(
-            icon: const Icon(Icons.close, color: Colors.red),
-            onPressed: notifier.limpiarError,
-          ),
-        ],
       ),
     );
   }

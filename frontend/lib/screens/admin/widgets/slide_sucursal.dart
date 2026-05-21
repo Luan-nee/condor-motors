@@ -302,7 +302,7 @@ class _SlideSucursalState extends ConsumerState<SlideSucursal>
                     color: isSelected ? const Color(0xFFE31E24) : iconBgColor,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: FaIcon(
+                  child: Icon(
                     icon,
                     color: isSelected ? Colors.white : iconColor,
                     size: 16,

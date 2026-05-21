@@ -38,7 +38,7 @@ class SucursalRow extends StatelessWidget {
                   color: iconBgColor,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: FaIcon(
+                child: Icon(
                   icon,
                   color: iconColor,
                   size: 20,

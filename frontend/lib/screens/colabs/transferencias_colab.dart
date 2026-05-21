@@ -253,7 +253,7 @@ class _TransferenciasColabScreenState
                             .withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: FaIcon(
+                  child: Icon(
                     TransferenciasUtils.getEstadoIcon(transferencia.estado),
                     color: TransferenciasUtils.getEstadoColor(
                         transferencia.estado),
@@ -460,7 +460,7 @@ class _TransferenciasColabScreenState
                             ),
                           ),
                           FaIcon(
-                            step['icon'] as IconData,
+                            step['icon'] as FaIconData,
                             size: iconSize,
                             color: step['isCompleted'] as bool
                                 ? step['color'] as Color

@@ -764,7 +764,7 @@ class _SucursalFormState extends ConsumerState<SucursalForm>
     }
   }
 
-  Widget _buildSectionTitle(String title, IconData icon) {
+  Widget _buildSectionTitle(String title, FaIconData icon) {
     return Row(
       children: [
         FaIcon(

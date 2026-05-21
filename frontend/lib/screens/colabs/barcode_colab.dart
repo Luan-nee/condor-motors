@@ -840,7 +840,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
             const SizedBox(height: 16),
             Row(
               children: [
-                Icon(
+                FaIcon(
                   FontAwesomeIcons.tag,
                   size: 14,
                   color: Colors.grey[400],
@@ -854,7 +854,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                   ),
                 ),
                 const SizedBox(width: 16),
-                Icon(
+                FaIcon(
                   FontAwesomeIcons.industry,
                   size: 14,
                   color: Colors.grey[400],
@@ -1054,7 +1054,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                       );
                     },
                     child: Icon(
-                      _quickAdd ? Icons.bolt : FontAwesomeIcons.barcode,
+                      _quickAdd ? Icons.bolt : FontAwesomeIcons.barcode.data,
                       key: ValueKey<bool>(_quickAdd),
                       size: 40,
                       color: _quickAdd

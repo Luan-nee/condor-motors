@@ -4,8 +4,8 @@ import 'package:condorsmotors/providers/print.riverpod.dart';
 import 'package:condorsmotors/screens/computer/widgets/venta/venta_detalle_computer.dart';
 import 'package:condorsmotors/utils/debouncer.util.dart';
 import 'package:condorsmotors/widgets/paginador.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
@@ -256,11 +256,11 @@ class _VentasComputerScreenState extends ConsumerState<VentasComputerScreen> {
         ),
         Expanded(
           child: ListView.builder(
+            scrollCacheExtent: const ScrollCacheExtent.pixels(500),
             itemCount: estado.ventas.length,
             itemBuilder: (context, index) {
               return _VentaComputerItem(venta: estado.ventas[index]);
-            },
-            cacheExtent: 500, // Mayor cache para fluidez en computer
+            }, // Mayor cache para fluidez en computer
           ),
         ),
         if (estado.paginacion.totalPages > 0)
@@ -286,7 +286,7 @@ class _VentasComputerScreenState extends ConsumerState<VentasComputerScreen> {
   }
 
   Widget _buildEmptyState({
-    required IconData icon,
+    required FaIconData icon,
     required String title,
     required String description,
     required String actionText,

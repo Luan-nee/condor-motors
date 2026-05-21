@@ -19,11 +19,11 @@ class StockUtils {
   /// Determina el icono para el estado del stock
   static IconData getStockStatusIcon(int stockActual, int stockMinimo) {
     if (stockActual <= 0) {
-      return FontAwesomeIcons.ban; // Sin stock
+      return FontAwesomeIcons.ban.data; // Sin stock
     } else if (stockActual < stockMinimo) {
-      return FontAwesomeIcons.triangleExclamation; // Stock bajo
+      return FontAwesomeIcons.triangleExclamation.data; // Stock bajo
     } else {
-      return FontAwesomeIcons.check; // Stock normal
+      return FontAwesomeIcons.check.data; // Stock normal
     }
   }
 

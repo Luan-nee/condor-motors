@@ -307,7 +307,7 @@ class _ProductosAdminSearchBarState extends ConsumerState<ProductosAdminSearchBa
 
   Widget _buildFilterChip({
     required String label,
-    required IconData icon,
+    required FaIconData icon,
     required Color color,
     required bool isSelected,
     required VoidCallback onSelected,

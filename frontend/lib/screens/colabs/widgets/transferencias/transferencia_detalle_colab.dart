@@ -418,7 +418,7 @@ class _TransferenciaDetalleColabState
 
   Widget _buildInfoCard(TransferenciaInventario transferencia, bool isMobile) {
     // Lista de campos de información que no son nulos
-    final List<({String label, String value, IconData icon})> infoFields = [
+    final List<({String label, String value, FaIconData icon})> infoFields = [
       (
         label: 'Sucursal Origen',
         value: transferencia.nombreSucursalOrigenNotificacion,
@@ -498,7 +498,7 @@ class _TransferenciaDetalleColabState
   Widget _buildInfoRow({
     required String label,
     required String value,
-    required IconData icon,
+    required FaIconData icon,
   }) {
     return Row(
       children: [

@@ -62,8 +62,8 @@ class VentasApi {
         search: search,
         extraParams: <String, String>{
           if (sucursalId != null) 'sucursalId': sucursalId.toString(),
-          if (sortBy != null) 'sort_by': sortBy,
-          if (order != null) 'order': order,
+          'sort_by': ?sortBy,
+          'order': ?order,
         },
       );
       final String cacheKey =

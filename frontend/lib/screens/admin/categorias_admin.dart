@@ -1,5 +1,7 @@
 import 'package:condorsmotors/models/categoria.model.dart';
 import 'package:condorsmotors/providers/admin/categorias.admin.riverpod.dart';
+import 'package:condorsmotors/widgets/common/empty_state.widget.dart';
+import 'package:condorsmotors/widgets/common/error_banner.widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -94,21 +96,25 @@ class _CategoriasAdminScreenState extends ConsumerState<CategoriasAdminScreen> {
                       ),
                       onPressed: () async {
                         if (_formKey.currentState!.validate()) {
+                          final messenger = ScaffoldMessenger.of(context);
                           try {
                             await notifier.guardarCategoria(
                               categoria: categoria,
                               nombre: _nombreController.text.trim(),
                               descripcion: _descripcionController.text.trim().isNotEmpty ? _descripcionController.text.trim() : null,
                             );
-                            if (context.mounted) {
-                              Navigator.pop(dialogContext);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(categoria == null ? 'Categoría creada' : 'Categoría actualizada'),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
+
+                            if (!dialogContext.mounted) {
+                              return;
                             }
+                            Navigator.pop(dialogContext);
+
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text(categoria == null ? 'Categoría creada' : 'Categoría actualizada'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
                           } catch (e) {
                             // Error handled in state but we show it here too if needed
                           }
@@ -221,7 +227,10 @@ class _CategoriasAdminScreenState extends ConsumerState<CategoriasAdminScreen> {
             ),
             const SizedBox(height: 32),
             if (state.errorMessage != null)
-              _buildErrorBanner(state.errorMessage!, notifier),
+              ErrorBanner(
+                message: state.errorMessage!,
+                onClose: notifier.limpiarError,
+              ),
             Expanded(
               child: DecoratedBox(
                 decoration: BoxDecoration(
@@ -229,11 +238,7 @@ class _CategoriasAdminScreenState extends ConsumerState<CategoriasAdminScreen> {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                 ),
-                child: state.isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : state.categorias.isEmpty
-                        ? _buildEmptyState(notifier)
-                        : _buildTable(state.categorias, notifier),
+                child: _buildTableContent(state, notifier),
               ),
             ),
           ],
@@ -242,96 +247,88 @@ class _CategoriasAdminScreenState extends ConsumerState<CategoriasAdminScreen> {
     );
   }
 
-  Widget _buildErrorBanner(String message, CategoriasAdmin notifier) {
+  Widget _buildTableHeader() {
     return Container(
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.red.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+      decoration: const BoxDecoration(
+        color: Color(0xFF2D2D2D),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
-      child: Row(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+      child: const Row(
         children: <Widget>[
-          const Icon(Icons.error_outline, color: Colors.red),
-          const SizedBox(width: 16),
-          Expanded(child: Text(message, style: const TextStyle(color: Colors.red))),
-          IconButton(
-            icon: const Icon(Icons.close, color: Colors.red),
-            onPressed: notifier.limpiarError,
-          ),
+          Expanded(
+              flex: 30,
+              child: Text('Categoría',
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold))),
+          Expanded(
+              flex: 40,
+              child: Text('Descripción',
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold))),
+          Expanded(
+              flex: 15,
+              child: Text('Cant. de productos',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold))),
+          Expanded(
+              flex: 15,
+              child: Text('Acciones',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold))),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyState(CategoriasAdmin notifier) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          const FaIcon(FontAwesomeIcons.folderOpen, color: Colors.grey, size: 48),
-          const SizedBox(height: 16),
-          Text('No hay categorías disponibles', style: TextStyle(color: Colors.grey[400], fontSize: 16)),
-          const SizedBox(height: 8),
-          ElevatedButton.icon(
-            icon: const FaIcon(FontAwesomeIcons.plus, size: 14),
-            label: const Text('Crear categoría'),
-            onPressed: () => _mostrarFormularioCategoria(notifier),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildTableContent(CategoriasAdminState state, CategoriasAdmin notifier) {
+    if (state.categorias.isEmpty && !state.isLoading) {
+      return EmptyState(
+        icon: FontAwesomeIcons.folderOpen,
+        message: 'No hay categorías disponibles',
+        buttonLabel: 'Crear categoría',
+        onAction: () => _mostrarFormularioCategoria(notifier),
+      );
+    }
 
-  Widget _buildTable(List<Categoria> categorias, CategoriasAdmin notifier) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFF2D2D2D),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-          child: const Row(
-            children: <Widget>[
-              Expanded(
-                  flex: 30,
-                  child: Text('Categoría',
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold))),
-              Expanded(
-                  flex: 40,
-                  child: Text('Descripción',
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold))),
-              Expanded(
-                  flex: 15,
-                  child: Text('Cant. de productos',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold))),
-              Expanded(
-                  flex: 15,
-                  child: Text('Acciones',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold))),
-            ],
-          ),
+        _buildTableHeader(),
+        SizedBox(
+          height: 2,
+          child: (state.isLoading && state.categorias.isNotEmpty)
+              ? const LinearProgressIndicator(
+                  backgroundColor: Colors.white12,
+                  color: Color(0xFFE31E24),
+                  minHeight: 2,
+                )
+              : const SizedBox.shrink(),
         ),
         Expanded(
-          child: ListView.builder(
-            itemCount: categorias.length,
-            padding: EdgeInsets.zero,
-            itemBuilder: (context, index) {
-              return _CategoriaAdminRow(
-                categoria: categorias[index],
-                onEdit: (cat) => _mostrarFormularioCategoria(notifier, cat),
-              );
-            },
-          ),
+          child: state.isLoading && state.categorias.isEmpty
+              ? const Center(
+                  child: CircularProgressIndicator(
+                    color: Color(0xFFE31E24),
+                  ),
+                )
+              : AnimatedOpacity(
+                  opacity: state.isLoading ? 0.5 : 1.0,
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  child: ListView.builder(
+                    itemCount: state.categorias.length,
+                    padding: EdgeInsets.zero,
+                    itemBuilder: (context, index) {
+                      return _CategoriaAdminRow(
+                        categoria: state.categorias[index],
+                        onEdit: (cat) => _mostrarFormularioCategoria(notifier, cat),
+                      );
+                    },
+                  ),
+                ),
         ),
       ],
     );

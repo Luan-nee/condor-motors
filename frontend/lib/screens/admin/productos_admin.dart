@@ -194,20 +194,19 @@ class _ProductosAdminScreenState extends ConsumerState<ProductosAdminScreen> {
                                 isLoading: isLoading,
                                 onEnable: (producto) async {
                                   final currentContext = context;
+                                  final scaffoldMessenger = ScaffoldMessenger.of(context);
                                   await ProductoAgregarDialog.show(
                                     currentContext,
                                     producto: producto,
                                     sucursalNombre: selectedSucursal?.nombre,
                                     onSave: (Map<String, dynamic> productoData) async {
                                       await notifier.habilitarProducto(producto.id, productoData);
-                                      if (mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Producto habilitado exitosamente'),
-                                            backgroundColor: Colors.green,
-                                          ),
-                                        );
-                                      }
+                                      scaffoldMessenger.showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Producto habilitado exitosamente'),
+                                          backgroundColor: Colors.green,
+                                        ),
+                                      );
                                     },
                                   );
                                 },

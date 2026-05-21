@@ -16,7 +16,7 @@ class SucursalDetalles extends StatelessWidget {
   });
 
   // Método para obtener icono según la sucursal
-  IconData _getIconForSucursal(Sucursal sucursal) {
+  FaIconData _getIconForSucursal(Sucursal sucursal) {
     // Primero revisamos si es sucursal central
     if (sucursal.sucursalCentral) {
       return FontAwesomeIcons.building;
@@ -40,7 +40,7 @@ class SucursalDetalles extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final IconData icon = _getIconForSucursal(sucursal);
+    final FaIconData icon = _getIconForSucursal(sucursal);
 
     return SizedBox(
       width: 180,
@@ -327,7 +327,7 @@ class SucursalDetalles extends StatelessWidget {
   Widget _buildInfoCard(
     String title,
     String value,
-    IconData icon, {
+    FaIconData icon, {
     bool isConfigured = true,
   }) {
     return Container(
@@ -384,7 +384,7 @@ class SucursalDetalles extends StatelessWidget {
     String title,
     String? serie,
     int? numeroInicial,
-    IconData icon,
+    FaIconData icon,
   ) {
     final bool isConfigured = serie != null;
     return Container(
@@ -453,7 +453,7 @@ class SucursalDetalles extends StatelessWidget {
     );
   }
 
-  Widget _buildDateInfo(String label, DateTime date, IconData icon) {
+  Widget _buildDateInfo(String label, DateTime date, FaIconData icon) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [

@@ -90,7 +90,7 @@ class EmpleadoHorarioViewer extends StatelessWidget {
   }
 
   // Widget para mostrar un elemento de horario
-  Widget _buildHorarioItem(String label, String value, IconData icon) {
+  Widget _buildHorarioItem(String label, String value, FaIconData icon) {
     return Row(
       children: <Widget>[
         Container(

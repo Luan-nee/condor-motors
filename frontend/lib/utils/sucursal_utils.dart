@@ -17,21 +17,21 @@ class SucursalUtils {
   static IconData getIconForSucursal(Sucursal sucursal) {
     // Primero revisamos si es sucursal central
     if (sucursal.sucursalCentral) {
-      return FontAwesomeIcons.building;
+      return FontAwesomeIcons.building.data;
     }
 
     // Luego revisamos el nombre
     final String nombre = sucursal.nombre.toLowerCase();
     if (nombre.contains('central') || nombre.contains('principal')) {
-      return FontAwesomeIcons.buildingColumns;
+      return FontAwesomeIcons.buildingColumns.data;
     } else if (nombre.contains('taller')) {
-      return FontAwesomeIcons.buildingShield;
+      return FontAwesomeIcons.buildingShield.data;
     } else if (nombre.contains('almacén') ||
         nombre.contains('almacen') ||
         nombre.contains('bodega')) {
-      return FontAwesomeIcons.warehouse;
+      return FontAwesomeIcons.warehouse.data;
     } else if (nombre.contains('tienda') || nombre.contains('venta')) {
-      return FontAwesomeIcons.buildingLock;
+      return FontAwesomeIcons.buildingLock.data;
     }
     // Icono por defecto para otras sucursales
     // Opciones disponibles para locales:
@@ -39,7 +39,7 @@ class SucursalUtils {
     // return FontAwesomeIcons.store;          // Tienda más moderna
     // return FontAwesomeIcons.storeAlt;       // Tienda alternativa
     // return FontAwesomeIcons.house;          // Casa/Local pequeño
-    return FontAwesomeIcons.store; // Tienda moderna (más comercial)
+    return FontAwesomeIcons.store.data; // Tienda moderna (más comercial)
   }
 
   /// Obtiene el color para una sucursal basado en su tipo

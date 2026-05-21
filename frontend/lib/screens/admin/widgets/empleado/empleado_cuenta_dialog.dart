@@ -881,7 +881,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
 
   // Fila de información para datos de cuenta (misma estructura que empleado_form)
   Widget _buildInfoRow({
-    required IconData icon,
+    required FaIconData icon,
     required String label,
     required String value,
   }) {
@@ -971,7 +971,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
                     helperStyle: TextStyle(color: Colors.white54),
                   ),
                   items: widget.roles.map((Map<String, dynamic> rol) {
-                    IconData iconData = FontAwesomeIcons.userTag;
+                    FaIconData iconData = FontAwesomeIcons.userTag;
                     final String codigo =
                         (rol['codigo'] ?? '').toString().toLowerCase();
 

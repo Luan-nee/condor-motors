@@ -362,7 +362,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                                 fotoUrl,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) =>
-                                    const Icon(FontAwesomeIcons.box,
+                                    const FaIcon(FontAwesomeIcons.box,
                                         size: 32, color: Colors.white24),
                               ),
                             ),
@@ -762,7 +762,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
 
   // Estadística en formato compacto
   Widget _buildCompactEstadistica(String label, String valor,
-      {required IconData icon, required Color color, bool isSmall = false}) {
+      {required FaIconData icon, required Color color, bool isSmall = false}) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: isSmall ? 8 : 12, vertical: 4),
       decoration: BoxDecoration(
@@ -1119,7 +1119,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
 
   // Widget para crear una tarjeta con precio
   Widget _buildPrecioChip(
-      String label, String precio, Color color, IconData icon) {
+      String label, String precio, Color color, FaIconData icon) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -1211,7 +1211,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
 
   // Método auxiliar para construir el resumen de cada promoción
   Widget _buildResumenPromocion(
-      String titulo, String descripcion, Color color, IconData icono) {
+      String titulo, String descripcion, Color color, FaIconData icono) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -1486,7 +1486,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     final bool esCentral = sucursal.sucursalCentral;
 
     Color indicadorColor = Colors.green;
-    IconData statusIcon = FontAwesomeIcons.check;
+    FaIconData statusIcon = FontAwesomeIcons.check;
     String statusText = 'Disponible';
 
     if (!disponible) {

@@ -79,7 +79,7 @@ class _SlidesAdminScreenState extends ConsumerState<SlidesAdminScreen> {
   }
 
   Widget _buildMenuItem({
-    required IconData icon,
+    required FaIconData icon,
     required String text,
     required bool isSelected,
     required VoidCallback onTap,
@@ -124,7 +124,7 @@ class _SlidesAdminScreenState extends ConsumerState<SlidesAdminScreen> {
   }
 
   Widget _buildExpandableMenuItem({
-    required IconData icon,
+    required FaIconData icon,
     required String text,
     required bool isSelected,
     required bool isExpanded,

@@ -46,7 +46,7 @@ class MarcasAdmin extends _$MarcasAdmin {
   Future<void> cargarMarcas({bool forceRefresh = false}) async {
     state = state.copyWith(isLoading: true);
     try {
-      final marcas = await _marcaRepository.getMarcas();
+      final marcas = await _marcaRepository.getMarcas(forceRefresh: forceRefresh);
       state = state.copyWith(
         marcas: marcas,
         isLoading: false,
@@ -68,7 +68,7 @@ class MarcasAdmin extends _$MarcasAdmin {
     try {
       final marcaData = {
         'nombre': nombre,
-        if (descripcion != null) 'descripcion': descripcion,
+        'descripcion': ?descripcion,
       };
 
       if (marca == null) {
@@ -89,6 +89,10 @@ class MarcasAdmin extends _$MarcasAdmin {
   }
 
   void limpiarError() {
-    state = state.copyWith();
+    state = MarcasAdminState(
+      isLoading: state.isLoading,
+      isCreating: state.isCreating,
+      marcas: state.marcas,
+    );
   }
 }

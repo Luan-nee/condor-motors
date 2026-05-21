@@ -19,11 +19,11 @@ class TransferenciasUtils {
   static IconData getEstadoIcon(EstadoTransferencia estado) {
     switch (estado) {
       case EstadoTransferencia.pedido:
-        return FontAwesomeIcons.clock;
+        return FontAwesomeIcons.clock.data;
       case EstadoTransferencia.enviado:
-        return FontAwesomeIcons.truckFast;
+        return FontAwesomeIcons.truckFast.data;
       case EstadoTransferencia.recibido:
-        return FontAwesomeIcons.checkDouble;
+        return FontAwesomeIcons.checkDouble.data;
     }
   }
 
