@@ -12,14 +12,14 @@ String _$empleadosAdminHash() => r'2f7a633cb941c3a6aaf4f1c7a6bd3ae87cb07d14';
 @ProviderFor(EmpleadosAdmin)
 final empleadosAdminProvider =
     AutoDisposeNotifierProvider<EmpleadosAdmin, EmpleadosAdminState>.internal(
-  EmpleadosAdmin.new,
-  name: r'empleadosAdminProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$empleadosAdminHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+      EmpleadosAdmin.new,
+      name: r'empleadosAdminProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$empleadosAdminHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
 
 typedef _$EmpleadosAdmin = AutoDisposeNotifier<EmpleadosAdminState>;
 // ignore_for_file: type=lint

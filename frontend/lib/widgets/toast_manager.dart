@@ -1,3 +1,4 @@
+﻿import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -108,7 +109,7 @@ class ToastManager {
       margin: const EdgeInsets.all(16),
       duration: duration ?? _defaultDuration,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
     );
 
@@ -151,7 +152,7 @@ class _ToastContent extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: _getBackgroundColor(),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),

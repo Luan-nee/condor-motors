@@ -3,6 +3,7 @@ import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:condorsmotors/repositories/stock.repository.dart';
 import 'package:condorsmotors/screens/admin/widgets/stock/stock_detalles_dialog.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/stock_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -150,7 +151,7 @@ class _StockDetalleSucursalDialogState
       case StockStatus.agotado:
         return Colors.red.shade800;
       case StockStatus.stockBajo:
-        return const Color(0xFFE31E24);
+        return AppTheme.primaryColor;
       case StockStatus.disponible:
         return Colors.green;
     }
@@ -162,9 +163,9 @@ class _StockDetalleSucursalDialogState
     _stockPorSucursal.forEach((_, value) => stockTotal += value);
 
     return Dialog(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: AppTheme.darkSurface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       elevation: 10,
       child: Container(
@@ -203,7 +204,7 @@ class _StockDetalleSucursalDialogState
             Row(
               children: <Widget>[
                 const FaIcon(FontAwesomeIcons.store,
-                    size: 16, color: Color(0xFFE31E24)),
+                    size: 16, color: AppTheme.primaryColor),
                 const SizedBox(width: 8),
                 const Text(
                   'Disponibilidad en Sucursales',
@@ -218,7 +219,7 @@ class _StockDetalleSucursalDialogState
                   const SizedBox(width: 12),
                   _buildLeyenda('Bajo', Colors.orange),
                   const SizedBox(width: 12),
-                  _buildLeyenda('Crítico', const Color(0xFFE31E24)),
+                  _buildLeyenda('Crítico', AppTheme.primaryColor),
                   const SizedBox(width: 12),
                   _buildLeyenda('No disponible', Colors.grey),
                 ],
@@ -232,7 +233,7 @@ class _StockDetalleSucursalDialogState
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      CircularProgressIndicator(color: Color(0xFFE31E24)),
+                      CircularProgressIndicator(color: AppTheme.primaryColor),
                       SizedBox(height: 16),
                       Text('Consultando stock en todas las sucursales...',
                           style: TextStyle(color: Colors.white70)),
@@ -246,7 +247,7 @@ class _StockDetalleSucursalDialogState
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     const Icon(Icons.error_outline,
-                        color: Color(0xFFE31E24), size: 48),
+                        color: AppTheme.primaryColor, size: 48),
                     const SizedBox(height: 16),
                     Text(_error!,
                         style: const TextStyle(color: Colors.white),
@@ -257,7 +258,7 @@ class _StockDetalleSucursalDialogState
                       label: const Text('Reintentar'),
                       onPressed: _cargarSucursales,
                       style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFE31E24),
+                          backgroundColor: AppTheme.primaryColor,
                           foregroundColor: Colors.white),
                     ),
                   ],
@@ -288,9 +289,9 @@ class _StockDetalleSucursalDialogState
 
                     return Card(
                       margin: const EdgeInsets.only(bottom: 8),
-                      color: const Color(0xFF2D2D2D),
+                      color: AppTheme.surfaceColor,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                         side: BorderSide(
                           color: disponible
                               ? statusColor.withValues(alpha: 0.5)
@@ -299,7 +300,7 @@ class _StockDetalleSucursalDialogState
                       ),
                       child: InkWell(
                         onTap: () => _verStockDetalle(sucursal),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Row(
@@ -318,7 +319,7 @@ class _StockDetalleSucursalDialogState
                                           size: 14,
                                           color: sucursal.sucursalCentral
                                               ? Colors.amber
-                                              : const Color(0xFFE31E24),
+                                              : AppTheme.primaryColor,
                                         ),
                                         const SizedBox(width: 8),
                                         Text(
@@ -473,12 +474,12 @@ class _StockDetalleSucursalDialogState
         InkWell(
           onTap: () =>
               setState(() => _mostrarInfoProducto = !_mostrarInfoProducto),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.smallRadius),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFF2D2D2D),
-              borderRadius: BorderRadius.circular(8),
+              color: AppTheme.surfaceColor,
+              borderRadius: BorderRadius.circular(AppTheme.smallRadius),
               border: Border.all(
                   color: Colors.white.withValues(
                       alpha: _mostrarInfoProducto ? 0.3 : 0.1)),
@@ -486,7 +487,7 @@ class _StockDetalleSucursalDialogState
             child: Row(
               children: <Widget>[
                 const FaIcon(FontAwesomeIcons.box,
-                    size: 16, color: Color(0xFFE31E24)),
+                    size: 16, color: AppTheme.primaryColor),
                 const SizedBox(width: 12),
                 const Text('Datos del Producto',
                     style: TextStyle(
@@ -517,7 +518,7 @@ class _StockDetalleSucursalDialogState
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: const Color(0xFF242424),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppTheme.smallRadius),
               border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
             ),
             child: Column(

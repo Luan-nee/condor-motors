@@ -1,3 +1,4 @@
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -160,7 +161,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
   Widget _buildHeader() {
     return Row(
       children: [
-        const FaIcon(FontAwesomeIcons.user, color: Color(0xFFE31E24), size: 18),
+        const FaIcon(FontAwesomeIcons.user, color: AppTheme.primaryColor, size: 18),
         const SizedBox(width: 8),
         Expanded(
           child: TextField(
@@ -337,7 +338,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
                   ? (color ?? Colors.blue).withValues(alpha: 0.15)
                   : Colors.grey.withValues(alpha: 0.08))
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppTheme.largeRadius),
           border: Border.all(
             color: enabled
                 ? (color ?? Colors.white24)
@@ -348,7 +349,7 @@ class _NumericKeypadState extends State<NumericKeypad> {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppTheme.largeRadius),
             onTap: enabled ? onTap : null,
             child: SizedBox(
               height: 56,

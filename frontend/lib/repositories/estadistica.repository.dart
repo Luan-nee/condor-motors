@@ -306,8 +306,8 @@ class EstadisticaRepository implements BaseRepository {
           } catch (e) {
             debugPrint("Error al parsear ventas: $e");
             // Intentar procesar elemento por elemento para identificar errores
-            List<UltimaVenta> resultado = [];
-            for (var ventaJson in (response['data'] as List)) {
+            final List<UltimaVenta> resultado = [];
+            for (final ventaJson in (response['data'] as List)) {
               try {
                 resultado.add(UltimaVenta.fromJson(ventaJson));
               } catch (e) {
@@ -399,7 +399,7 @@ class EstadisticaRepository implements BaseRepository {
           useCache: useCache, forceRefresh: forceRefresh);
 
       // Lista para almacenar los detalles de productos
-      List<Map<String, dynamic>> productosDetalle = [];
+      final List<Map<String, dynamic>> productosDetalle = [];
 
       // Para cada sucursal en las estadísticas
       for (final sucursal in estadisticasProductos.sucursales) {

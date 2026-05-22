@@ -1,6 +1,7 @@
 // Importamos el API global
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/repositories/producto.repository.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/stock_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -64,10 +65,12 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
 
     // Inicializar variables de liquidación
     _enLiquidacion = widget.producto.liquidacion;
-    _precioLiquidacion = widget.producto.precioOferta ??
+    _precioLiquidacion =
+        widget.producto.precioOferta ??
         widget.producto.precioVenta * 0.9; // Por defecto 10% descuento
-    _precioLiquidacionController =
-        TextEditingController(text: _precioLiquidacion.toStringAsFixed(2));
+    _precioLiquidacionController = TextEditingController(
+      text: _precioLiquidacion.toStringAsFixed(2),
+    );
   }
 
   @override
@@ -86,7 +89,8 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-              'Por seguridad, solo se permite agregar stock mediante entradas, no reducirlo'),
+            'Por seguridad, solo se permite agregar stock mediante entradas, no reducirlo',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -137,10 +141,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_error!),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(_error!), backgroundColor: Colors.red),
       );
     }
   }
@@ -149,13 +150,15 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
   Future<void> _gestionarLiquidacion() async {
     // Validación de precio de liquidación
     if (_enLiquidacion) {
-      final double? precioLiquidacion =
-          double.tryParse(_precioLiquidacionController.text);
+      final double? precioLiquidacion = double.tryParse(
+        _precioLiquidacionController.text,
+      );
       if (precioLiquidacion == null || precioLiquidacion <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-                'El precio de liquidación debe ser un número válido mayor a 0'),
+              'El precio de liquidación debe ser un número válido mayor a 0',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -167,7 +170,8 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-                'El precio de liquidación debe ser menor al precio de venta'),
+              'El precio de liquidación debe ser menor al precio de venta',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -182,15 +186,15 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
 
     try {
       // Usar el repositorio en lugar de la API directamente
-      final Producto? productoActualizado =
-          await _productoRepository.setLiquidacion(
-        sucursalId: widget.sucursalId,
-        productoId: widget.producto.id,
-        enLiquidacion: _enLiquidacion,
-        precioLiquidacion: _enLiquidacion
-            ? double.parse(_precioLiquidacionController.text)
-            : null,
-      );
+      final Producto? productoActualizado = await _productoRepository
+          .setLiquidacion(
+            sucursalId: widget.sucursalId,
+            productoId: widget.producto.id,
+            enLiquidacion: _enLiquidacion,
+            precioLiquidacion: _enLiquidacion
+                ? double.parse(_precioLiquidacionController.text)
+                : null,
+          );
 
       if (!mounted || productoActualizado == null) {
         return;
@@ -201,14 +205,17 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
       });
 
       // Actualizar la UI con los datos del producto actualizado
-      Navigator.of(context)
-          .pop(productoActualizado); // Devolver el producto actualizado
+      Navigator.of(
+        context,
+      ).pop(productoActualizado); // Devolver el producto actualizado
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_enLiquidacion
-              ? 'Producto puesto en liquidación correctamente'
-              : 'Liquidación removida correctamente'),
+          content: Text(
+            _enLiquidacion
+                ? 'Producto puesto en liquidación correctamente'
+                : 'Liquidación removida correctamente',
+          ),
           backgroundColor: Colors.green,
         ),
       );
@@ -223,10 +230,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_error!),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(_error!), backgroundColor: Colors.red),
       );
     }
   }
@@ -234,18 +238,22 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
   @override
   Widget build(BuildContext context) {
     final Color statusColor = _getStockStatusColor(_stockActual, _stockMinimo);
-    final FaIconData statusIcon = _getStockStatusIcon(_stockActual, _stockMinimo);
+    final FaIconData statusIcon = _getStockStatusIcon(
+      _stockActual,
+      _stockMinimo,
+    );
     final String statusText = _getStockStatusText(_stockActual, _stockMinimo);
 
     return Dialog(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: AppTheme.darkSurface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       elevation: 10,
       child: Container(
         width: 800,
-        height: 700, // Aumentamos la altura para permitir más visibilidad sin tanto scroll
+        height:
+            700, // Aumentamos la altura para permitir más visibilidad sin tanto scroll
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -298,35 +306,47 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                                 <Widget>[
                                   _buildInfoRow('SKU', widget.producto.sku),
                                   _buildInfoRow(
-                                      'Categoría', widget.producto.categoria),
+                                    'Categoría',
+                                    widget.producto.categoria,
+                                  ),
                                   _buildInfoRow('Marca', widget.producto.marca),
                                   _buildInfoRow(
-                                      'Sucursal', widget.sucursalNombre),
+                                    'Sucursal',
+                                    widget.sucursalNombre,
+                                  ),
                                   if (widget.producto.descripcion != null)
-                                    _buildInfoRow('Descripción',
-                                        widget.producto.descripcion!),
+                                    _buildInfoRow(
+                                      'Descripción',
+                                      widget.producto.descripcion!,
+                                    ),
                                 ],
                               ),
 
                               const SizedBox(height: 24), // Espacio aumentado
-
                               // Información de stock
                               _buildInfoSection(
                                 'Información de Stock',
                                 FontAwesomeIcons.chartLine,
                                 <Widget>[
                                   _buildInfoRow(
-                                      'Stock Actual', _stockActual.toString(),
-                                      color: statusColor),
+                                    'Stock Actual',
+                                    _stockActual.toString(),
+                                    color: statusColor,
+                                  ),
                                   _buildInfoRow(
-                                      'Stock Mínimo', _stockMinimo.toString()),
-                                  _buildInfoRow('Estado', statusText,
-                                      icon: statusIcon, color: statusColor),
+                                    'Stock Mínimo',
+                                    _stockMinimo.toString(),
+                                  ),
+                                  _buildInfoRow(
+                                    'Estado',
+                                    statusText,
+                                    icon: statusIcon,
+                                    color: statusColor,
+                                  ),
                                 ],
                               ),
 
                               const SizedBox(height: 24), // Espacio aumentado
-
                               // Información de precios y liquidación
                               _buildInfoSection(
                                 'Información de Precios',
@@ -340,32 +360,6 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                                     'Precio Venta',
                                     widget.producto.getPrecioVentaFormateado(),
                                   ),
-                                  if (widget.producto.precioOferta != null)
-                                    _buildInfoRow(
-                                      'Precio Oferta',
-                                      widget.producto
-                                          .getPrecioOfertaFormateado()!,
-                                      color: Colors.orange,
-                                    ),
-                                  _buildInfoRow(
-                                    'Estado Liquidación',
-                                    widget.producto.liquidacion
-                                        ? 'En liquidación'
-                                        : 'Precio normal',
-                                    color: widget.producto.liquidacion
-                                        ? Colors.orange
-                                        : null,
-                                    icon: widget.producto.liquidacion
-                                        ? FontAwesomeIcons.fire
-                                        : null,
-                                  ),
-                                  if (widget.producto.liquidacion)
-                                    _buildInfoRow(
-                                      'Precio Actual',
-                                      widget.producto
-                                          .getPrecioActualFormateado(),
-                                      color: Colors.orange,
-                                    ),
                                 ],
                               ),
                             ],
@@ -375,15 +369,11 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                         const SizedBox(width: 24),
 
                         // Ajuste de stock
-                        Expanded(
-                          flex: 4,
-                          child: _buildAjusteStock(),
-                        ),
+                        Expanded(flex: 4, child: _buildAjusteStock()),
                       ],
                     ),
 
                     const SizedBox(height: 24), // Espacio aumentado
-
                     // Sección para gestionar liquidación
                     _buildGestionLiquidacion(),
                   ],
@@ -397,17 +387,17 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
   }
 
   // Sección de información con título y lista de filas
-  Widget _buildInfoSection(String title, FaIconData icon, List<Widget> children) {
+  Widget _buildInfoSection(
+    String title,
+    FaIconData icon,
+    List<Widget> children,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Row(
           children: <Widget>[
-            FaIcon(
-              icon,
-              size: 16,
-              color: const Color(0xFFE31E24),
-            ),
+            FaIcon(icon, size: 16, color: AppTheme.primaryColor),
             const SizedBox(width: 8),
             Text(
               title,
@@ -426,39 +416,95 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
   }
 
   // Fila de información con etiqueta y valor
-  Widget _buildInfoRow(String label, String value,
-      {FaIconData? icon, Color? color}) {
+  Widget _buildInfoRow(
+    String label,
+    String value, {
+    FaIconData? icon,
+    Color? color,
+    bool iconAlFinal = false,
+    bool iconEnCaja = false,
+    String? tooltip,
+  }) {
+    Widget? iconWidget;
+    if (icon != null) {
+      if (iconEnCaja) {
+        iconWidget = Container(
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+          decoration: BoxDecoration(
+            color: (color ?? Colors.orange).withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(
+              color: (color ?? Colors.orange).withValues(alpha: 0.3),
+            ),
+          ),
+          child: FaIcon(icon, size: 10, color: color ?? Colors.white70),
+        );
+      } else {
+        iconWidget = FaIcon(icon, size: 14, color: color ?? Colors.white70);
+      }
+    }
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           SizedBox(
-            width: 100,
-            child: Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
-                fontWeight: FontWeight.w500,
-              ),
+            width: 110,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Flexible(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (tooltip != null) ...<Widget>[
+                  const SizedBox(width: 4),
+                  Tooltip(
+                    message: tooltip,
+                    child: FaIcon(
+                      FontAwesomeIcons.circleInfo,
+                      size: 11,
+                      color: Colors.white.withValues(alpha: 0.5),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
-          if (icon != null) ...<Widget>[
-            FaIcon(
-              icon,
-              size: 14,
-              color: color ?? Colors.white70,
-            ),
+          if (iconWidget != null && !iconAlFinal) ...<Widget>[
+            iconWidget,
             const SizedBox(width: 6),
           ],
           Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                color: color ?? Colors.white,
-                fontWeight: color != null ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
+            child: (iconWidget != null && iconAlFinal)
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(
+                        value,
+                        style: TextStyle(
+                          color: color ?? Colors.white,
+                          fontWeight: color != null ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      iconWidget,
+                    ],
+                  )
+                : Text(
+                    value,
+                    style: TextStyle(
+                      color: color ?? Colors.white,
+                      fontWeight: color != null ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
           ),
         ],
       ),
@@ -467,14 +513,31 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
 
   // Widget para gestionar liquidación
   Widget _buildGestionLiquidacion() {
+    // Verificar si hay cambios respecto al estado original del producto
+    final bool switchChanged = _enLiquidacion != widget.producto.liquidacion;
+
+    bool precioChanged = false;
+    if (_enLiquidacion) {
+      final double? nuevoPrecio = double.tryParse(
+        _precioLiquidacionController.text,
+      );
+      final double? precioOriginal = widget.producto.precioOferta;
+      if (precioOriginal == null) {
+        precioChanged = nuevoPrecio != null;
+      } else {
+        precioChanged =
+            nuevoPrecio != null && (nuevoPrecio - precioOriginal).abs() > 0.009;
+      }
+    }
+
+    final bool tieneCambiosLiquidacion = switchChanged || precioChanged;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.1),
-        ),
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -492,7 +555,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: Colors.orange.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                   ),
                   child: const FaIcon(
                     FontAwesomeIcons.fire,
@@ -507,6 +570,16 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Tooltip(
+                  message:
+                      'Al activar la liquidación, el producto utilizará el precio de oferta como precio de venta principal. Esto aplica un descuento especial para liquidar inventario. El precio de liquidación debe ser menor al precio de venta regular.',
+                  child: FaIcon(
+                    FontAwesomeIcons.circleInfo,
+                    size: 14,
+                    color: Colors.orange,
                   ),
                 ),
                 const Spacer(),
@@ -532,52 +605,6 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                   ? Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        const SizedBox(height: 16),
-
-                        // Descripción de liquidación
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                                color: Colors.orange.withValues(alpha: 0.3)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              const Row(
-                                children: <Widget>[
-                                  FaIcon(
-                                    FontAwesomeIcons.circleInfo,
-                                    size: 14,
-                                    color: Colors.orange,
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Información sobre liquidación',
-                                    style: TextStyle(
-                                      color: Colors.orange,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Al activar la liquidación, el producto utilizará el precio de oferta como precio de venta principal. '
-                                'Esto aplica un descuento especial para liquidar inventario. '
-                                'El precio de liquidación debe ser menor al precio de venta regular.',
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
                         const SizedBox(height: 16),
 
                         // Switch para activar/desactivar liquidación
@@ -614,87 +641,142 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                             opacity: _enLiquidacion ? 1.0 : 0.0,
                             duration: const Duration(milliseconds: 300),
                             child: _enLiquidacion
-                                ? Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                ? Row(
                                     children: <Widget>[
-                                      const Text(
-                                        'Precio de liquidación',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
+                                      // Campo de Texto de Liquidación
+                                      Expanded(
+                                        flex: 45,
+                                        child: TextField(
+                                          controller:
+                                              _precioLiquidacionController,
+                                          keyboardType:
+                                              const TextInputType.numberWithOptions(
+                                            decimal: true,
+                                          ),
+                                          onChanged: (String value) {
+                                            setState(() {});
+                                          },
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                          ),
+                                          decoration: const InputDecoration(
+                                            labelText: 'Precio de liquidación',
+                                            hintText: 'Ingrese el precio',
+                                            border: OutlineInputBorder(),
+                                            filled: true,
+                                            fillColor: AppTheme.darkSurface,
+                                            labelStyle: TextStyle(
+                                              color: Colors.white70,
+                                            ),
+                                            hintStyle: TextStyle(
+                                              color: Colors.white30,
+                                            ),
+                                            prefixText: 'S/ ',
+                                            prefixStyle: TextStyle(
+                                              color: Colors.white70,
+                                            ),
+                                          ),
                                         ),
                                       ),
-                                      const SizedBox(height: 8),
-                                      TextField(
-                                        controller:
-                                            _precioLiquidacionController,
-                                        keyboardType: const TextInputType
-                                            .numberWithOptions(decimal: true),
-                                        style: const TextStyle(
-                                            color: Colors.white),
-                                        decoration: InputDecoration(
-                                          labelText: 'Precio de liquidación',
-                                          hintText:
-                                              'Ingrese el precio de liquidación',
-                                          border: const OutlineInputBorder(),
-                                          filled: true,
-                                          fillColor: const Color(0xFF1A1A1A),
-                                          labelStyle: const TextStyle(
-                                              color: Colors.white70),
-                                          hintStyle: const TextStyle(
-                                              color: Colors.white30),
-                                          prefixText: 'S/ ',
-                                          prefixStyle: const TextStyle(
-                                              color: Colors.white70),
-                                          helperText:
-                                              'Debe ser menor a S/ ${widget.producto.precioVenta.toStringAsFixed(2)}',
-                                          helperStyle: TextStyle(
-                                              color: Colors.white
-                                                  .withValues(alpha: 0.6)),
-                                        ),
-                                      ),
+                                      const SizedBox(width: 32),
 
-                                      const SizedBox(height: 8),
+                                      // Panel Informativo de Comparación - Precio Regular & Descuento
+                                      Expanded(
+                                        flex: 55,
+                                        child: Transform.translate(
+                                          offset: const Offset(0, -4),
+                                          child: Row(
+                                            children: <Widget>[
+                                              // Precio Regular
+                                              Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: <Widget>[
+                                                  Text(
+                                                    'Precio Regular',
+                                                    style: TextStyle(
+                                                      color: Colors.white
+                                                          .withValues(alpha: 0.6),
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    'S/ ${widget.producto.precioVenta.toStringAsFixed(2)}',
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 16,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(width: 36),
 
-                                      // Comparación de precios
-                                      Container(
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF1A1A1A),
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                        child: Column(
-                                          children: <Widget>[
-                                            _buildPrecioComparacion(
-                                              'Precio Regular',
-                                              widget.producto.precioVenta,
-                                              Colors.white,
-                                            ),
-                                            const SizedBox(height: 8),
-                                            _buildPrecioComparacion(
-                                              'Precio Liquidación',
-                                              double.tryParse(
-                                                      _precioLiquidacionController
-                                                          .text) ??
-                                                  0,
-                                              Colors.orange,
-                                            ),
-                                            const SizedBox(height: 8),
-                                            _buildPrecioComparacion(
-                                              'Descuento',
-                                              widget.producto.precioVenta -
-                                                  (double.tryParse(
-                                                          _precioLiquidacionController
-                                                              .text) ??
-                                                      0),
-                                              Colors.green,
-                                              isDescuento: true,
-                                              precioOriginal:
-                                                  widget.producto.precioVenta,
-                                            ),
-                                          ],
+                                              // Descuento
+                                              Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: <Widget>[
+                                                  Text(
+                                                    'Descuento',
+                                                    style: TextStyle(
+                                                      color: Colors.white
+                                                          .withValues(alpha: 0.6),
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Builder(
+                                                    builder: (context) {
+                                                      final double precioLiq =
+                                                          double.tryParse(
+                                                                _precioLiquidacionController
+                                                                    .text,
+                                                              ) ??
+                                                              0;
+                                                      final double ahorro =
+                                                          widget
+                                                              .producto
+                                                              .precioVenta -
+                                                          precioLiq;
+                                                      final double pct =
+                                                          (widget
+                                                                  .producto
+                                                                  .precioVenta >
+                                                              0)
+                                                          ? (ahorro /
+                                                              widget
+                                                                  .producto
+                                                                  .precioVenta *
+                                                              100)
+                                                          : 0;
+
+                                                      // Determinación dinámica de color según signo del ahorro (descuento)
+                                                      final Color colorDescuento =
+                                                          ahorro >= 0
+                                                              ? Colors.green
+                                                              : Colors.orange;
+
+                                                      return Text(
+                                                        'S/ ${ahorro.toStringAsFixed(2)} (${pct.toStringAsFixed(1)}%)',
+                                                        style: TextStyle(
+                                                          color: colorDescuento,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 16,
+                                                        ),
+                                                      );
+                                                    },
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -705,54 +787,59 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
 
                         const SizedBox(height: 20),
 
-                        // Botones para guardar/cancelar
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: <Widget>[
-                            ElevatedButton(
-                              onPressed: _isUpdating
-                                  ? null
-                                  : () {
-                                      setState(() {
-                                        _enLiquidacion =
-                                            widget.producto.liquidacion;
-                                        _precioLiquidacionController.text =
-                                            (widget.producto.precioOferta ??
-                                                    (widget.producto
-                                                            .precioVenta *
-                                                        0.9))
-                                                .toStringAsFixed(2);
-                                      });
-                                    },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.grey.shade800,
-                                foregroundColor: Colors.white,
+                        // Botones para guardar/cancelar (se muestran únicamente si se detectan cambios)
+                        if (tieneCambiosLiquidacion)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: <Widget>[
+                              ElevatedButton(
+                                onPressed: _isUpdating
+                                    ? null
+                                    : () {
+                                        setState(() {
+                                          _enLiquidacion =
+                                              widget.producto.liquidacion;
+                                          _precioLiquidacionController.text =
+                                              (widget.producto.precioOferta ??
+                                                      (widget
+                                                              .producto
+                                                              .precioVenta *
+                                                          0.9))
+                                                  .toStringAsFixed(2);
+                                        });
+                                      },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.grey.shade800,
+                                  foregroundColor: Colors.white,
+                                ),
+                                child: const Text('Cancelar'),
                               ),
-                              child: const Text('Cancelar'),
-                            ),
-                            const SizedBox(width: 16),
-                            ElevatedButton(
-                              onPressed:
-                                  _isUpdating ? null : _gestionarLiquidacion,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.orange,
-                                foregroundColor: Colors.white,
-                              ),
-                              child: _isUpdating
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2,
+                              const SizedBox(width: 16),
+                              ElevatedButton(
+                                onPressed: _isUpdating
+                                    ? null
+                                    : _gestionarLiquidacion,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.orange,
+                                  foregroundColor: Colors.white,
+                                ),
+                                child: _isUpdating
+                                    ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : Text(
+                                        _enLiquidacion
+                                            ? 'Guardar Liquidación'
+                                            : 'Quitar Liquidación',
                                       ),
-                                    )
-                                  : Text(_enLiquidacion
-                                      ? 'Guardar Liquidación'
-                                      : 'Quitar Liquidación'),
-                            ),
-                          ],
-                        ),
+                              ),
+                            ],
+                          ),
                       ],
                     )
                   : const SizedBox.shrink(),
@@ -763,48 +850,14 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
     );
   }
 
-  // Widget para mostrar comparación de precios
-  Widget _buildPrecioComparacion(String label, double precio, Color color,
-      {bool isDescuento = false, double? precioOriginal}) {
-    // Calcular porcentaje de descuento
-    String porcentajeDescuento = '';
-    if (isDescuento && precioOriginal != null && precioOriginal > 0) {
-      final double porcentaje = (precio / precioOriginal) * 100;
-      porcentajeDescuento = ' (${porcentaje.toStringAsFixed(1)}%)';
-    }
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: <Widget>[
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.8),
-            fontSize: 14,
-          ),
-        ),
-        Text(
-          'S/ ${precio.toStringAsFixed(2)}$porcentajeDescuento',
-          style: TextStyle(
-            color: color,
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-        ),
-      ],
-    );
-  }
-
   // Widget para ajustar el stock
   Widget _buildAjusteStock() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.1),
-        ),
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -827,10 +880,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                 children: <Widget>[
                   const Text(
                     'Actual',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -844,26 +894,20 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                 ],
               ),
               const SizedBox(width: 20),
-              const Icon(
-                Icons.arrow_forward,
-                color: Colors.white30,
-              ),
+              const Icon(Icons.arrow_forward, color: Colors.white30),
               const SizedBox(width: 20),
               Column(
                 children: <Widget>[
                   const Text(
                     'Nuevo',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     _stockNuevo.toString(),
                     style: TextStyle(
                       color: _stockNuevo != _stockActual
-                          ? const Color(0xFFE31E24)
+                          ? AppTheme.primaryColor
                           : Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 20,
@@ -886,11 +930,12 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
               hintText: 'Ingrese la cantidad',
               border: const OutlineInputBorder(),
               filled: true,
-              fillColor: const Color(0xFF1A1A1A),
+              fillColor: AppTheme.darkSurface,
               labelStyle: const TextStyle(color: Colors.white70),
               hintStyle: const TextStyle(color: Colors.white30),
-              errorText:
-                  _mostrarAdvertencia ? 'Valor muy alto, ¿está seguro?' : null,
+              errorText: _mostrarAdvertencia
+                  ? 'Valor muy alto, ¿está seguro?'
+                  : null,
             ),
             onChanged: (String value) {
               // Validar que sea un número
@@ -921,15 +966,17 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
             children: <Widget>[
               // Botón para reducir la cantidad a agregar
               IconButton(
-                icon: const FaIcon(FontAwesomeIcons.circleMinus,
-                    color: Colors.white),
+                icon: const FaIcon(
+                  FontAwesomeIcons.circleMinus,
+                  color: Colors.white,
+                ),
                 onPressed: _isUpdating || (_stockNuevo <= _stockActual)
                     ? null
                     : () {
                         setState(() {
                           _stockNuevo--;
-                          _stockController.text =
-                              (_stockNuevo - _stockActual).toString();
+                          _stockController.text = (_stockNuevo - _stockActual)
+                              .toString();
                           _mostrarAdvertencia =
                               (_stockNuevo - _stockActual) > 100;
                           // Reiniciar contador de clics cuando reducimos
@@ -942,15 +989,17 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
               const SizedBox(width: 16),
               // Botón para aumentar la cantidad a agregar
               IconButton(
-                icon: const FaIcon(FontAwesomeIcons.circlePlus,
-                    color: Colors.white),
+                icon: const FaIcon(
+                  FontAwesomeIcons.circlePlus,
+                  color: Colors.white,
+                ),
                 onPressed: _isUpdating
                     ? null
                     : () {
                         setState(() {
                           _stockNuevo++;
-                          _stockController.text =
-                              (_stockNuevo - _stockActual).toString();
+                          _stockController.text = (_stockNuevo - _stockActual)
+                              .toString();
                           _mostrarAdvertencia =
                               (_stockNuevo - _stockActual) > 100;
 
@@ -985,10 +1034,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                         children: <Widget>[
                           // Botón +5
                           ElevatedButton.icon(
-                            icon: const FaIcon(
-                              FontAwesomeIcons.plus,
-                              size: 12,
-                            ),
+                            icon: const FaIcon(FontAwesomeIcons.plus, size: 12),
                             label: const Text('+5'),
                             onPressed: _isUpdating
                                 ? null
@@ -1006,16 +1052,15 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                               backgroundColor: const Color(0xFF3E3E3E),
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 8),
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
                           // Botón +10
                           ElevatedButton.icon(
-                            icon: const FaIcon(
-                              FontAwesomeIcons.plus,
-                              size: 12,
-                            ),
+                            icon: const FaIcon(FontAwesomeIcons.plus, size: 12),
                             label: const Text('+10'),
                             onPressed: _isUpdating
                                 ? null
@@ -1033,7 +1078,9 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                               backgroundColor: const Color(0xFF3E3E3E),
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 8),
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
                             ),
                           ),
                         ],
@@ -1081,7 +1128,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                       ? null
                       : _actualizarStock,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE31E24),
+                    backgroundColor: AppTheme.primaryColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     disabledBackgroundColor: Colors.grey.shade800,
@@ -1110,7 +1157,7 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
                 children: <Widget>[
                   const FaIcon(
                     FontAwesomeIcons.triangleExclamation,
-                    color: Color(0xFFE31E24),
+                    color: AppTheme.primaryColor,
                     size: 14,
                   ),
                   const SizedBox(width: 8),
@@ -1133,21 +1180,25 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
 
   // Métodos auxiliares que usan StockUtils
   Color _getStockStatusColor(int stockActual, int stockMinimo) {
-    final StockStatus status =
-        StockUtils.getStockStatus(stockActual, stockMinimo);
+    final StockStatus status = StockUtils.getStockStatus(
+      stockActual,
+      stockMinimo,
+    );
     switch (status) {
       case StockStatus.agotado:
         return Colors.red.shade800;
       case StockStatus.stockBajo:
-        return const Color(0xFFE31E24);
+        return AppTheme.primaryColor;
       case StockStatus.disponible:
         return Colors.green;
     }
   }
 
   FaIconData _getStockStatusIcon(int stockActual, int stockMinimo) {
-    final StockStatus status =
-        StockUtils.getStockStatus(stockActual, stockMinimo);
+    final StockStatus status = StockUtils.getStockStatus(
+      stockActual,
+      stockMinimo,
+    );
     switch (status) {
       case StockStatus.agotado:
         return FontAwesomeIcons.ban;
@@ -1159,8 +1210,10 @@ class _StockDetallesDialogState extends State<StockDetallesDialog> {
   }
 
   String _getStockStatusText(int stockActual, int stockMinimo) {
-    final StockStatus status =
-        StockUtils.getStockStatus(stockActual, stockMinimo);
+    final StockStatus status = StockUtils.getStockStatus(
+      stockActual,
+      stockMinimo,
+    );
     switch (status) {
       case StockStatus.agotado:
         return 'Agotado';

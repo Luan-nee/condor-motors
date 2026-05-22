@@ -1,4 +1,4 @@
-import 'package:condorsmotors/models/cliente.model.dart';
+﻿import 'package:condorsmotors/models/cliente.model.dart';
 import 'package:condorsmotors/models/pedido.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/repositories/cliente.repository.dart';
@@ -139,7 +139,7 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
     }
 
     // Validar detalles de reserva
-    for (var detalle in _detallesReserva) {
+    for (final detalle in _detallesReserva) {
       if (detalle.nombreProducto.isEmpty || detalle.cantidad <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -315,7 +315,7 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
               const ColoredBox(
                 color: AppTheme.backgroundColor,
                 child: TabBar(
-                  indicatorColor: Color(0xFFE31E24),
+                  indicatorColor: AppTheme.primaryColor,
                   labelColor: Colors.white,
                   unselectedLabelColor: Colors.white54,
                   tabs: [
@@ -376,7 +376,7 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
                     const SizedBox(width: 16),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE31E24),
+                        backgroundColor: AppTheme.primaryColor,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                             horizontal: 32, vertical: 16),
@@ -551,12 +551,12 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
                     return Theme(
                       data: ThemeData.dark().copyWith(
                         colorScheme: const ColorScheme.dark(
-                          primary: Color(0xFFE31E24),
+                          primary: AppTheme.primaryColor,
                           onPrimary: Colors.white,
                           surface: Color(0xFF232323),
                         ),
                         dialogTheme: const DialogThemeData(
-                            backgroundColor: Color(0xFF1A1A1A)),
+                            backgroundColor: AppTheme.darkSurface),
                       ),
                       child: child!,
                     );
@@ -631,7 +631,7 @@ class _FormPedidoWidgetState extends State<FormPedidoWidget> {
               alignment: Alignment.centerRight,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE31E24),
+                  backgroundColor: AppTheme.primaryColor,
                   foregroundColor: Colors.white,
                 ),
                 onPressed: _agregarDetalle,

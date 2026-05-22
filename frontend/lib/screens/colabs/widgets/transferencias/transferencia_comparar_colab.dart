@@ -1,4 +1,5 @@
 import 'package:condorsmotors/models/transferencias.model.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -21,9 +22,9 @@ class TransferenciaCompararColab extends StatelessWidget {
     final bool isMobile = screenSize.width < 600;
 
     return Dialog(
-      backgroundColor: const Color(0xFF2D2D2D),
+      backgroundColor: AppTheme.surfaceColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Container(
         width: isMobile ? screenSize.width * 0.95 : 600,
@@ -63,7 +64,7 @@ class TransferenciaCompararColab extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(isMobile ? 12 : 16),
       decoration: const BoxDecoration(
-        color: Color(0xFF1A1A1A),
+        color: AppTheme.darkSurface,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(12),
           topRight: Radius.circular(12),
@@ -73,7 +74,7 @@ class TransferenciaCompararColab extends StatelessWidget {
         children: [
           const FaIcon(
             FontAwesomeIcons.scaleBalanced,
-            color: Color(0xFFE31E24),
+            color: AppTheme.primaryColor,
             size: 20,
           ),
           const SizedBox(width: 12),
@@ -105,8 +106,8 @@ class TransferenciaCompararColab extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.darkSurface,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
       ),
       child: Column(
         children: [
@@ -119,7 +120,7 @@ class TransferenciaCompararColab extends StatelessWidget {
             padding: EdgeInsets.symmetric(vertical: 8),
             child: FaIcon(
               FontAwesomeIcons.arrowDown,
-              color: Color(0xFFE31E24),
+              color: AppTheme.primaryColor,
               size: 16,
             ),
           ),
@@ -139,12 +140,12 @@ class TransferenciaCompararColab extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: const Color(0xFFE31E24).withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+            color: AppTheme.primaryColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(AppTheme.smallRadius),
           ),
           child: FaIcon(
             icon,
-            color: const Color(0xFFE31E24),
+            color: AppTheme.primaryColor,
             size: 16,
           ),
         ),
@@ -182,14 +183,14 @@ class TransferenciaCompararColab extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFE31E24).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              color: AppTheme.primaryColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(AppTheme.smallRadius),
             ),
             child: const Row(
               children: [
                 FaIcon(
                   FontAwesomeIcons.triangleExclamation,
-                  color: Color(0xFFE31E24),
+                  color: AppTheme.primaryColor,
                   size: 20,
                 ),
                 SizedBox(width: 12),
@@ -197,7 +198,7 @@ class TransferenciaCompararColab extends StatelessWidget {
                   child: Text(
                     'Hay productos con stock insuficiente. Revise la lista antes de continuar.',
                     style: TextStyle(
-                      color: Color(0xFFE31E24),
+                      color: AppTheme.primaryColor,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -211,7 +212,7 @@ class TransferenciaCompararColab extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.orange.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppTheme.smallRadius),
             ),
             child: Row(
               children: [
@@ -247,7 +248,7 @@ class TransferenciaCompararColab extends StatelessWidget {
           children: [
             const FaIcon(
               FontAwesomeIcons.boxesStacked,
-              color: Color(0xFFE31E24),
+              color: AppTheme.primaryColor,
               size: 20,
             ),
             const SizedBox(width: 12),
@@ -273,14 +274,14 @@ class TransferenciaCompararColab extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.darkSurface,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         border: Border.all(
           color: producto.hayStockSuficiente
               ? producto.quedaConStockBajo
                   ? Colors.orange
                   : const Color(0xFF43A047)
-              : const Color(0xFFE31E24),
+              : AppTheme.primaryColor,
         ),
       ),
       child: Column(
@@ -290,7 +291,7 @@ class TransferenciaCompararColab extends StatelessWidget {
             children: [
               const FaIcon(
                 FontAwesomeIcons.box,
-                color: Color(0xFFE31E24),
+                color: AppTheme.primaryColor,
                 size: 16,
               ),
               const SizedBox(width: 12),
@@ -343,7 +344,7 @@ class TransferenciaCompararColab extends StatelessWidget {
                 'Stock Transferido',
                 producto.cantidadSolicitada.toString(),
                 FontAwesomeIcons.truckFast,
-                const Color(0xFFE31E24),
+                AppTheme.primaryColor,
               ),
               _buildStockInfo(
                 'Stock Final',
@@ -353,7 +354,7 @@ class TransferenciaCompararColab extends StatelessWidget {
                     ? Colors.orange
                     : producto.hayStockSuficiente
                         ? const Color(0xFF43A047)
-                        : const Color(0xFFE31E24),
+                        : AppTheme.primaryColor,
                 showIcon: true,
                 stockBajo: producto.quedaConStockBajo,
                 stockDisponible: producto.hayStockSuficiente,
@@ -423,7 +424,7 @@ class TransferenciaCompararColab extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
-        color: Color(0xFF1A1A1A),
+        color: AppTheme.darkSurface,
         borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(12),
           bottomRight: Radius.circular(12),
@@ -449,7 +450,7 @@ class TransferenciaCompararColab extends StatelessWidget {
             ),
             label: const Text('Confirmar Envío'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE31E24),
+              backgroundColor: AppTheme.primaryColor,
               disabledBackgroundColor: Colors.grey,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(
@@ -457,7 +458,7 @@ class TransferenciaCompararColab extends StatelessWidget {
                 vertical: 12,
               ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppTheme.smallRadius),
               ),
             ),
           ),

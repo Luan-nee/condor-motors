@@ -1,6 +1,7 @@
-import 'package:condorsmotors/models/proforma.model.dart';
+﻿import 'package:condorsmotors/models/proforma.model.dart';
 import 'package:condorsmotors/providers/computer/proforma.computer.riverpod.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma/proforma_utils.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -19,9 +20,9 @@ class ProcessingDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color(0xFF2D2D2D),
+      backgroundColor: AppTheme.surfaceColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Container(
         padding: const EdgeInsets.all(24),
@@ -32,7 +33,7 @@ class ProcessingDialog extends StatelessWidget {
               width: 48,
               height: 48,
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
               ),
             ),
             const SizedBox(height: 24),
@@ -173,7 +174,7 @@ class _ProformaSaleDialogState extends ConsumerState<ProformaSaleDialog> {
           context: context,
           builder: (BuildContext errorContext) {
             return AlertDialog(
-              backgroundColor: const Color(0xFF2D2D2D),
+              backgroundColor: AppTheme.surfaceColor,
               title: const Row(
                 children: [
                   Icon(Icons.error_outline, color: Colors.red),
@@ -211,7 +212,7 @@ class _ProformaSaleDialogState extends ConsumerState<ProformaSaleDialog> {
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4CAF50),
+                    backgroundColor: AppTheme.successColor,
                   ),
                   onPressed: () {
                     Navigator.of(errorContext).pop();
@@ -239,7 +240,7 @@ class _ProformaSaleDialogState extends ConsumerState<ProformaSaleDialog> {
         context: context,
         builder: (BuildContext errorContext) {
           return AlertDialog(
-            backgroundColor: const Color(0xFF2D2D2D),
+            backgroundColor: AppTheme.surfaceColor,
             title: const Row(
               children: [
                 Icon(Icons.error_outline, color: Colors.red),
@@ -292,9 +293,9 @@ class _ProformaSaleDialogState extends ConsumerState<ProformaSaleDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color(0xFF2D2D2D),
+      backgroundColor: AppTheme.surfaceColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Container(
         width: MediaQuery.of(context).size.width * 0.5,
@@ -308,13 +309,13 @@ class _ProformaSaleDialogState extends ConsumerState<ProformaSaleDialog> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppTheme.successColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                   ),
                   child: const FaIcon(
                     FontAwesomeIcons.fileInvoiceDollar,
                     size: 20,
-                    color: Color(0xFF4CAF50),
+                    color: AppTheme.successColor,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -374,13 +375,13 @@ class _ProformaSaleDialogState extends ConsumerState<ProformaSaleDialog> {
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
-                borderRadius: BorderRadius.circular(8),
+                color: AppTheme.darkSurface,
+                borderRadius: BorderRadius.circular(AppTheme.smallRadius),
               ),
               padding: const EdgeInsets.all(12),
               child: Column(
                 children: <Widget>[
-                  for (DetalleProforma detalle in widget.proforma.detalles)
+                  for (final DetalleProforma detalle in widget.proforma.detalles)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Row(
@@ -446,7 +447,7 @@ class _ProformaSaleDialogState extends ConsumerState<ProformaSaleDialog> {
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF4CAF50),
+                          color: AppTheme.successColor,
                         ),
                       ),
                     ],
@@ -475,12 +476,12 @@ class _ProformaSaleDialogState extends ConsumerState<ProformaSaleDialog> {
                 ElevatedButton.icon(
                   onPressed: _procesando ? null : _convertirProformaAVenta,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4CAF50),
+                    backgroundColor: AppTheme.successColor,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
                     // Mostrar visual de deshabilitado cuando está procesando
                     disabledBackgroundColor:
-                        const Color(0xFF4CAF50).withValues(alpha: 0.5),
+                        AppTheme.successColor.withValues(alpha: 0.5),
                   ),
                   icon: _procesando
                       ? const SizedBox(

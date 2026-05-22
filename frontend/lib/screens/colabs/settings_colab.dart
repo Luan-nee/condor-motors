@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -72,9 +73,9 @@ class _SettingsColabScreenState extends State<SettingsColabScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Configuración'),
-        backgroundColor: const Color(0xFF2D2D2D),
+        backgroundColor: AppTheme.surfaceColor,
       ),
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: AppTheme.darkSurface,
       body: ListView(
         children: [
           SwitchListTile.adaptive(
@@ -88,9 +89,9 @@ class _SettingsColabScreenState extends State<SettingsColabScreen> {
               'Recibir notificaciones push cuando haya nuevos movimientos recibidos',
               style: TextStyle(color: Colors.white70),
             ),
-            activeThumbColor: const Color(0xFFE31E24),
-            activeTrackColor: const Color(0xFFE31E24).withValues(alpha: 0.5),
-            tileColor: const Color(0xFF2D2D2D),
+            activeThumbColor: AppTheme.primaryColor,
+            activeTrackColor: AppTheme.primaryColor.withValues(alpha: 0.5),
+            tileColor: AppTheme.surfaceColor,
           ),
         ],
       ),

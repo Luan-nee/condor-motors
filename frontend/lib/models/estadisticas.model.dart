@@ -200,9 +200,9 @@ class EstadisticasVentas extends Equatable {
     }
 
     // Normalizar los mapas de ventas para asegurar valores numéricos
-    Map<String, dynamic> ventasMap =
+    final Map<String, dynamic> ventasMap =
         _normalizeVentasMap(json['ventas'] as Map<String, dynamic>?);
-    Map<String, dynamic> totalVentasMap =
+    final Map<String, dynamic> totalVentasMap =
         _normalizeVentasMap(json['totalVentas'] as Map<String, dynamic>?);
 
     return EstadisticasVentas(

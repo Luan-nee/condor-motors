@@ -6,20 +6,20 @@ part of 'ventas.computer.riverpod.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$ventasComputerHash() => r'67ba2263c6f8eeb28d072c03ebe21f3e2b002706';
+String _$ventasComputerHash() => r'58f457f493b8d7a36a16f311a65bc8722c849022';
 
 /// See also [VentasComputer].
 @ProviderFor(VentasComputer)
 final ventasComputerProvider =
     NotifierProvider<VentasComputer, VentasComputerState>.internal(
-  VentasComputer.new,
-  name: r'ventasComputerProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$ventasComputerHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+      VentasComputer.new,
+      name: r'ventasComputerProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$ventasComputerHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
 
 typedef _$VentasComputer = Notifier<VentasComputerState>;
 // ignore_for_file: type=lint

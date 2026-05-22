@@ -561,8 +561,8 @@ class VentasApi {
     }
 
     // Convertir cada elemento a un objeto Venta con manejo de errores detallado
-    List<Venta> resultado = [];
-    for (var item in ventasData) {
+    final List<Venta> resultado = [];
+    for (final item in ventasData) {
       if (item is Map<String, dynamic>) {
         try {
           resultado.add(Venta.fromJson(item));

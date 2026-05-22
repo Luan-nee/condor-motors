@@ -1,6 +1,7 @@
 import 'package:condorsmotors/models/empleado.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
 import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_horario_dialog.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/empleados_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -89,7 +90,7 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
                   maxHeight: MediaQuery.of(context).size.height * 0.8,
                 ),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.5),
@@ -99,7 +100,7 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
                   ],
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                   child: Image.network(
                     widget.empleado.fotoUrl!,
                     fit: BoxFit.contain,
@@ -109,8 +110,8 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
                       width: 300,
                       height: 300,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2D2D2D),
-                        borderRadius: BorderRadius.circular(12),
+                        color: AppTheme.surfaceColor,
+                        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                       ),
                       child: const Center(
                         child: Column(
@@ -220,14 +221,14 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
                     width: 64,
                     height: 64,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2D2D2D),
-                      borderRadius: BorderRadius.circular(12),
+                      color: AppTheme.surfaceColor,
+                      borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                     ),
                     child: Center(
                       child: (widget.empleado.fotoUrl != null &&
                               widget.empleado.fotoUrl!.isNotEmpty)
                           ? ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                               child: Stack(
                                 children: [
                                   Image.network(
@@ -240,7 +241,7 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
                                             StackTrace? stackTrace) =>
                                         const FaIcon(
                                       FontAwesomeIcons.user,
-                                      color: Color(0xFFE31E24),
+                                      color: AppTheme.primaryColor,
                                       size: 28,
                                     ),
                                   ),
@@ -274,7 +275,7 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
                             )
                           : const FaIcon(
                               FontAwesomeIcons.user,
-                              color: Color(0xFFE31E24),
+                              color: AppTheme.primaryColor,
                               size: 28,
                             ),
                     ),
@@ -302,10 +303,10 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2D2D2D),
-                        borderRadius: BorderRadius.circular(8),
+                        color: AppTheme.surfaceColor,
+                        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                         border: Border.all(
-                          color: const Color(0xFFE31E24).withValues(alpha: 0.3),
+                          color: AppTheme.primaryColor.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(
@@ -313,7 +314,7 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
                         children: <Widget>[
                           FaIcon(
                             EmpleadosUtils.getRolIcon(rol),
-                            color: const Color(0xFFE31E24),
+                            color: AppTheme.primaryColor,
                             size: 14,
                           ),
                           const SizedBox(width: 8),
@@ -360,7 +361,7 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Color(0xFFE31E24),
+              color: AppTheme.primaryColor,
             ),
           ),
           const SizedBox(height: 12),
@@ -409,7 +410,7 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Color(0xFFE31E24),
+              color: AppTheme.primaryColor,
             ),
           ),
           const SizedBox(height: 12),
@@ -417,8 +418,8 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF2D2D2D),
-              borderRadius: BorderRadius.circular(8),
+              color: AppTheme.surfaceColor,
+              borderRadius: BorderRadius.circular(AppTheme.smallRadius),
               border: Border.all(
                 color: esCentral
                     ? const Color.fromARGB(255, 95, 208, 243)
@@ -431,8 +432,8 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1A1A1A),
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppTheme.darkSurface,
+                    borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                   ),
                   child: Center(
                     child: FaIcon(
@@ -500,7 +501,7 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFFE31E24),
+                  color: AppTheme.primaryColor,
                 ),
               ),
             ],
@@ -525,7 +526,7 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Color(0xFFE31E24),
+              color: AppTheme.primaryColor,
             ),
           ),
           const SizedBox(height: 12),
@@ -549,7 +550,7 @@ class _EmpleadoDetallesViewerState extends State<EmpleadoDetallesViewer> {
                   ),
                   label: const Text('Editar'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE31E24),
+                    backgroundColor: AppTheme.primaryColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
@@ -602,9 +603,9 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: AppTheme.darkSurface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Container(
         width: 600,
@@ -653,7 +654,7 @@ class _EmpleadoDetallesDialogState extends State<EmpleadoDetallesDialog> {
                   ),
                   label: const Text('Editar'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE31E24),
+                    backgroundColor: AppTheme.primaryColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,

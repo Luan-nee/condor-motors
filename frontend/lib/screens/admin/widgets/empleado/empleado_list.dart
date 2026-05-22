@@ -1,4 +1,5 @@
 import 'package:condorsmotors/models/empleado.model.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/empleados_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -72,7 +73,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: _isHovered
-              ? const Color(0xFF2D2D2D)
+              ? AppTheme.surfaceColor
               : (esInactivo ? Colors.transparent : Colors.transparent),
           border: Border(
             bottom: BorderSide(
@@ -96,8 +97,8 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2D2D2D),
-                        borderRadius: BorderRadius.circular(8),
+                        color: AppTheme.surfaceColor,
+                        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                         border: esInactivo
                             ? Border.all(
                                 color: Colors.grey.withValues(alpha: 0.4),
@@ -108,7 +109,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                         child: widget.empleado.fotoUrl != null &&
                                 widget.empleado.fotoUrl!.isNotEmpty
                             ? ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                                 child: Stack(
                                   children: <Widget>[
                                     Image.network(
@@ -121,7 +122,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                                               StackTrace? stackTrace) =>
                                           const FaIcon(
                                         FontAwesomeIcons.user,
-                                        color: Color(0xFFE31E24),
+                                        color: AppTheme.primaryColor,
                                         size: 16,
                                       ),
                                     ),
@@ -139,7 +140,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                                 children: <Widget>[
                                   const FaIcon(
                                     FontAwesomeIcons.user,
-                                    color: Color(0xFFE31E24),
+                                    color: AppTheme.primaryColor,
                                     size: 16,
                                   ),
                                   if (esInactivo)
@@ -150,7 +151,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                                         width: 12,
                                         height: 12,
                                         decoration: const BoxDecoration(
-                                          color: Color(0xFFE31E24),
+                                          color: AppTheme.primaryColor,
                                           shape: BoxShape.circle,
                                         ),
                                         child: const Center(
@@ -248,7 +249,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                       FontAwesomeIcons.phone,
                       color: esInactivo
                           ? Colors.grey.withValues(alpha: 0.5)
-                          : const Color(0xFFE31E24),
+                          : AppTheme.primaryColor,
                       size: 14,
                     ),
                     const SizedBox(width: 8),
@@ -276,7 +277,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                       EmpleadosUtils.getRolIcon(rol),
                       color: esInactivo
                           ? Colors.grey.withValues(alpha: 0.5)
-                          : const Color(0xFFE31E24),
+                          : AppTheme.primaryColor,
                       size: 14,
                     ),
                     const SizedBox(width: 8),

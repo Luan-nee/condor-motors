@@ -9,6 +9,7 @@ import 'package:condorsmotors/screens/admin/widgets/producto/productos_form.dart
 import 'package:condorsmotors/screens/admin/widgets/producto/productos_table.dart';
 import 'package:condorsmotors/screens/admin/widgets/productos_search_bar.dart';
 import 'package:condorsmotors/screens/admin/widgets/slide_sucursal.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:condorsmotors/widgets/toast_manager.dart';
 import 'package:flutter/foundation.dart';
@@ -22,7 +23,8 @@ class ProductosAdminScreen extends ConsumerStatefulWidget {
   const ProductosAdminScreen({super.key});
 
   @override
-  ConsumerState<ProductosAdminScreen> createState() => _ProductosAdminScreenState();
+  ConsumerState<ProductosAdminScreen> createState() =>
+      _ProductosAdminScreenState();
 }
 
 class _ProductosAdminScreenState extends ConsumerState<ProductosAdminScreen> {
@@ -37,7 +39,7 @@ class _ProductosAdminScreenState extends ConsumerState<ProductosAdminScreen> {
     }
 
     final state = ref.read(productosAdminProvider);
-    
+
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) => ProductosFormDialogAdmin(
@@ -45,7 +47,9 @@ class _ProductosAdminScreenState extends ConsumerState<ProductosAdminScreen> {
         sucursales: state.sucursales,
         sucursalSeleccionada: state.selectedSucursal,
         onSave: (Map<String, dynamic> productoData) async {
-          await ref.read(productosAdminProvider.notifier).cargarProductos(forceRefresh: true);
+          await ref
+              .read(productosAdminProvider.notifier)
+              .cargarProductos(forceRefresh: true);
         },
       ),
     );
@@ -53,13 +57,15 @@ class _ProductosAdminScreenState extends ConsumerState<ProductosAdminScreen> {
 
   void _showProductoDetalleDialog(Producto producto) {
     final state = ref.read(productosAdminProvider);
-    
+
     ProductoDetalleDialog.show(
       context: context,
       producto: producto,
       sucursales: state.sucursales,
       onSave: (Producto productoActualizado) async {
-        await ref.read(productosAdminProvider.notifier).cargarProductos(forceRefresh: true);
+        await ref
+            .read(productosAdminProvider.notifier)
+            .cargarProductos(forceRefresh: true);
       },
     );
   }
@@ -72,12 +78,16 @@ class _ProductosAdminScreenState extends ConsumerState<ProductosAdminScreen> {
 
     context.showInfoToast('Exportando productos...');
 
-    final List<int>? excelBytes = await _generarExportacionProductos(state.productosFiltrados);
+    final List<int>? excelBytes = await _generarExportacionProductos(
+      state.productosFiltrados,
+    );
 
     if (mounted) {
       if (excelBytes != null && excelBytes.isNotEmpty) {
         if (kIsWeb) {
-          context.showSuccessToast('Reporte de productos descargado exitosamente');
+          context.showSuccessToast(
+            'Reporte de productos descargado exitosamente',
+          );
         } else {
           try {
             String? directorioGuardado;
@@ -85,12 +95,15 @@ class _ProductosAdminScreenState extends ConsumerState<ProductosAdminScreen> {
             directorioGuardado = prefs.getString('directorioExcel');
 
             if (directorioGuardado == null) {
-              final io.Directory directory = await getApplicationDocumentsDirectory();
+              final io.Directory directory =
+                  await getApplicationDocumentsDirectory();
               directorioGuardado = directory.path;
             }
 
             if (mounted) {
-              context.showSuccessToast('Reporte de productos guardado exitosamente');
+              context.showSuccessToast(
+                'Reporte de productos guardado exitosamente',
+              );
             }
           } catch (e) {
             if (mounted) {
@@ -106,28 +119,34 @@ class _ProductosAdminScreenState extends ConsumerState<ProductosAdminScreen> {
     }
   }
 
-  Future<List<int>?> _generarExportacionProductos(List<Producto> productos) async {
+  Future<List<int>?> _generarExportacionProductos(
+    List<Producto> productos,
+  ) async {
     try {
       if (productos.isEmpty) {
         return null;
       }
 
       final StringBuffer csvContent = StringBuffer()
-        ..writeln('SKU,Nombre,Categoría,Marca,Precio Compra,Precio Venta,Stock,Stock Mínimo,Color,Descripción');
+        ..writeln(
+          'SKU,Nombre,Categoría,Marca,Precio Compra,Precio Venta,Stock,Stock Mínimo,Color,Descripción',
+        );
 
       for (final Producto producto in productos) {
-        csvContent.writeln([
-          producto.sku,
-          producto.nombre,
-          producto.categoria,
-          producto.marca,
-          producto.precioCompra.toString(),
-          producto.precioVenta.toString(),
-          producto.stock.toString(),
-          producto.stockMinimo?.toString() ?? '',
-          producto.color ?? '',
-          (producto.descripcion ?? '').replaceAll(',', ';'),
-        ].join(','));
+        csvContent.writeln(
+          [
+            producto.sku,
+            producto.nombre,
+            producto.categoria,
+            producto.marca,
+            producto.precioCompra.toString(),
+            producto.precioVenta.toString(),
+            producto.stock.toString(),
+            producto.stockMinimo?.toString() ?? '',
+            producto.color ?? '',
+            (producto.descripcion ?? '').replaceAll(',', ';'),
+          ].join(','),
+        );
       }
 
       return utf8.encode(csvContent.toString());
@@ -140,23 +159,41 @@ class _ProductosAdminScreenState extends ConsumerState<ProductosAdminScreen> {
   @override
   Widget build(BuildContext context) {
     // Escuchamos errores de forma aislada para mostrar Toasts sin reconstruir todo
-    ref.listen(productosAdminProvider.select((s) => s.errorMessage), (previous, next) {
+    ref.listen(productosAdminProvider.select((s) => s.errorMessage), (
+      previous,
+      next,
+    ) {
       if (next != null && next.isNotEmpty) {
         context.showErrorToast(next);
       }
     });
 
-    final selectedSucursal = ref.watch(productosAdminProvider.select((s) => s.selectedSucursal));
-    final isLoadingSucursales = ref.watch(productosAdminProvider.select((s) => s.isLoadingSucursales));
-    final totalPages = ref.watch(productosAdminProvider.select((s) => s.paginacion.totalPages));
-    final isLoading = ref.watch(productosAdminProvider.select((s) => s.isLoading));
-    final productos = ref.watch(productosAdminProvider.select((s) => s.productosFiltrados));
-    final errorMessage = ref.watch(productosAdminProvider.select((s) => s.errorMessage));
+    final selectedSucursal = ref.watch(
+      productosAdminProvider.select((s) => s.selectedSucursal),
+    );
+    final isLoadingSucursales = ref.watch(
+      productosAdminProvider.select((s) => s.isLoadingSucursales),
+    );
+    final totalPages = ref.watch(
+      productosAdminProvider.select((s) => s.paginacion.totalPages),
+    );
+    final isLoading = ref.watch(
+      productosAdminProvider.select((s) => s.isLoading),
+    );
+    final productos = ref.watch(
+      productosAdminProvider.select((s) => s.productosFiltrados),
+    );
+    final errorMessage = ref.watch(
+      productosAdminProvider.select((s) => s.errorMessage),
+    );
+    final sortBy = ref.watch(productosAdminProvider.select((s) => s.sortBy));
+    final sortOrder = ref.watch(productosAdminProvider.select((s) => s.order));
 
     final notifier = ref.read(productosAdminProvider.notifier);
 
     // Mantenemos una key estable para evitar destruir el estado interno de la tabla durante la navegación
-    final String baseKey = 'productos_${selectedSucursal?.id}_page_${ref.read(productosAdminProvider).currentPage}';
+    final String baseKey =
+        'productos_${selectedSucursal?.id}_page_${ref.read(productosAdminProvider).currentPage}';
 
     return Scaffold(
       body: Row(
@@ -174,7 +211,9 @@ class _ProductosAdminScreenState extends ConsumerState<ProductosAdminScreen> {
                         return _buildEmptyState(isLoadingSucursales);
                       }
 
-                      if (errorMessage != null && productos.isEmpty && !isLoading) {
+                      if (errorMessage != null &&
+                          productos.isEmpty &&
+                          !isLoading) {
                         return _buildErrorState(errorMessage, notifier);
                       }
 
@@ -185,36 +224,46 @@ class _ProductosAdminScreenState extends ConsumerState<ProductosAdminScreen> {
                               child: ProductosTable(
                                 key: ValueKey<String>(baseKey),
                                 productos: productos,
-                                sucursales: ref.read(productosAdminProvider).sucursales,
+                                sucursales: ref
+                                    .read(productosAdminProvider)
+                                    .sucursales,
                                 onEdit: _showProductDialog,
                                 onViewDetails: _showProductoDetalleDialog,
                                 onSort: notifier.ordenarPor,
-                                sortBy: ref.read(productosAdminProvider).sortBy,
-                                sortOrder: ref.read(productosAdminProvider).order,
+                                sortBy: sortBy,
+                                sortOrder: sortOrder,
                                 isLoading: isLoading,
                                 onEnable: (producto) async {
                                   final currentContext = context;
-                                  final scaffoldMessenger = ScaffoldMessenger.of(context);
+                                  final scaffoldMessenger =
+                                      ScaffoldMessenger.of(context);
                                   await ProductoAgregarDialog.show(
                                     currentContext,
                                     producto: producto,
                                     sucursalNombre: selectedSucursal?.nombre,
-                                    onSave: (Map<String, dynamic> productoData) async {
-                                      await notifier.habilitarProducto(producto.id, productoData);
-                                      scaffoldMessenger.showSnackBar(
-                                        const SnackBar(
-                                          content: Text('Producto habilitado exitosamente'),
-                                          backgroundColor: Colors.green,
-                                        ),
-                                      );
-                                    },
+                                    onSave:
+                                        (
+                                          Map<String, dynamic> productoData,
+                                        ) async {
+                                          await notifier.habilitarProducto(
+                                            producto.id,
+                                            productoData,
+                                          );
+                                          scaffoldMessenger.showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'Producto habilitado exitosamente',
+                                              ),
+                                              backgroundColor: Colors.green,
+                                            ),
+                                          );
+                                        },
                                   );
                                 },
                               ),
                             ),
                           ),
-                          if (totalPages > 0)
-                            const _ProductosAdminPagination(),
+                          if (totalPages > 0) const _ProductosAdminPagination(),
                         ],
                       );
                     },
@@ -235,9 +284,13 @@ class _ProductosAdminScreenState extends ConsumerState<ProductosAdminScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (isLoadingSucursales)
-            const CircularProgressIndicator(color: Color(0xFFE31E24))
+            const CircularProgressIndicator(color: AppTheme.primaryColor)
           else
-            const FaIcon(FontAwesomeIcons.warehouse, color: Colors.white54, size: 48),
+            const FaIcon(
+              FontAwesomeIcons.warehouse,
+              color: Colors.white54,
+              size: 48,
+            ),
           const SizedBox(height: 16),
           Text(
             isLoadingSucursales
@@ -260,11 +313,19 @@ class _ProductosAdminScreenState extends ConsumerState<ProductosAdminScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const FaIcon(FontAwesomeIcons.circleExclamation, color: Color(0xFFE31E24), size: 48),
+            const FaIcon(
+              FontAwesomeIcons.circleExclamation,
+              color: AppTheme.primaryColor,
+              size: 48,
+            ),
             const SizedBox(height: 16),
             const Text(
               'Ocurrió un problema',
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -278,7 +339,7 @@ class _ProductosAdminScreenState extends ConsumerState<ProductosAdminScreen> {
               icon: const FaIcon(FontAwesomeIcons.arrowsRotate, size: 14),
               label: const Text('Reintentar'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE31E24),
+                backgroundColor: AppTheme.primaryColor,
                 foregroundColor: Colors.white,
               ),
             ),
@@ -297,8 +358,12 @@ class _ProductosAdminHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Solo se reconstruye si el buscador o las acciones cambian
     return ProductosAdminSearchBar(
-      onExport: () => context.findAncestorStateOfType<_ProductosAdminScreenState>()?._exportarProductos(),
-      onNew: () => context.findAncestorStateOfType<_ProductosAdminScreenState>()?._showProductDialog(null),
+      onExport: () => context
+          .findAncestorStateOfType<_ProductosAdminScreenState>()
+          ?._exportarProductos(),
+      onNew: () => context
+          .findAncestorStateOfType<_ProductosAdminScreenState>()
+          ?._showProductDialog(null),
     );
   }
 }
@@ -308,7 +373,9 @@ class _ProductosAdminPagination extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final paginacion = ref.watch(productosAdminProvider.select((s) => s.paginacion));
+    final paginacion = ref.watch(
+      productosAdminProvider.select((s) => s.paginacion),
+    );
     final notifier = ref.read(productosAdminProvider.notifier);
 
     return Container(
@@ -327,19 +394,23 @@ class _ProductosAdminSidebar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sucursales = ref.watch(productosAdminProvider.select((s) => s.sucursales));
-    final selectedSucursal = ref.watch(productosAdminProvider.select((s) => s.selectedSucursal));
-    final isLoadingSucursales = ref.watch(productosAdminProvider.select((s) => s.isLoadingSucursales));
+    final sucursales = ref.watch(
+      productosAdminProvider.select((s) => s.sucursales),
+    );
+    final selectedSucursal = ref.watch(
+      productosAdminProvider.select((s) => s.selectedSucursal),
+    );
+    final isLoadingSucursales = ref.watch(
+      productosAdminProvider.select((s) => s.isLoadingSucursales),
+    );
     final notifier = ref.read(productosAdminProvider.notifier);
 
     return Container(
       width: 350,
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
+        color: AppTheme.darkSurface,
         border: Border(
-          left: BorderSide(
-            color: Colors.white.withValues(alpha: 0.1),
-          ),
+          left: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
         ),
       ),
       child: SlideSucursal(

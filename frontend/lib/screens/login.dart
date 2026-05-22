@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:condorsmotors/providers/auth.riverpod.dart';
 import 'package:condorsmotors/screens/widgets/login_form.widget.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:condorsmotors/widgets/background.dart';
 import 'package:condorsmotors/widgets/dialogs/server_config.dialog.dart';
@@ -292,7 +293,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.all(16),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppTheme.smallRadius),
             ),
             action: SnackBarAction(
               label: 'Reintentar',
@@ -318,7 +319,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Scaffold(
-            backgroundColor: const Color(0xFF1A1A1A),
+            backgroundColor: AppTheme.darkSurface,
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -339,7 +340,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   const SizedBox(height: 32),
                   const CircularProgressIndicator(
                     valueColor:
-                        AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+                        AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -396,7 +397,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   Widget _buildMainLayout(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: AppTheme.darkSurface,
       body: Stack(
         children: <Widget>[
           // Fondo animado optimizado

@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 import 'package:condorsmotors/api/index.api.dart';
 import 'package:condorsmotors/components/proforma_notification.dart';
@@ -36,7 +36,7 @@ void main() async {
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: Color(0xFF1A1A1A),
+      systemNavigationBarColor: AppTheme.darkSurface,
       systemNavigationBarIconBrightness: Brightness.light,
     ),
   );
@@ -98,7 +98,7 @@ class _AppInitializerState extends State<AppInitializer> {
   Widget build(BuildContext context) {
     if (_error != null) {
       return Scaffold(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: AppTheme.darkSurface,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -113,7 +113,7 @@ class _AppInitializerState extends State<AppInitializer> {
     }
     if (!_initialized) {
       return Scaffold(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: AppTheme.darkSurface,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -133,7 +133,7 @@ class _AppInitializerState extends State<AppInitializer> {
               ),
               const SizedBox(height: 32),
               const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
               ),
               const SizedBox(height: 16),
               const Text(

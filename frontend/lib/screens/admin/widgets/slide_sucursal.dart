@@ -1,5 +1,6 @@
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/providers/admin/settings.admin.riverpod.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/sucursal_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -97,7 +98,7 @@ class _SlideSucursalState extends ConsumerState<SlideSucursal>
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             CircularProgressIndicator(
-              color: Color(0xFFE31E24),
+              color: AppTheme.primaryColor,
             ),
             SizedBox(height: 16),
             Text(
@@ -129,7 +130,7 @@ class _SlideSucursalState extends ConsumerState<SlideSucursal>
               icon: const FaIcon(FontAwesomeIcons.arrowsRotate, size: 16),
               label: const Text('Recargar'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE31E24),
+                backgroundColor: AppTheme.primaryColor,
                 foregroundColor: Colors.white,
               ),
               onPressed: widget.onRecargarSucursales,
@@ -227,14 +228,14 @@ class _SlideSucursalState extends ConsumerState<SlideSucursal>
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: Color(0xFFE31E24),
+              color: AppTheme.primaryColor,
             ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: const Color(0xFF2D2D2D),
-              borderRadius: BorderRadius.circular(12),
+              color: AppTheme.surfaceColor,
+              borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
             ),
             child: Text(
               cantidad.toString(),
@@ -272,19 +273,19 @@ class _SlideSucursalState extends ConsumerState<SlideSucursal>
         color: Colors.transparent,
         child: InkWell(
           onTap: () => widget.onSucursalSelected(sucursal),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.smallRadius),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
             curve: Curves.easeOutCubic,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: isSelected
-                  ? const Color(0xFFE31E24).withValues(alpha: 0.2)
+                  ? AppTheme.primaryColor.withValues(alpha: 0.2)
                   : Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppTheme.smallRadius),
               border: Border.all(
                 color: isSelected
-                    ? const Color(0xFFE31E24)
+                    ? AppTheme.primaryColor
                     : Colors.white.withValues(alpha: 0.1),
                 width: isSelected ? 2 : 1,
               ),
@@ -299,8 +300,8 @@ class _SlideSucursalState extends ConsumerState<SlideSucursal>
                     ..setEntry(1, 1, isSelected ? 1.1 : 1.0),
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFFE31E24) : iconBgColor,
-                    borderRadius: BorderRadius.circular(8),
+                    color: isSelected ? AppTheme.primaryColor : iconBgColor,
+                    borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                   ),
                   child: Icon(
                     icon,

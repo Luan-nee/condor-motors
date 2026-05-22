@@ -76,7 +76,7 @@ class VentasAdminState {
   }
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class VentasAdmin extends _$VentasAdmin {
   late final VentaRepository _ventaRepository;
   late final SucursalRepository _sucursalRepository;
@@ -139,7 +139,7 @@ class VentasAdmin extends _$VentasAdmin {
     state = state.copyWith(isLoadingVentas: true, clearError: true, clearSuccess: true);
     try {
       // Usamos la preferencia guardada del usuario como base para la petición
-      int requestPageSize = state.userPreferredPageSize;
+      final int requestPageSize = state.userPreferredPageSize;
 
       final response = await _ventaRepository.getVentas(
         sucursalId: state.selectedSucursal!.id,

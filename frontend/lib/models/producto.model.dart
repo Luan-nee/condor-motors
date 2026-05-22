@@ -513,15 +513,15 @@ class Producto extends Equatable {
     if (pathFoto == null || pathFoto!.isEmpty) {
       return 'https://via.placeholder.com/150';
     }
-    String normalized = pathFoto!.replaceAll('\\', '/');
+    final String normalized = pathFoto!.replaceAll('\\', '/');
     if (normalized.startsWith('http')) {
       return normalized;
     }
     // Elimina barra final de baseUrl y barra inicial de normalized
-    String cleanBase = baseUrl.endsWith('/')
+    final String cleanBase = baseUrl.endsWith('/')
         ? baseUrl.substring(0, baseUrl.length - 1)
         : baseUrl;
-    String cleanPath =
+    final String cleanPath =
         normalized.startsWith('/') ? normalized.substring(1) : normalized;
     return '$cleanBase/$cleanPath';
   }

@@ -1,3 +1,4 @@
+﻿import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 
 /// Widget unificado para mostrar alertas de error con fondo degradado suave en la sección de administración
@@ -20,7 +21,7 @@ class ErrorBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.red.withValues(alpha: 0.1),
         border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
       ),
       child: Row(
         children: [

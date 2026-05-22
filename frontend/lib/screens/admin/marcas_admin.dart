@@ -1,5 +1,6 @@
 import 'package:condorsmotors/models/marca.model.dart';
 import 'package:condorsmotors/providers/admin/marcas.admin.riverpod.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/widgets/common/empty_state.widget.dart';
 import 'package:condorsmotors/widgets/common/error_banner.widget.dart';
 import 'package:flutter/material.dart';
@@ -32,8 +33,8 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) => Dialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: AppTheme.darkSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.mediumRadius)),
         child: Container(
           padding: const EdgeInsets.all(24),
           constraints: const BoxConstraints(maxWidth: 400),
@@ -69,7 +70,7 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
                         borderSide: BorderSide(color: Colors.white24)),
                     focusedBorder: OutlineInputBorder(
                         borderSide:
-                            BorderSide(color: Color(0xFFE31E24), width: 2)),
+                            BorderSide(color: AppTheme.primaryColor, width: 2)),
                   ),
                   validator: (value) => (value == null || value.isEmpty)
                       ? 'Por favor ingrese un nombre'
@@ -88,7 +89,7 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
                         borderSide: BorderSide(color: Colors.white24)),
                     focusedBorder: OutlineInputBorder(
                         borderSide:
-                            BorderSide(color: Color(0xFFE31E24), width: 2)),
+                            BorderSide(color: AppTheme.primaryColor, width: 2)),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -103,7 +104,7 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
                     const SizedBox(width: 16),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE31E24),
+                        backgroundColor: AppTheme.primaryColor,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                             horizontal: 24, vertical: 12),
@@ -201,11 +202,11 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
                             : 'Recargar marcas',
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2D2D2D),
+                            backgroundColor: AppTheme.surfaceColor,
                             foregroundColor: Colors.white,
                             padding: EdgeInsets.zero,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                             ),
                             elevation: 0,
                           ),
@@ -232,11 +233,11 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
                             size: 16, color: Colors.white),
                         label: const Text('Nuevo'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFE31E24),
+                          backgroundColor: AppTheme.primaryColor,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(horizontal: 24),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                           ),
                           elevation: 0,
                         ),
@@ -256,8 +257,8 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
             Expanded(
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A1A),
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppTheme.darkSurface,
+                  borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                   border:
                       Border.all(color: Colors.white.withValues(alpha: 0.1)),
                 ),
@@ -273,7 +274,7 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
   Widget _buildTableHeader() {
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF2D2D2D),
+        color: AppTheme.surfaceColor,
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
@@ -325,7 +326,7 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
           child: (state.isLoading && state.marcas.isNotEmpty)
               ? const LinearProgressIndicator(
                   backgroundColor: Colors.white12,
-                  color: Color(0xFFE31E24),
+                  color: AppTheme.primaryColor,
                   minHeight: 2,
                 )
               : const SizedBox.shrink(),
@@ -334,7 +335,7 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
           child: state.isLoading && state.marcas.isEmpty
               ? const Center(
                   child: CircularProgressIndicator(
-                    color: Color(0xFFE31E24),
+                    color: AppTheme.primaryColor,
                   ),
                 )
               : AnimatedOpacity(
@@ -366,11 +367,11 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
                                     width: 32,
                                     height: 32,
                                     decoration: BoxDecoration(
-                                        color: const Color(0xFF2D2D2D),
-                                        borderRadius: BorderRadius.circular(8)),
+                                        color: AppTheme.surfaceColor,
+                                        borderRadius: BorderRadius.circular(AppTheme.smallRadius)),
                                     child: const Center(
                                         child: FaIcon(FontAwesomeIcons.tag,
-                                            color: Color(0xFFE31E24), size: 14)),
+                                            color: AppTheme.primaryColor, size: 14)),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
@@ -400,20 +401,20 @@ class _MarcasAdminScreenState extends ConsumerState<MarcasAdminScreen> {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 12, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFE31E24)
+                                    color: AppTheme.primaryColor
                                         .withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: <Widget>[
                                       const FaIcon(FontAwesomeIcons.box,
-                                          size: 12, color: Color(0xFFE31E24)),
+                                          size: 12, color: AppTheme.primaryColor),
                                       const SizedBox(width: 6),
                                       Text(
                                         marca.totalProductos.toString(),
                                         style: const TextStyle(
-                                            color: Color(0xFFE31E24),
+                                            color: AppTheme.primaryColor,
                                             fontWeight: FontWeight.bold),
                                       ),
                                     ],

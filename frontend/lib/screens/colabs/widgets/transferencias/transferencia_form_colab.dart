@@ -1,6 +1,7 @@
 import 'package:condorsmotors/models/transferencias.model.dart';
 import 'package:condorsmotors/providers/admin/sucursal.admin.riverpod.dart';
 import 'package:condorsmotors/screens/colabs/widgets/transferencias/transferencia_form_list_colab.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -62,9 +63,9 @@ class _TransferenciaFormColabState extends ConsumerState<TransferenciaFormColab>
     final sucursalesState = ref.watch(sucursalAdminProvider);
 
     return Dialog(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: AppTheme.darkSurface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Container(
         width: size.width * 0.95,
@@ -103,7 +104,7 @@ class _TransferenciaFormColabState extends ConsumerState<TransferenciaFormColab>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
-        color: Color(0xFF2D2D2D),
+        color: AppTheme.surfaceColor,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(12),
           topRight: Radius.circular(12),
@@ -114,7 +115,7 @@ class _TransferenciaFormColabState extends ConsumerState<TransferenciaFormColab>
           const FaIcon(
             FontAwesomeIcons.truck,
             size: 20,
-            color: Color(0xFFE31E24),
+            color: AppTheme.primaryColor,
           ),
           const SizedBox(width: 8),
           const Text(
@@ -155,8 +156,8 @@ class _TransferenciaFormColabState extends ConsumerState<TransferenciaFormColab>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: const Color(0xFF2D2D2D),
-            borderRadius: BorderRadius.circular(8),
+            color: AppTheme.surfaceColor,
+            borderRadius: BorderRadius.circular(AppTheme.smallRadius),
             border: Border.all(color: Colors.white12),
           ),
           child: DropdownButtonHideUnderline(
@@ -164,7 +165,7 @@ class _TransferenciaFormColabState extends ConsumerState<TransferenciaFormColab>
               value: _sucursalDestinoId,
               isExpanded: true,
               hint: const Text('Seleccionar sucursal destino', style: TextStyle(color: Colors.white54)),
-              dropdownColor: const Color(0xFF2D2D2D),
+              dropdownColor: AppTheme.surfaceColor,
               elevation: 4,
               style: const TextStyle(color: Colors.white),
               items: availableSucursales.map((s) {
@@ -182,7 +183,7 @@ class _TransferenciaFormColabState extends ConsumerState<TransferenciaFormColab>
             padding: EdgeInsets.only(top: 8),
             child: LinearProgressIndicator(
               backgroundColor: Colors.transparent,
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
             ),
           ),
       ],
@@ -193,7 +194,7 @@ class _TransferenciaFormColabState extends ConsumerState<TransferenciaFormColab>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
-        color: Color(0xFF2D2D2D),
+        color: AppTheme.surfaceColor,
         borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(12),
           bottomRight: Radius.circular(12),
@@ -227,7 +228,7 @@ class _TransferenciaFormColabState extends ConsumerState<TransferenciaFormColab>
                 : const FaIcon(FontAwesomeIcons.check, size: 16),
             label: Text(_isLoading ? 'Guardando...' : 'Guardar'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE31E24),
+              backgroundColor: AppTheme.primaryColor,
               foregroundColor: Colors.white,
               disabledBackgroundColor: Colors.grey,
             ),
@@ -257,12 +258,12 @@ class _TransferenciaFormColabState extends ConsumerState<TransferenciaFormColab>
               icon: const FaIcon(
                 FontAwesomeIcons.plus,
                 size: 14,
-                color: Color(0xFFE31E24),
+                color: AppTheme.primaryColor,
               ),
               label: const Text(
                 'Agregar',
                 style: TextStyle(
-                  color: Color(0xFFE31E24),
+                  color: AppTheme.primaryColor,
                   fontSize: 14,
                 ),
               ),
@@ -280,8 +281,8 @@ class _TransferenciaFormColabState extends ConsumerState<TransferenciaFormColab>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF2D2D2D),
-              borderRadius: BorderRadius.circular(8),
+              color: AppTheme.surfaceColor,
+              borderRadius: BorderRadius.circular(AppTheme.smallRadius),
             ),
             child: Center(
               child: Text(
@@ -301,20 +302,20 @@ class _TransferenciaFormColabState extends ConsumerState<TransferenciaFormColab>
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2D2D2D),
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppTheme.surfaceColor,
+                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                 ),
                 child: Row(
                   children: <Widget>[
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE31E24).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                       ),
                       child: const FaIcon(
                         FontAwesomeIcons.box,
-                        color: Color(0xFFE31E24),
+                        color: AppTheme.primaryColor,
                         size: 16,
                       ),
                     ),
@@ -347,13 +348,13 @@ class _TransferenciaFormColabState extends ConsumerState<TransferenciaFormColab>
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE31E24).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                       ),
                       child: Text(
                         'Cant: ${producto.cantidad}',
                         style: const TextStyle(
-                          color: Color(0xFFE31E24),
+                          color: AppTheme.primaryColor,
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
                         ),

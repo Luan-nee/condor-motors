@@ -1,11 +1,10 @@
 import 'package:condorsmotors/providers/auth.riverpod.dart';
-// Removed dash provider
 import 'package:condorsmotors/screens/computer/dashboard_computer.dart';
 import 'package:condorsmotors/screens/computer/proforma_computer.dart';
 import 'package:condorsmotors/screens/computer/settings_computer.dart';
 import 'package:condorsmotors/screens/computer/ventas_computer.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
-// Removed provider
 import 'package:flutter_riverpod/flutter_riverpod.dart'
     hide ChangeNotifierProvider, Provider;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -186,7 +185,7 @@ class _SlidesComputerScreenState extends ConsumerState<SlidesComputerScreen> {
           Container(
             width: 250,
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
+              color: AppTheme.darkSurface,
               border: Border(
                 right: BorderSide(
                   color: Colors.white.withValues(alpha: 0.1),
@@ -227,7 +226,7 @@ class _SlidesComputerScreenState extends ConsumerState<SlidesComputerScreen> {
                           const Text(
                             'TiendaPeru',
                             style: TextStyle(
-                              color: Color(0xFFE31E24),
+                              color: AppTheme.primaryColor,
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
@@ -240,14 +239,14 @@ class _SlidesComputerScreenState extends ConsumerState<SlidesComputerScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE31E24).withValues(alpha: 0.1),
+                          color: AppTheme.primaryColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Row(
                           children: <Widget>[
                             const FaIcon(
                               FontAwesomeIcons.store,
-                              color: Color(0xFFE31E24),
+                              color: AppTheme.primaryColor,
                               size: 12,
                             ),
                             const SizedBox(width: 8),
@@ -365,11 +364,11 @@ class _SlidesComputerScreenState extends ConsumerState<SlidesComputerScreen> {
         ),
         decoration: BoxDecoration(
           color: isSelected
-              ? const Color(0xFFE31E24).withValues(alpha: 0.1)
+              ? AppTheme.primaryColor.withValues(alpha: 0.1)
               : Colors.transparent,
           border: Border(
             left: BorderSide(
-              color: isSelected ? const Color(0xFFE31E24) : Colors.transparent,
+              color: isSelected ? AppTheme.primaryColor : Colors.transparent,
               width: 3,
             ),
           ),
@@ -378,7 +377,7 @@ class _SlidesComputerScreenState extends ConsumerState<SlidesComputerScreen> {
           children: <Widget>[
             FaIcon(
               icon,
-              color: isSelected ? const Color(0xFFE31E24) : Colors.white54,
+              color: isSelected ? AppTheme.primaryColor : Colors.white54,
               size: 18,
             ),
             const SizedBox(width: 12),
@@ -390,7 +389,7 @@ class _SlidesComputerScreenState extends ConsumerState<SlidesComputerScreen> {
                     text,
                     style: TextStyle(
                       color:
-                          isSelected ? const Color(0xFFE31E24) : Colors.white54,
+                          isSelected ? AppTheme.primaryColor : Colors.white54,
                       fontSize: 14,
                     ),
                   ),
@@ -415,7 +414,7 @@ class _SlidesComputerScreenState extends ConsumerState<SlidesComputerScreen> {
     showDialog(
       context: context,
       builder: (BuildContext context) => AlertDialog(
-        backgroundColor: const Color(0xFF2D2D2D),
+        backgroundColor: AppTheme.surfaceColor,
         title: const Text(
           'Cerrar Sesión',
           style: TextStyle(color: Colors.white),
@@ -431,7 +430,7 @@ class _SlidesComputerScreenState extends ConsumerState<SlidesComputerScreen> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE31E24),
+              backgroundColor: AppTheme.primaryColor,
               foregroundColor: Colors.white,
             ),
             onPressed: () => _handleLogout(context),

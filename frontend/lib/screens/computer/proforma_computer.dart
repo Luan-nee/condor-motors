@@ -4,6 +4,7 @@ import 'package:condorsmotors/models/proforma.model.dart';
 import 'package:condorsmotors/providers/computer/proforma.computer.riverpod.dart';
 import 'package:condorsmotors/screens/computer/proforma_list.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma/proforma_widget.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -107,7 +108,7 @@ class ProformaComputerScreenState extends ConsumerState<ProformaComputerScreen>
     final notifier = ref.read(proformaComputerProvider.notifier);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: AppTheme.darkSurface,
       appBar: AppBar(
         backgroundColor: const Color(0xFF121212),
         title: Row(
@@ -126,7 +127,7 @@ class ProformaComputerScreenState extends ConsumerState<ProformaComputerScreen>
                             horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
                           color: Colors.red,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                         ),
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
@@ -198,8 +199,8 @@ class ProformaComputerScreenState extends ConsumerState<ProformaComputerScreen>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFF2D2D2D),
-                borderRadius: BorderRadius.circular(12),
+                color: AppTheme.surfaceColor,
+                borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
               ),
               child: Row(
                 children: [
@@ -316,7 +317,7 @@ class ProformaComputerScreenState extends ConsumerState<ProformaComputerScreen>
                       Container(
                         width: 1,
                         height: double.infinity,
-                        color: const Color(0xFF2D2D2D),
+                        color: AppTheme.surfaceColor,
                       ),
 
                       // Detalle de proforma seleccionada (2/3 del ancho)

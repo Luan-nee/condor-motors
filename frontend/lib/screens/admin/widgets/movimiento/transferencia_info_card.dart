@@ -1,3 +1,4 @@
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -14,8 +15,8 @@ class TransferenciaInfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF222222),
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.deepSurface,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
       ),
       child: Row(
         children: items.map((item) {
@@ -25,7 +26,7 @@ class TransferenciaInfoCard extends StatelessWidget {
                 FaIcon(
                   item.icon,
                   size: 14,
-                  color: const Color(0xFFE31E24),
+                  color: AppTheme.primaryColor,
                 ),
                 const SizedBox(width: 8),
                 Expanded(

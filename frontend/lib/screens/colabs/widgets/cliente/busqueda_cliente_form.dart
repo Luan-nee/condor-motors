@@ -1,5 +1,6 @@
 import 'package:condorsmotors/models/cliente.model.dart';
 import 'package:condorsmotors/repositories/cliente.repository.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -143,7 +144,7 @@ class _BusquedaClienteFormState extends State<BusquedaClienteForm> {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: Colors.green.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                   ),
                   child: const Icon(
                     Icons.person_add,
@@ -183,7 +184,7 @@ class _BusquedaClienteFormState extends State<BusquedaClienteForm> {
                 helperText: 'Campo obligatorio',
                 helperStyle: TextStyle(color: Colors.white38),
               ),
-              dropdownColor: const Color(0xFF2D2D2D),
+              dropdownColor: AppTheme.surfaceColor,
               style: const TextStyle(color: Colors.white),
               items: tiposDocumento.entries.map((entry) {
                 return DropdownMenuItem<int>(

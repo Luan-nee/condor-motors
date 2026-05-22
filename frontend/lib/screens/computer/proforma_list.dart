@@ -3,6 +3,7 @@ import 'package:condorsmotors/models/proforma.model.dart';
 import 'package:condorsmotors/repositories/proforma.repository.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma/proforma_conversion_utils.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma/proforma_utils.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:flutter/foundation.dart';
@@ -296,8 +297,8 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFF2D2D2D),
-              borderRadius: BorderRadius.circular(8),
+              color: AppTheme.surfaceColor,
+              borderRadius: BorderRadius.circular(AppTheme.smallRadius),
             ),
             child: Row(
               children: <Widget>[
@@ -320,10 +321,10 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
                       hintStyle: const TextStyle(color: Colors.white54),
                       prefixIcon:
                           const Icon(Icons.search, color: Colors.white54),
-                      fillColor: const Color(0xFF1A1A1A),
+                      fillColor: AppTheme.darkSurface,
                       filled: true,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                         borderSide: BorderSide.none,
                       ),
                       contentPadding: EdgeInsets.zero,
@@ -404,13 +405,13 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      color: const Color(0xFF2D2D2D),
+      color: AppTheme.surfaceColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
       ),
       child: InkWell(
         onTap: () => widget.onProformaSelected(proforma),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -628,9 +629,9 @@ class _ProformaListWidgetState extends State<ProformaListWidget> {
     return Paginador(
       paginacion: widget.paginacion!,
       onPageChanged: widget.onPageChanged!,
-      backgroundColor: const Color(0xFF2D2D2D),
+      backgroundColor: AppTheme.surfaceColor,
       textColor: Colors.white,
-      accentColor: const Color(0xFFE31E24),
+      accentColor: AppTheme.primaryColor,
       forceCompactMode: true,
       radius: 8.0,
     );
@@ -717,9 +718,9 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color(0xFF2D2D2D),
+      backgroundColor: AppTheme.surfaceColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Container(
         padding: const EdgeInsets.all(24),
@@ -732,7 +733,7 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
               children: <Widget>[
                 const Icon(
                   Icons.shopping_cart,
-                  color: Color(0xFF4CAF50),
+                  color: AppTheme.successColor,
                   size: 24,
                 ),
                 const SizedBox(width: 8),
@@ -771,8 +772,8 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
-                borderRadius: BorderRadius.circular(8),
+                color: AppTheme.darkSurface,
+                borderRadius: BorderRadius.circular(AppTheme.smallRadius),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -869,7 +870,7 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF4CAF50),
+                          color: AppTheme.successColor,
                         ),
                       ),
                     ],
@@ -915,7 +916,7 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                     widget.onConfirm(ventaData);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4CAF50),
+                    backgroundColor: AppTheme.successColor,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
                   ),
@@ -941,23 +942,23 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
             _tipoDocumento = tipo;
           });
         },
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             color: isSelected
-                ? const Color(0xFF4CAF50).withValues(alpha: 0.1)
+                ? AppTheme.successColor.withValues(alpha: 0.1)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppTheme.smallRadius),
             border: Border.all(
-              color: isSelected ? const Color(0xFF4CAF50) : Colors.white24,
+              color: isSelected ? AppTheme.successColor : Colors.white24,
             ),
           ),
           child: Center(
             child: Text(
               tipo,
               style: TextStyle(
-                color: isSelected ? const Color(0xFF4CAF50) : Colors.white,
+                color: isSelected ? AppTheme.successColor : Colors.white,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
@@ -991,9 +992,9 @@ class ProcessingDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color(0xFF2D2D2D),
+      backgroundColor: AppTheme.surfaceColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Padding(
         padding: const EdgeInsets.all(24),

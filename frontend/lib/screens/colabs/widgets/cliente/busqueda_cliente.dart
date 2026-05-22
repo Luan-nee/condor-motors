@@ -1,4 +1,5 @@
 import 'package:condorsmotors/models/cliente.model.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/busqueda_cliente_utils.dart';
 import 'package:condorsmotors/widgets/active_filter_chip.widget.dart';
 import 'package:flutter/foundation.dart';
@@ -52,8 +53,8 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
   TipoDocumento _tipoDocumentoSeleccionado = TipoDocumento.todos;
 
   // Colores para el tema oscuro
-  final Color darkBackground = const Color(0xFF1A1A1A);
-  final Color darkSurface = const Color(0xFF2D2D2D);
+  final Color darkBackground = AppTheme.darkSurface;
+  final Color darkSurface = AppTheme.surfaceColor;
 
   @override
   void initState() {
@@ -104,7 +105,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: darkSurface,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
             ),
             child: _buildMobileFilters(),
           ),
@@ -143,7 +144,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
                   color: _isTipoDocumentoExpanded
                       ? Colors.blue.withValues(alpha: 0.2)
                       : darkBackground,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                 ),
                 child: IconButton(
                   icon: Row(
@@ -188,7 +189,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
                   color: _isSearchExpanded
                       ? Colors.orange.withValues(alpha: 0.2)
                       : darkBackground,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                 ),
                 child: IconButton(
                   icon: Row(
@@ -225,7 +226,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
               DecoratedBox(
                 decoration: BoxDecoration(
                   color: Colors.green.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                 ),
                 child: IconButton(
                   icon: const FaIcon(
@@ -243,7 +244,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
                 DecoratedBox(
                   decoration: BoxDecoration(
                     color: Colors.red.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                   ),
                   child: IconButton(
                     icon: const Icon(
@@ -271,7 +272,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
       ),
       child: Column(
@@ -362,7 +363,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
       ),
       child: Column(
@@ -549,14 +550,14 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
           color: darkSurface,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppTheme.smallRadius),
             side: BorderSide(
               color: colorTipoDoc.withValues(alpha: 0.3),
             ),
           ),
           child: InkWell(
             onTap: () => widget.onClienteSeleccionado(cliente),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppTheme.smallRadius),
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Row(
@@ -649,7 +650,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
       builder: (BuildContext context) => Dialog(
         backgroundColor: darkSurface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppTheme.largeRadius),
         ),
         child: Container(
           padding: const EdgeInsets.all(24),
@@ -796,7 +797,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                     ),
                   ),
                 ),
@@ -822,7 +823,7 @@ class _BusquedaClienteWidgetState extends State<BusquedaClienteWidget>
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppTheme.smallRadius),
           ),
           child: Icon(
             icon,

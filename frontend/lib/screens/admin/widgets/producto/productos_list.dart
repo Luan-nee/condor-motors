@@ -1,4 +1,5 @@
 import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/sucursal_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -26,7 +27,7 @@ class ProductosList extends StatelessWidget {
         // Header del panel
         Container(
           padding: const EdgeInsets.all(16),
-          color: const Color(0xFF222222),
+          color: AppTheme.deepSurface,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -61,8 +62,8 @@ class ProductosList extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF2D2D2D),
-                            borderRadius: BorderRadius.circular(12),
+                            color: AppTheme.surfaceColor,
+                            borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                           ),
                           child: Text(
                             sucursales.length.toString(),
@@ -84,7 +85,7 @@ class ProductosList extends StatelessWidget {
                         onPressed: onRecargarSucursales,
                         tooltip: 'Recargar sucursales',
                         style: IconButton.styleFrom(
-                          backgroundColor: const Color(0xFF2D2D2D),
+                          backgroundColor: AppTheme.surfaceColor,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.all(8),
                         ),
@@ -118,12 +119,12 @@ class ProductosList extends StatelessWidget {
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? const Color(0xFFE31E24).withValues(alpha: 0.1)
-                      : const Color(0xFF2D2D2D),
-                  borderRadius: BorderRadius.circular(12),
+                      ? AppTheme.primaryColor.withValues(alpha: 0.1)
+                      : AppTheme.surfaceColor,
+                  borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                   border: Border.all(
                     color: isSelected
-                        ? const Color(0xFFE31E24).withValues(alpha: 0.3)
+                        ? AppTheme.primaryColor.withValues(alpha: 0.3)
                         : Colors.white.withValues(alpha: 0.1),
                     width: isSelected ? 2 : 1,
                   ),
@@ -131,7 +132,7 @@ class ProductosList extends StatelessWidget {
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                     onTap: () => onSucursalSelected(sucursal),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -142,10 +143,10 @@ class ProductosList extends StatelessWidget {
                             height: 48,
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? const Color(0xFFE31E24)
+                                  ? AppTheme.primaryColor
                                       .withValues(alpha: 0.2)
                                   : const Color(0xFF3D3D3D),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                             ),
                             child: Icon(
                               sucursal.sucursalCentral
@@ -209,7 +210,7 @@ class ProductosList extends StatelessWidget {
                           if (isSelected)
                             const FaIcon(
                               FontAwesomeIcons.circleCheck,
-                              color: Color(0xFFE31E24),
+                              color: AppTheme.primaryColor,
                               size: 20,
                             ),
                         ],

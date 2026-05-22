@@ -12,6 +12,7 @@ import 'package:condorsmotors/screens/admin/stocks_admin.dart';
 import 'package:condorsmotors/screens/admin/sucursal_admin.dart';
 import 'package:condorsmotors/screens/admin/transferencias_admin.dart';
 import 'package:condorsmotors/screens/admin/ventas_admin.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -40,7 +41,8 @@ class _SlidesAdminScreenState extends ConsumerState<SlidesAdminScreen> {
 
   Widget _buildMainContent() {
     debugPrint(
-        '[SlidesAdminScreen] _buildMainContent ejecutado, _selectedIndex:  $_selectedIndex, _selectedSubIndex:  $_selectedSubIndex');
+      '[SlidesAdminScreen] _buildMainContent ejecutado, _selectedIndex:  $_selectedIndex, _selectedSubIndex:  $_selectedSubIndex',
+    );
     switch (_selectedIndex) {
       case 0:
         return const DashboardAdminScreen();
@@ -87,33 +89,35 @@ class _SlidesAdminScreenState extends ConsumerState<SlidesAdminScreen> {
     return InkWell(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected
-              ? const Color(0xFFE31E24).withValues(alpha: 0.1)
+              ? AppTheme.primaryColor.withValues(alpha: 0.1)
               : Colors.transparent,
           border: Border(
             left: BorderSide(
-              color: isSelected ? const Color(0xFFE31E24) : Colors.transparent,
+              color: isSelected ? AppTheme.primaryColor : Colors.transparent,
               width: 3,
             ),
           ),
         ),
         child: Row(
           children: <Widget>[
-            FaIcon(
-              icon,
-              color: isSelected ? const Color(0xFFE31E24) : Colors.white54,
-              size: 18,
+            SizedBox(
+              width: 24,
+              child: Center(
+                child: FaIcon(
+                  icon,
+                  color: isSelected ? AppTheme.primaryColor : Colors.white54,
+                  size: 18,
+                ),
+              ),
             ),
             const SizedBox(width: 12),
             Text(
               text,
               style: TextStyle(
-                color: isSelected ? const Color(0xFFE31E24) : Colors.white54,
+                color: isSelected ? AppTheme.primaryColor : Colors.white54,
                 fontSize: 14,
               ),
             ),
@@ -160,14 +164,12 @@ class _SlidesAdminScreenState extends ConsumerState<SlidesAdminScreen> {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          vertical: 8,
-        ),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: Text(
           text,
           style: TextStyle(
             color: isSelected
-                ? const Color(0xFFE31E24)
+                ? AppTheme.primaryColor
                 : Colors.white.withValues(alpha: 0.7),
             fontSize: 14,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -214,7 +216,8 @@ class _SlidesAdminScreenState extends ConsumerState<SlidesAdminScreen> {
     if (_transitionStart != null) {
       final diff = now.difference(_transitionStart!).inMilliseconds;
       debugPrint(
-          '[SlidesAdminScreen] Tiempo de transición hasta build: ${diff}ms');
+        '[SlidesAdminScreen] Tiempo de transición hasta build: ${diff}ms',
+      );
       _transitionStart = null;
     }
     debugPrint('[SlidesAdminScreen] build ejecutado');
@@ -225,11 +228,9 @@ class _SlidesAdminScreenState extends ConsumerState<SlidesAdminScreen> {
           Container(
             width: 250,
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
+              color: AppTheme.darkSurface,
               border: Border(
-                right: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.1),
-                ),
+                right: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
               ),
               boxShadow: <BoxShadow>[
                 BoxShadow(
@@ -254,7 +255,8 @@ class _SlidesAdminScreenState extends ConsumerState<SlidesAdminScreen> {
                           shape: BoxShape.circle,
                           image: DecorationImage(
                             image: AssetImage(
-                                'assets/images/condor-motors-logo.webp'),
+                              'assets/images/condor-motors-logo.webp',
+                            ),
                             fit: BoxFit.cover,
                           ),
                         ),
@@ -263,7 +265,7 @@ class _SlidesAdminScreenState extends ConsumerState<SlidesAdminScreen> {
                       const Text(
                         'TiendaPeru',
                         style: TextStyle(
-                          color: Color(0xFFE31E24),
+                          color: AppTheme.primaryColor,
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
@@ -397,9 +399,7 @@ class _SlidesAdminScreenState extends ConsumerState<SlidesAdminScreen> {
                     ),
                     label: const Text(
                       'Salir',
-                      style: TextStyle(
-                        color: Colors.white54,
-                      ),
+                      style: TextStyle(color: Colors.white54),
                     ),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
@@ -414,9 +414,7 @@ class _SlidesAdminScreenState extends ConsumerState<SlidesAdminScreen> {
           ),
 
           // Contenido principal (carga perezosa)
-          Expanded(
-            child: _buildMainContent(),
-          ),
+          Expanded(child: _buildMainContent()),
         ],
       ),
     );

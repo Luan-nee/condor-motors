@@ -5,6 +5,7 @@ import 'package:condorsmotors/models/transferencias.model.dart';
 import 'package:condorsmotors/providers/colabs/transferencias.colab.riverpod.dart';
 import 'package:condorsmotors/screens/colabs/widgets/transferencias/transferencia_detalle_colab.dart';
 import 'package:condorsmotors/screens/colabs/widgets/transferencias/transferencia_form_colab.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/transferencias_utils.dart';
 import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:flutter/material.dart';
@@ -84,9 +85,9 @@ class _TransferenciasColabScreenState
     final transferencias = notifier.getTransferenciasFiltradas();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: AppTheme.darkSurface,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF2D2D2D),
+        backgroundColor: AppTheme.surfaceColor,
         title: const Text(
           'Transferencias',
           style: TextStyle(color: Colors.white),
@@ -96,10 +97,10 @@ class _TransferenciasColabScreenState
           Theme(
             data: Theme.of(context).copyWith(
               popupMenuTheme: PopupMenuThemeData(
-                color: const Color(0xFF2D2D2D),
+                color: AppTheme.surfaceColor,
                 textStyle: const TextStyle(color: Colors.white),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                 ),
               ),
             ),
@@ -114,7 +115,7 @@ class _TransferenciasColabScreenState
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: const BoxDecoration(
-                          color: Color(0xFFE31E24),
+                          color: AppTheme.primaryColor,
                           shape: BoxShape.circle,
                         ),
                         constraints: const BoxConstraints(
@@ -220,7 +221,7 @@ class _TransferenciasColabScreenState
         padding: const EdgeInsets.only(bottom: 32.0),
         child: FloatingActionButton(
           onPressed: () => _showCreateTransferenciaDialog(context),
-          backgroundColor: const Color(0xFFE31E24),
+          backgroundColor: AppTheme.primaryColor,
           tooltip: 'Nueva transferencia',
           child: const FaIcon(FontAwesomeIcons.plus),
         ),
@@ -236,8 +237,8 @@ class _TransferenciasColabScreenState
     return Container(
       margin: EdgeInsets.only(bottom: isMobile ? 8 : 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
-        borderRadius: BorderRadius.circular(12),
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Column(
         children: <Widget>[
@@ -251,7 +252,7 @@ class _TransferenciasColabScreenState
                     color:
                         TransferenciasUtils.getEstadoColor(transferencia.estado)
                             .withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                   ),
                   child: Icon(
                     TransferenciasUtils.getEstadoIcon(transferencia.estado),
@@ -285,7 +286,7 @@ class _TransferenciasColabScreenState
                               color: TransferenciasUtils.getEstadoColor(
                                       transferencia.estado)
                                   .withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                             ),
                             child: Text(
                               transferencia.estado.nombre,
@@ -350,7 +351,7 @@ class _TransferenciasColabScreenState
                               child: Text(
                                 '${transferencia.productos!.length} productos',
                                 style: const TextStyle(
-                                  color: Color(0xFFE31E24),
+                                  color: AppTheme.primaryColor,
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -404,7 +405,7 @@ class _TransferenciasColabScreenState
               ],
             ),
           ),
-          const Divider(color: Color(0xFF1A1A1A), height: 1),
+          const Divider(color: AppTheme.darkSurface, height: 1),
           Padding(
             padding: EdgeInsets.all(isMobile ? 12 : 16),
             child: _buildTimeline(transferencia, isMobile),
@@ -449,7 +450,7 @@ class _TransferenciasColabScreenState
                               color: step['isCompleted'] as bool
                                   ? (step['color'] as Color)
                                       .withValues(alpha: 0.1)
-                                  : const Color(0xFF1A1A1A),
+                                  : AppTheme.darkSurface,
                               shape: BoxShape.circle,
                               border: Border.all(
                                 color: step['isCompleted'] as bool
@@ -476,7 +477,7 @@ class _TransferenciasColabScreenState
                                   color: step['color'] as Color,
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: const Color(0xFF1A1A1A),
+                                    color: AppTheme.darkSurface,
                                     width: 2,
                                   ),
                                 ),
@@ -521,7 +522,7 @@ class _TransferenciasColabScreenState
                           decoration: BoxDecoration(
                             color:
                                 (step['color'] as Color).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                           ),
                           child: Text(
                             formattedDate,
@@ -560,12 +561,12 @@ class _TransferenciasColabScreenState
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF2D2D2D),
+          backgroundColor: AppTheme.surfaceColor,
           title: const Row(
             children: [
               FaIcon(
                 FontAwesomeIcons.circleInfo,
-                color: Color(0xFFE31E24),
+                color: AppTheme.primaryColor,
                 size: 24,
               ),
               SizedBox(width: 12),

@@ -1,4 +1,5 @@
-import 'package:condorsmotors/models/proforma.model.dart';
+﻿import 'package:condorsmotors/models/proforma.model.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/material.dart';
 
@@ -41,9 +42,9 @@ class ProformaUtils {
   /// Widget reutilizable para mostrar diálogo de procesamiento
   static Widget buildProcessingDialog(String documentType) {
     return Dialog(
-      backgroundColor: const Color(0xFF2D2D2D),
+      backgroundColor: AppTheme.surfaceColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Container(
         padding: const EdgeInsets.all(24),
@@ -54,7 +55,7 @@ class ProformaUtils {
               width: 48,
               height: 48,
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
               ),
             ),
             const SizedBox(height: 24),

@@ -5,6 +5,7 @@ import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/repositories/categoria.repository.dart';
 import 'package:condorsmotors/repositories/color.repository.dart';
 import 'package:condorsmotors/screens/colabs/widgets/list_busqueda_producto.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/busqueda_producto_utils.dart'
     show BusquedaProductoUtils, TipoDescuento;
 import 'package:condorsmotors/widgets/active_filter_chip.widget.dart';
@@ -83,8 +84,8 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
   bool _isLoadingLocal = false;
 
   // Colores para el tema oscuro
-  final Color darkBackground = const Color(0xFF1A1A1A);
-  final Color darkSurface = const Color(0xFF2D2D2D);
+  final Color darkBackground = AppTheme.darkSurface;
+  final Color darkSurface = AppTheme.surfaceColor;
 
   // Repositorios
   final CategoriaRepository _categoriaRepository = CategoriaRepository.instance;
@@ -308,7 +309,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: darkSurface,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
             ),
             child: isMobile ? _buildMobileFilters() : _buildDesktopFilters(),
           ),
@@ -381,7 +382,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
                   color: _isCategoriaExpanded
                       ? Colors.blue.withValues(alpha: 0.2)
                       : darkBackground,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                 ),
                 child: IconButton(
                   icon: Row(
@@ -423,7 +424,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
                   color: _isPromocionExpanded
                       ? Colors.purple.withValues(alpha: 0.2)
                       : darkBackground,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                 ),
                 child: IconButton(
                   icon: Row(
@@ -468,7 +469,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
                   color: _isSearchExpanded
                       ? Colors.orange.withValues(alpha: 0.2)
                       : darkBackground,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                 ),
                 child: IconButton(
                   icon: Row(
@@ -507,7 +508,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
                   color: hayFiltrosActivos
                       ? Colors.red.withValues(alpha: 0.2)
                       : darkBackground,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                 ),
                 child: IconButton(
                   icon: Icon(
@@ -624,7 +625,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
     return Container(
       decoration: BoxDecoration(
         color: darkBackground,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Row(
@@ -879,7 +880,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: darkBackground,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
@@ -979,7 +980,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: darkSurface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<TipoDescuento>(
@@ -1228,7 +1229,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
       ),
       child: Column(
@@ -1287,7 +1288,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
       ),
       child: Column(
@@ -1346,7 +1347,7 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
       ),
       child: Column(

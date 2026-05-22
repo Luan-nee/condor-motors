@@ -2,6 +2,7 @@ import 'package:condorsmotors/models/transferencias.model.dart';
 import 'package:condorsmotors/providers/colabs/transferencias.colab.riverpod.dart';
 import 'package:condorsmotors/screens/colabs/transferencias_colab.dart';
 import 'package:condorsmotors/screens/colabs/widgets/transferencias/transferencia_comparar_colab.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/transferencias_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -50,9 +51,9 @@ class _TransferenciaDetalleColabState
     final notifier = ref.read(transferenciasColabProvider.notifier);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: AppTheme.darkSurface,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF2D2D2D),
+        backgroundColor: AppTheme.surfaceColor,
         title: const Text(
           'Detalle de Transferencia',
           style: TextStyle(color: Colors.white),
@@ -74,7 +75,7 @@ class _TransferenciaDetalleColabState
           if (state.isLoading) {
             return const Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
               ),
             );
           }
@@ -105,7 +106,7 @@ class _TransferenciaDetalleColabState
                     icon: const FaIcon(FontAwesomeIcons.arrowsRotate),
                     label: const Text('Reintentar'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE31E24),
+                      backgroundColor: AppTheme.primaryColor,
                     ),
                   ),
                 ],
@@ -151,8 +152,8 @@ class _TransferenciaDetalleColabState
     return Container(
       padding: EdgeInsets.all(isMobile ? 16 : 24),
       decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
-        borderRadius: BorderRadius.circular(12),
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,12 +163,12 @@ class _TransferenciaDetalleColabState
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE31E24).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                 ),
                 child: const FaIcon(
                   FontAwesomeIcons.truck,
-                  color: Color(0xFFE31E24),
+                  color: AppTheme.primaryColor,
                   size: 24,
                 ),
               ),
@@ -192,7 +193,7 @@ class _TransferenciaDetalleColabState
                       ),
                       decoration: BoxDecoration(
                         color: estadoEstilo['backgroundColor'],
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                       ),
                       child: Text(
                         estadoEstilo['estadoDisplay'],
@@ -214,14 +215,14 @@ class _TransferenciaDetalleColabState
                   ),
                   label: const Text('Enviar'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE31E24),
+                    backgroundColor: AppTheme.primaryColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 12,
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                     ),
                   ),
                 ),
@@ -242,7 +243,7 @@ class _TransferenciaDetalleColabState
       barrierDismissible: false,
       builder: (context) => const Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
         ),
       ),
     );
@@ -305,9 +306,9 @@ class _TransferenciaDetalleColabState
             final confirmar = await showDialog<bool>(
               context: context,
               builder: (context) => AlertDialog(
-                backgroundColor: const Color(0xFF2D2D2D),
+                backgroundColor: AppTheme.surfaceColor,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                 ),
                 title: const Row(
                   children: [
@@ -357,7 +358,7 @@ class _TransferenciaDetalleColabState
                         vertical: 12,
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                       ),
                     ),
                   ),
@@ -465,8 +466,8 @@ class _TransferenciaDetalleColabState
     return Container(
       padding: EdgeInsets.all(isMobile ? 16 : 24),
       decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
-        borderRadius: BorderRadius.circular(12),
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -505,12 +506,12 @@ class _TransferenciaDetalleColabState
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: const Color(0xFFE31E24).withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+            color: AppTheme.primaryColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(AppTheme.smallRadius),
           ),
           child: FaIcon(
             icon,
-            color: const Color(0xFFE31E24),
+            color: AppTheme.primaryColor,
             size: 16,
           ),
         ),
@@ -579,8 +580,8 @@ class _TransferenciaDetalleColabState
     return Container(
       padding: EdgeInsets.all(isMobile ? 16 : 24),
       decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
-        borderRadius: BorderRadius.circular(12),
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -605,7 +606,7 @@ class _TransferenciaDetalleColabState
                 child: Text(
                   '${productos.length} productos',
                   style: const TextStyle(
-                    color: Color(0xFFE31E24),
+                    color: AppTheme.primaryColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -629,20 +630,20 @@ class _TransferenciaDetalleColabState
                 margin: const EdgeInsets.symmetric(vertical: 8),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A1A),
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppTheme.darkSurface,
+                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                 ),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE31E24).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                       ),
                       child: const FaIcon(
                         FontAwesomeIcons.box,
-                        color: Color(0xFFE31E24),
+                        color: AppTheme.primaryColor,
                         size: 16,
                       ),
                     ),
@@ -679,7 +680,7 @@ class _TransferenciaDetalleColabState
                       child: Text(
                         '${producto.cantidad} unidades',
                         style: const TextStyle(
-                          color: Color(0xFFE31E24),
+                          color: AppTheme.primaryColor,
                           fontWeight: FontWeight.bold,
                         ),
                       ),

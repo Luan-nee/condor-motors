@@ -4,6 +4,7 @@ import 'package:condorsmotors/screens/admin/widgets/sucursal/sucursal_detalles.d
 import 'package:condorsmotors/screens/admin/widgets/sucursal/sucursal_form.dart';
 import 'package:condorsmotors/screens/admin/widgets/sucursal/sucursal_header.dart';
 import 'package:condorsmotors/screens/admin/widgets/sucursal/sucursal_table.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -91,18 +92,14 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
 
     final state = ref.read(sucursalAdminProvider);
     if (state.errorMessage.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(state.errorMessage),
-          backgroundColor: const Color(0xFFE31E24),
-        ),
+      AppTheme.showErrorSnackBar(
+        context,
+        message: state.errorMessage,
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Datos recargados exitosamente'),
-          backgroundColor: Color(0xFF4CAF50),
-        ),
+      AppTheme.showSuccessSnackBar(
+        context,
+        message: 'Datos recargados exitosamente',
       );
     }
   }
@@ -154,20 +151,16 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
       await ref.read(sucursalAdminProvider.notifier).limpiarCacheYRecargar();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Sucursal guardada exitosamente'),
-            backgroundColor: Color(0xFF4CAF50),
-          ),
+        AppTheme.showSuccessSnackBar(
+          context,
+          message: 'Sucursal guardada exitosamente',
         );
       }
     } else {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error),
-            backgroundColor: const Color(0xFFE31E24),
-          ),
+        AppTheme.showErrorSnackBar(
+          context,
+          message: error,
         );
       }
     }
@@ -214,21 +207,16 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
         await ref.read(sucursalAdminProvider.notifier).limpiarCacheYRecargar();
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content:
-                  Text('Sucursal "${sucursal.nombre}" eliminada correctamente'),
-              backgroundColor: const Color(0xFF4CAF50),
-            ),
+          AppTheme.showSuccessSnackBar(
+            context,
+            message: 'Sucursal "${sucursal.nombre}" eliminada correctamente',
           );
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(error),
-              backgroundColor: const Color(0xFFE31E24),
-            ),
+          AppTheme.showErrorSnackBar(
+            context,
+            message: error,
           );
         }
       }
@@ -268,7 +256,7 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
                       children: <Widget>[
                         CircularProgressIndicator(
                           valueColor:
-                              AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+                              AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
                         ),
                         SizedBox(height: 16),
                         Text(
@@ -285,7 +273,7 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
                       children: <Widget>[
                         const FaIcon(
                           FontAwesomeIcons.circleExclamation,
-                          color: Color(0xFFE31E24),
+                          color: AppTheme.primaryColor,
                           size: 48,
                         ),
                         const SizedBox(height: 16),
@@ -297,7 +285,7 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
                         const SizedBox(height: 16),
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFE31E24),
+                            backgroundColor: AppTheme.primaryColor,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 24,
@@ -339,7 +327,7 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
                         else
                           ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFE31E24),
+                              backgroundColor: AppTheme.primaryColor,
                               foregroundColor: Colors.white,
                             ),
                             onPressed: _mostrarFormularioSucursal,
@@ -383,7 +371,7 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
                       child: LinearProgressIndicator(
                         backgroundColor: Colors.transparent,
                         valueColor:
-                            AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+                            AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
                       ),
                     ),
                   ),
@@ -500,7 +488,7 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
 
   Widget _buildGrupoHeader(String titulo, int cantidad) {
     return Container(
-      color: const Color(0xFF2D2D2D),
+      color: AppTheme.surfaceColor,
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
       margin: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -513,7 +501,7 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
                     ? FontAwesomeIcons.building
                     : FontAwesomeIcons.store,
                 color: titulo.contains('Central')
-                    ? const Color(0xFFE31E24)
+                    ? AppTheme.primaryColor
                     : Colors.white70,
                 size: 16,
               ),
@@ -522,7 +510,7 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
                 titulo,
                 style: TextStyle(
                   color: titulo.contains('Central')
-                      ? const Color(0xFFE31E24)
+                      ? AppTheme.primaryColor
                       : Colors.white70,
                   fontWeight: FontWeight.bold,
                 ),
@@ -533,7 +521,7 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
               color: Colors.black26,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
             ),
             child: Text(
               cantidad.toString(),

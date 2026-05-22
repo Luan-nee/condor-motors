@@ -4,6 +4,7 @@ import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_cuenta_dia
 import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_detalles_dialog.dart';
 import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_form.dart';
 import 'package:condorsmotors/screens/admin/widgets/empleado/empleados_table.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/widgets/common/error_banner.widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,7 +24,7 @@ class _ColaboradoresAdminScreenState extends ConsumerState<ColaboradoresAdminScr
     final notifier = ref.read(empleadosAdminProvider.notifier);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: AppTheme.darkSurface,
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -59,7 +60,7 @@ class _ColaboradoresAdminScreenState extends ConsumerState<ColaboradoresAdminScr
                           : const FaIcon(FontAwesomeIcons.arrowsRotate, size: 16, color: Colors.white),
                       label: Text(state.isLoading ? 'Recargando...' : 'Recargar', style: const TextStyle(color: Colors.white)),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2D2D2D),
+                        backgroundColor: AppTheme.surfaceColor,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       ),
@@ -70,7 +71,7 @@ class _ColaboradoresAdminScreenState extends ConsumerState<ColaboradoresAdminScr
                       icon: const FaIcon(FontAwesomeIcons.plus, size: 16, color: Colors.white),
                       label: const Text('Agregar', style: TextStyle(color: Colors.white)),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE31E24),
+                        backgroundColor: AppTheme.primaryColor,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       ),
@@ -88,7 +89,7 @@ class _ColaboradoresAdminScreenState extends ConsumerState<ColaboradoresAdminScr
               ),
             Expanded(
               child: state.isLoading
-                  ? const Center(child: CircularProgressIndicator(color: Color(0xFFE31E24)))
+                  ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
                   : EmpleadosTable(
                       empleados: state.empleados,
                       nombresSucursales: state.nombresSucursales,
@@ -111,7 +112,7 @@ class _ColaboradoresAdminScreenState extends ConsumerState<ColaboradoresAdminScr
     final bool? confirmacion = await showDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: AppTheme.darkSurface,
         title: const Text('¿Eliminar colaborador?', style: TextStyle(color: Colors.white)),
         content: Text(
           '¿Está seguro que desea eliminar a ${empleado.nombre} ${empleado.apellidos}? Esta acción no se puede deshacer.',
@@ -123,7 +124,7 @@ class _ColaboradoresAdminScreenState extends ConsumerState<ColaboradoresAdminScr
             child: const Text('Cancelar', style: TextStyle(color: Colors.white54)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE31E24), foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor, foregroundColor: Colors.white),
             onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('Eliminar'),
           ),

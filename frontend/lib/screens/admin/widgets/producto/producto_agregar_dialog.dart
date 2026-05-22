@@ -1,4 +1,5 @@
 import 'package:condorsmotors/models/producto.model.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -150,8 +151,8 @@ class _ProductoAgregarDialogState extends State<ProductoAgregarDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color(0xFF1A1A1A),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      backgroundColor: AppTheme.darkSurface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.mediumRadius)),
       child: Container(
         width: 420,
         padding: const EdgeInsets.all(24),
@@ -163,7 +164,7 @@ class _ProductoAgregarDialogState extends State<ProductoAgregarDialog> {
             children: [
               const Row(
                 children: [
-                  FaIcon(FontAwesomeIcons.boxOpen, color: Color(0xFFE31E24)),
+                  FaIcon(FontAwesomeIcons.boxOpen, color: AppTheme.primaryColor),
                   SizedBox(width: 8),
                   Text('Habilitar Producto',
                       style: TextStyle(
@@ -179,8 +180,8 @@ class _ProductoAgregarDialogState extends State<ProductoAgregarDialog> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2D2D2D),
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppTheme.surfaceColor,
+                    borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                     border:
                         Border.all(color: Colors.white.withValues(alpha: 0.1)),
                   ),
@@ -213,17 +214,17 @@ class _ProductoAgregarDialogState extends State<ProductoAgregarDialog> {
                   labelText: 'Cantidad a agregar',
                   labelStyle: const TextStyle(color: Colors.white70),
                   filled: true,
-                  fillColor: const Color(0xFF222222),
+                  fillColor: AppTheme.deepSurface,
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(AppTheme.smallRadius)),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                     borderSide:
                         BorderSide(color: Colors.white.withValues(alpha: 0.2)),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFFE31E24)),
+                    borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+                    borderSide: const BorderSide(color: AppTheme.primaryColor),
                   ),
                   prefixIcon: const Icon(Icons.add, color: Colors.white54),
                   helperText: 'Ingrese la cantidad de stock a agregar',
@@ -334,17 +335,17 @@ class _ProductoAgregarDialogState extends State<ProductoAgregarDialog> {
                   labelText: 'Precio de Compra',
                   labelStyle: const TextStyle(color: Colors.white70),
                   filled: true,
-                  fillColor: const Color(0xFF222222),
+                  fillColor: AppTheme.deepSurface,
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(AppTheme.smallRadius)),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                     borderSide:
                         BorderSide(color: Colors.white.withValues(alpha: 0.2)),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFFE31E24)),
+                    borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+                    borderSide: const BorderSide(color: AppTheme.primaryColor),
                   ),
                   prefixText: 'S/ ',
                   prefixStyle: const TextStyle(color: Colors.white),
@@ -369,17 +370,17 @@ class _ProductoAgregarDialogState extends State<ProductoAgregarDialog> {
                   labelText: 'Precio de Venta',
                   labelStyle: const TextStyle(color: Colors.white70),
                   filled: true,
-                  fillColor: const Color(0xFF222222),
+                  fillColor: AppTheme.deepSurface,
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(AppTheme.smallRadius)),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                     borderSide:
                         BorderSide(color: Colors.white.withValues(alpha: 0.2)),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFFE31E24)),
+                    borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+                    borderSide: const BorderSide(color: AppTheme.primaryColor),
                   ),
                   prefixText: 'S/ ',
                   prefixStyle: const TextStyle(color: Colors.white),
@@ -416,8 +417,8 @@ class _ProductoAgregarDialogState extends State<ProductoAgregarDialog> {
                       return Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF2D2D2D),
-                          borderRadius: BorderRadius.circular(8),
+                          color: AppTheme.surfaceColor,
+                          borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                           border: Border.all(
                             color: Colors.white.withValues(alpha: 0.1),
                           ),
@@ -434,7 +435,7 @@ class _ProductoAgregarDialogState extends State<ProductoAgregarDialog> {
                               style: TextStyle(
                                 color: ganancia > 0
                                     ? Colors.green[400]
-                                    : const Color(0xFFE31E24),
+                                    : AppTheme.primaryColor,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -471,16 +472,16 @@ class _ProductoAgregarDialogState extends State<ProductoAgregarDialog> {
                     labelText: 'Precio de Liquidación',
                     labelStyle: const TextStyle(color: Colors.amber),
                     filled: true,
-                    fillColor: const Color(0xFF222222),
+                    fillColor: AppTheme.deepSurface,
                     border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8)),
+                        borderRadius: BorderRadius.circular(AppTheme.smallRadius)),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                       borderSide: BorderSide(
                           color: Colors.amber.withValues(alpha: 0.2)),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                       borderSide: const BorderSide(color: Colors.amber),
                     ),
                     prefixText: 'S/ ',
@@ -508,13 +509,13 @@ class _ProductoAgregarDialogState extends State<ProductoAgregarDialog> {
                 label: const Text('Habilitar Producto',
                     style: TextStyle(fontWeight: FontWeight.bold)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE31E24),
+                  backgroundColor: AppTheme.primaryColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   textStyle: const TextStyle(
                       fontSize: 16, fontWeight: FontWeight.bold),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(AppTheme.smallRadius)),
                 ),
                 onPressed: _guardar,
               ),

@@ -2,6 +2,7 @@ import 'package:condorsmotors/models/ventas.model.dart';
 import 'package:condorsmotors/providers/admin/ventas.admin.riverpod.dart';
 import 'package:condorsmotors/screens/admin/widgets/slide_sucursal.dart';
 import 'package:condorsmotors/screens/admin/widgets/venta/venta_detalle_dialog.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/debouncer.util.dart';
 import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:condorsmotors/widgets/toast_manager.dart';
@@ -86,7 +87,7 @@ class _VentasAdminScreenState extends ConsumerState<VentasAdminScreen> {
           Container(
             width: 350,
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
+              color: AppTheme.darkSurface,
               border: Border(
                 left: BorderSide(
                   color: Colors.white.withValues(alpha: 0.1),
@@ -120,7 +121,7 @@ class _VentasAdminHeader extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
+        color: AppTheme.surfaceColor,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.2),
@@ -133,7 +134,7 @@ class _VentasAdminHeader extends ConsumerWidget {
         children: [
           const FaIcon(
             FontAwesomeIcons.fileInvoiceDollar,
-            color: Color(0xFFE31E24),
+            color: AppTheme.primaryColor,
             size: 20,
           ),
           const SizedBox(width: 12),
@@ -165,8 +166,8 @@ class _VentasAdminHeader extends ConsumerWidget {
     return Container(
       height: 40,
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.darkSurface,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.1),
         ),
@@ -211,8 +212,8 @@ class _VentasAdminHeader extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.darkSurface,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.1),
         ),
@@ -220,7 +221,7 @@ class _VentasAdminHeader extends ConsumerWidget {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: '${state.sortBy}_${state.order}',
-          dropdownColor: const Color(0xFF1A1A1A),
+          dropdownColor: AppTheme.darkSurface,
           style: const TextStyle(color: Colors.white, fontSize: 13),
           icon: const Icon(Icons.arrow_drop_down,
               color: Colors.white70, size: 18),
@@ -262,11 +263,11 @@ class _VentasAdminHeader extends ConsumerWidget {
         message: state.isLoadingVentas ? 'Recargando...' : 'Recargar ventas',
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF1A1A1A),
+            backgroundColor: AppTheme.darkSurface,
             foregroundColor: Colors.white,
             padding: EdgeInsets.zero,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppTheme.smallRadius),
               side: BorderSide(
                 color: Colors.white.withValues(alpha: 0.1),
               ),
@@ -305,7 +306,7 @@ class _VentasAdminContent extends ConsumerWidget {
 
     if (state.isLoadingVentas && state.ventas.isEmpty) {
       return const Center(
-        child: CircularProgressIndicator(color: Color(0xFFE31E24)),
+        child: CircularProgressIndicator(color: AppTheme.primaryColor),
       );
     }
 
@@ -371,7 +372,7 @@ class _VentasAdminContent extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: const BoxDecoration(
-        color: Color(0xFF1A1A1A),
+        color: AppTheme.darkSurface,
         border: Border(bottom: BorderSide(color: Colors.white12)),
       ),
       child: const Row(
@@ -469,7 +470,7 @@ class _VentaTableRow extends ConsumerWidget {
             flex: 10,
             child: Text(currencyFormat.format(venta.calcularTotal()),
                 style: const TextStyle(
-                    color: Color(0xFFE31E24),
+                    color: AppTheme.primaryColor,
                     fontSize: 13,
                     fontWeight: FontWeight.bold)),
           ),

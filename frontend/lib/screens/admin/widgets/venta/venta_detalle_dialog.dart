@@ -4,6 +4,7 @@ import 'package:condorsmotors/models/ventas.model.dart';
 import 'package:condorsmotors/providers/print.riverpod.dart';
 import 'package:condorsmotors/screens/admin/widgets/venta/venta_info_card.dart';
 import 'package:condorsmotors/screens/admin/widgets/venta/venta_productos_table.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' hide Consumer;
@@ -61,8 +62,8 @@ class _VentaDetalleDialogState extends ConsumerState<VentaDetalleDialog>
     final Venta venta = widget.venta!;
 
     return Dialog(
-      backgroundColor: const Color(0xFF1A1A1A),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: AppTheme.darkSurface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.largeRadius)),
       insetPadding: const EdgeInsets.all(24),
       child: FadeTransition(
         opacity: _opacityAnimation,
@@ -104,15 +105,15 @@ class _VentaDetalleDialogState extends ConsumerState<VentaDetalleDialog>
 
   Widget _buildLoadingOrErrorState() {
     return Dialog(
-      backgroundColor: const Color(0xFF1A1A1A),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: AppTheme.darkSurface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.largeRadius)),
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (widget.isLoadingFullData)
-              const CircularProgressIndicator(color: Color(0xFFE31E24))
+              const CircularProgressIndicator(color: AppTheme.primaryColor)
             else
               const Text('Venta no encontrada.', style: TextStyle(color: Colors.white)),
             const SizedBox(height: 16),
@@ -141,13 +142,13 @@ class _VentaDetalleDialogState extends ConsumerState<VentaDetalleDialog>
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2D2D2D),
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppTheme.surfaceColor,
+                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                 ),
                 child: Center(
                   child: FaIcon(
                     tienePdf ? FontAwesomeIcons.filePdf : FontAwesomeIcons.fileInvoice,
-                    color: const Color(0xFFE31E24),
+                    color: AppTheme.primaryColor,
                     size: 18,
                   ),
                 ),
@@ -207,7 +208,7 @@ class _VentaDetalleDialogState extends ConsumerState<VentaDetalleDialog>
             ),
           ),
         ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2D2D2D), foregroundColor: Colors.white),
+          style: ElevatedButton.styleFrom(backgroundColor: AppTheme.surfaceColor, foregroundColor: Colors.white),
           onPressed: () => Navigator.pop(context),
           child: const Text('Cerrar'),
         ),

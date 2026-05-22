@@ -4,6 +4,7 @@ import 'package:condorsmotors/providers/admin/transferencias.admin.riverpod.dart
 import 'package:condorsmotors/screens/admin/widgets/movimiento/transferencia_comparar_admin.dart';
 import 'package:condorsmotors/screens/admin/widgets/movimiento/transferencia_info_card.dart';
 import 'package:condorsmotors/screens/admin/widgets/movimiento/transferencia_productos_table.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -132,8 +133,8 @@ class _TransferenciaDetailDialogState
     final state = ref.watch(transferenciasAdminProvider);
 
     return Dialog(
-      backgroundColor: const Color(0xFF1A1A1A),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      backgroundColor: AppTheme.darkSurface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.mediumRadius)),
       child: Container(
         width: dialogWidth,
         constraints: BoxConstraints(
@@ -195,12 +196,12 @@ class _TransferenciaDetailDialogState
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFFE31E24).withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(8),
+                color: AppTheme.primaryColor.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(AppTheme.smallRadius),
               ),
               child: const FaIcon(
                 FontAwesomeIcons.truck,
-                color: Color(0xFFE31E24),
+                color: AppTheme.primaryColor,
                 size: 20,
               ),
             ),
@@ -281,7 +282,7 @@ class _TransferenciaDetailDialogState
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: estiloEstado['backgroundColor'] as Color,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.smallRadius),
           border: Border.all(
             color: (estiloEstado['textColor'] as Color).withValues(alpha: 0.2),
           ),
@@ -305,8 +306,8 @@ class _TransferenciaDetailDialogState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF222222),
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.deepSurface,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -314,7 +315,7 @@ class _TransferenciaDetailDialogState
           Row(
             children: [
               const FaIcon(FontAwesomeIcons.scaleBalanced,
-                  size: 16, color: Color(0xFFE31E24)),
+                  size: 16, color: AppTheme.primaryColor),
               const SizedBox(width: 12),
               const Text('Comparar Stock',
                   style: TextStyle(
@@ -329,7 +330,7 @@ class _TransferenciaDetailDialogState
           DropdownButtonFormField<sucursal_model.Sucursal>(
             initialValue: _sucursalSeleccionada,
             decoration: _getInputDecoration(),
-            dropdownColor: const Color(0xFF2D2D2D),
+            dropdownColor: AppTheme.surfaceColor,
             style: const TextStyle(color: Colors.white),
             items: _buildSucursalItems(state.sucursales),
             onChanged: (sucursal) async {
@@ -351,7 +352,7 @@ class _TransferenciaDetailDialogState
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: estiloEstado['backgroundColor'] as Color,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppTheme.largeRadius),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -372,12 +373,12 @@ class _TransferenciaDetailDialogState
   InputDecoration _getInputDecoration() {
     return InputDecoration(
       filled: true,
-      fillColor: const Color(0xFF2D2D2D),
+      fillColor: AppTheme.surfaceColor,
       border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.smallRadius),
           borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
       enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.smallRadius),
           borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     );
@@ -406,13 +407,13 @@ class _TransferenciaDetailDialogState
       margin: const EdgeInsets.only(left: 8),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: const Color(0xFFE31E24).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE31E24).withValues(alpha: 0.3)),
+        color: AppTheme.primaryColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
+        border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
       ),
       child: const Text('Origen',
           style: TextStyle(
-              color: Color(0xFFE31E24), fontSize: 11, fontWeight: FontWeight.bold)),
+              color: AppTheme.primaryColor, fontSize: 11, fontWeight: FontWeight.bold)),
     );
   }
 
@@ -420,8 +421,8 @@ class _TransferenciaDetailDialogState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF222222),
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.deepSurface,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -429,7 +430,7 @@ class _TransferenciaDetailDialogState
           Row(
             children: [
               const FaIcon(FontAwesomeIcons.boxesStacked,
-                  size: 16, color: Color(0xFFE31E24)),
+                  size: 16, color: AppTheme.primaryColor),
               const SizedBox(width: 12),
               Text('Productos (${transferencia.productos?.length ?? 0})',
                   style: const TextStyle(
@@ -466,7 +467,7 @@ class _TransferenciaDetailDialogState
             icon: const Icon(Icons.check),
             label: const Text('Aceptar'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE31E24),
+              backgroundColor: AppTheme.primaryColor,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
@@ -481,7 +482,7 @@ class _TransferenciaDetailDialogState
       mainAxisSize: MainAxisSize.min,
       children: [
         const SizedBox(height: 24),
-        const CircularProgressIndicator(color: Color(0xFFE31E24)),
+        const CircularProgressIndicator(color: AppTheme.primaryColor),
         const SizedBox(height: 32),
         Text('Cargando detalles de la transferencia #${widget.transferencia.id}',
             textAlign: TextAlign.center,

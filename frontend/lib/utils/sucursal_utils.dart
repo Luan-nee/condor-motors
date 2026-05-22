@@ -1,11 +1,12 @@
 import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 /// Utilidades para el manejo de sucursales
 class SucursalUtils {
   /// Color principal para sucursales centrales
-  static const Color colorCentral = Color(0xFFE31E24);
+  static const Color colorCentral = AppTheme.primaryColor;
 
   /// Color para sucursales locales
   static const Color colorLocal = Colors.white70;
@@ -51,7 +52,7 @@ class SucursalUtils {
   static Color getIconBackgroundColor(Sucursal sucursal) {
     return sucursal.sucursalCentral
         ? colorCentral.withValues(alpha: 0.1)
-        : const Color(0xFF2D2D2D);
+        : AppTheme.surfaceColor;
   }
 
   /// Obtiene el tipo de sucursal como texto
@@ -91,7 +92,7 @@ class SucursalUtils {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
+        color: AppTheme.surfaceColor,
         borderRadius: BorderRadius.circular(4),
       ),
       child: Row(
@@ -134,7 +135,7 @@ class SucursalUtils {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
-            color: const Color(0xFF2D2D2D),
+            color: AppTheme.surfaceColor,
             borderRadius: BorderRadius.circular(4),
           ),
           child: Text(

@@ -12,13 +12,14 @@ String _$ventasColabHash() => r'2cfe72ed9ebd187ce29b63e9b31dbf31d80e669b';
 @ProviderFor(VentasColab)
 final ventasColabProvider =
     NotifierProvider<VentasColab, VentasColabState>.internal(
-  VentasColab.new,
-  name: r'ventasColabProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product') ? null : _$ventasColabHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+      VentasColab.new,
+      name: r'ventasColabProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$ventasColabHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
 
 typedef _$VentasColab = Notifier<VentasColabState>;
 // ignore_for_file: type=lint

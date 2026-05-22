@@ -1,5 +1,6 @@
-import 'package:condorsmotors/api/index.api.dart'
+﻿import 'package:condorsmotors/api/index.api.dart'
     show updateBaseUrl, serverConfigs;
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 import 'package:restart_app/restart_app.dart';
 
@@ -96,7 +97,7 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
               height: 200,
               child: Center(
                 child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
                 ),
               ),
             )
@@ -143,7 +144,7 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
                             labelText: 'Dirección del Servidor',
                             hintText: 'Ej: localhost o 192.168.1.66',
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                             ),
                           ),
                           keyboardType: TextInputType.text,
@@ -158,7 +159,7 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
                             labelText: 'Puerto',
                             hintText: '3000',
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                             ),
                           ),
                           keyboardType: TextInputType.number,

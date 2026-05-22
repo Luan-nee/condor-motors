@@ -6,20 +6,20 @@ part of 'dashboard.admin.riverpod.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$dashboardAdminHash() => r'6c5e899fb66f4543669c393c5c98932560324eb5';
+String _$dashboardAdminHash() => r'd9aa359eb57517fda238f7ddfe221b6c331f60ae';
 
 /// See also [DashboardAdmin].
 @ProviderFor(DashboardAdmin)
 final dashboardAdminProvider =
     AutoDisposeNotifierProvider<DashboardAdmin, DashboardAdminState>.internal(
-  DashboardAdmin.new,
-  name: r'dashboardAdminProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$dashboardAdminHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+      DashboardAdmin.new,
+      name: r'dashboardAdminProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$dashboardAdminHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
 
 typedef _$DashboardAdmin = AutoDisposeNotifier<DashboardAdminState>;
 // ignore_for_file: type=lint

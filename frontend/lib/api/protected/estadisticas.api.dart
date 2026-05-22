@@ -198,7 +198,7 @@ class EstadisticasApi {
               final Map<String, dynamic> sucursal = sucursalObj;
               final String? idStr = sucursal['id']?.toString();
               if (idStr == sucursalId) {
-                Map<String, dynamic> sucursalStats = {
+                final Map<String, dynamic> sucursalStats = {
                   'status': 'success',
                   'data': [
                     {

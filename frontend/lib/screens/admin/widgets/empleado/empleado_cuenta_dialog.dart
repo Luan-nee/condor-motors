@@ -1,6 +1,7 @@
 import 'package:condorsmotors/api/main.api.dart' show ApiException;
 import 'package:condorsmotors/models/empleado.model.dart';
 import 'package:condorsmotors/repositories/empleado.repository.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/empleados_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -53,7 +54,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
   late final EmpleadoRepository _empleadoRepository;
 
   // Constantes de colores para tema oscuro con rojo
-  static const Color colorPrimario = Color(0xFFE31E24); // Rojo TiendaPeru
+  static const Color colorPrimario = AppTheme.primaryColor; // Rojo TiendaPeru
 
   // Determinar si es una nueva cuenta o actualización
   bool get _esNuevaCuenta =>
@@ -359,9 +360,9 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
     final bool? confirmar = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) => Dialog(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: AppTheme.darkSurface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
         ),
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -564,8 +565,8 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
           maxHeight: MediaQuery.of(context).size.height * 0.85,
         ),
         decoration: BoxDecoration(
-          color: const Color(0xFF1A1A1A),
-          borderRadius: BorderRadius.circular(12),
+          color: AppTheme.darkSurface,
+          borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.5),
@@ -576,7 +577,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
           child: _isLoading
               ? _buildLoadingIndicator()
               : _buildForm(title, subtitle),
@@ -589,7 +590,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
   Widget _buildLoadingIndicator() {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
-      color: const Color(0xFF1A1A1A),
+      color: AppTheme.darkSurface,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
@@ -662,7 +663,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
       decoration: const BoxDecoration(
-        color: Color(0xFFE31E24),
+        color: AppTheme.primaryColor,
       ),
       child: Row(
         children: <Widget>[
@@ -670,7 +671,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppTheme.smallRadius),
             ),
             child: FaIcon(
               _esNuevaCuenta
@@ -716,7 +717,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.red.shade900.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         border: Border.all(color: Colors.red.shade700),
       ),
       child: Row(
@@ -751,8 +752,8 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         border: Border.all(
           color: _esNuevaCuenta
               ? colorPrimario.withValues(alpha: 0.5)
@@ -781,8 +782,8 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
-                borderRadius: BorderRadius.circular(8),
+                color: AppTheme.darkSurface,
+                borderRadius: BorderRadius.circular(AppTheme.smallRadius),
               ),
               child: const FaIcon(
                 FontAwesomeIcons.circleInfo,
@@ -829,8 +830,8 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
-                borderRadius: BorderRadius.circular(8),
+                color: AppTheme.darkSurface,
+                borderRadius: BorderRadius.circular(AppTheme.smallRadius),
               ),
               child: const FaIcon(
                 FontAwesomeIcons.userCheck,
@@ -855,8 +856,8 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1A1A),
-            borderRadius: BorderRadius.circular(8),
+            color: AppTheme.darkSurface,
+            borderRadius: BorderRadius.circular(AppTheme.smallRadius),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -960,7 +961,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
               Expanded(
                 child: DropdownButtonFormField<int>(
                   initialValue: _selectedRolId,
-                  dropdownColor: const Color(0xFF2D2D2D),
+                  dropdownColor: AppTheme.surfaceColor,
                   style: const TextStyle(color: Colors.white, fontSize: 14),
                   decoration: const InputDecoration(
                     labelText: 'Rol del usuario',
@@ -1151,7 +1152,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
                 vertical: 12,
               ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppTheme.smallRadius),
               ),
             ),
           )
@@ -1173,7 +1174,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
             // Botón para guardar
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE31E24),
+                backgroundColor: AppTheme.primaryColor,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,

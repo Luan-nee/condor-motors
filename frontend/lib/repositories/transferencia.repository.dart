@@ -3,6 +3,7 @@ import 'package:condorsmotors/api/protected/transferencias.api.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/transferencias.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 
 /// Repositorio para gestionar transferencias de inventario
@@ -233,7 +234,7 @@ class TransferenciaRepository implements BaseRepository {
     switch (estado.toUpperCase()) {
       case 'RECIBIDO':
         backgroundColor = const Color(0xFF2D8A3B).withValues(alpha: 0.15);
-        textColor = const Color(0xFF4CAF50);
+        textColor = AppTheme.successColor;
         iconData = Icons.check_circle;
         tooltipText = 'Transferencia completada';
       case 'PEDIDO':

@@ -1,5 +1,6 @@
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/providers/admin/sucursal.admin.riverpod.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/sucursal_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -173,9 +174,9 @@ class _SucursalFormState extends ConsumerState<SucursalForm>
     return Card(
       elevation: 4,
       margin: const EdgeInsets.all(16),
-      color: const Color(0xFF1A1A1A),
+      color: AppTheme.darkSurface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Form(
         key: _formKey,
@@ -186,7 +187,7 @@ class _SucursalFormState extends ConsumerState<SucursalForm>
             Container(
               padding: const EdgeInsets.all(16),
               decoration: const BoxDecoration(
-                color: Color(0xFF2D2D2D),
+                color: AppTheme.surfaceColor,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(12),
                   topRight: Radius.circular(12),
@@ -273,7 +274,7 @@ class _SucursalFormState extends ConsumerState<SucursalForm>
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                               border: Border.all(
                                 color: Colors.white.withValues(alpha: 0.1),
                               ),
@@ -342,7 +343,7 @@ class _SucursalFormState extends ConsumerState<SucursalForm>
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                               border: Border.all(
                                 color: Colors.white.withValues(alpha: 0.1),
                               ),
@@ -561,7 +562,7 @@ class _SucursalFormState extends ConsumerState<SucursalForm>
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                               border: Border.all(
                                 color: Colors.white.withValues(alpha: 0.1),
                               ),
@@ -770,7 +771,7 @@ class _SucursalFormState extends ConsumerState<SucursalForm>
         FaIcon(
           icon,
           size: 18,
-          color: const Color(0xFFE31E24),
+          color: AppTheme.primaryColor,
         ),
         const SizedBox(width: 8),
         Text(

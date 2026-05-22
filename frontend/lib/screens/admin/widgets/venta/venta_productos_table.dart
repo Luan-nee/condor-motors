@@ -1,4 +1,5 @@
 import 'package:condorsmotors/models/ventas.model.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -38,7 +39,7 @@ class VentaProductosTable extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
           decoration: const BoxDecoration(
-            color: Color(0xFF2D2D2D),
+            color: AppTheme.surfaceColor,
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(8),
               topRight: Radius.circular(8),
@@ -59,8 +60,8 @@ class VentaProductosTable extends StatelessWidget {
           child: Container(
             constraints: BoxConstraints(maxHeight: maxTableHeight),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E1E1E),
-              border: Border.all(color: const Color(0xFF2D2D2D)),
+              color: AppTheme.cardColor,
+              border: Border.all(color: AppTheme.surfaceColor),
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(8),
                 bottomRight: Radius.circular(8),
@@ -70,7 +71,7 @@ class VentaProductosTable extends StatelessWidget {
               shrinkWrap: true,
               itemCount: detalles.length,
               physics: const ClampingScrollPhysics(),
-              separatorBuilder: (_, _) => const Divider(color: Color(0xFF2D2D2D), height: 1),
+              separatorBuilder: (_, _) => const Divider(color: AppTheme.surfaceColor, height: 1),
               itemBuilder: (context, index) {
                 final detalle = detalles[index];
                 return Padding(
@@ -102,7 +103,7 @@ class VentaProductosTable extends StatelessWidget {
                         child: Text(
                           formatoMoneda.format(detalle.total),
                           style: const TextStyle(
-                            color: Color(0xFFE31E24),
+                            color: AppTheme.primaryColor,
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
                           ),

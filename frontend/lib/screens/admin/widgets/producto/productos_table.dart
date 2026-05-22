@@ -1,10 +1,12 @@
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/repositories/producto.repository.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
+import 'package:condorsmotors/widgets/common/smooth_scroll.widget.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-class ProductosTable extends StatelessWidget {
+class ProductosTable extends StatefulWidget {
   final List<Producto> productos;
   final List<Sucursal> sucursales;
   final Function(Producto) onEdit;
@@ -31,24 +33,41 @@ class ProductosTable extends StatelessWidget {
   });
 
   @override
+  State<ProductosTable> createState() => _ProductosTableState();
+}
+
+class _ProductosTableState extends State<ProductosTable> {
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (isLoading && productos.isEmpty) {
+    if (widget.isLoading && widget.productos.isEmpty) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           _TableHeader(
-            sortBy: sortBy,
-            sortOrder: sortOrder,
-            onSort: onSort,
+            sortBy: widget.sortBy,
+            sortOrder: widget.sortOrder,
+            onSort: widget.onSort,
           ),
           const Expanded(
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
-                  CircularProgressIndicator(
-                    color: Color(0xFFE31E24),
-                  ),
+                  CircularProgressIndicator(color: AppTheme.primaryColor),
                   SizedBox(height: 16),
                   Text(
                     'Cargando productos...',
@@ -62,14 +81,14 @@ class ProductosTable extends StatelessWidget {
       );
     }
 
-    if (productos.isEmpty) {
+    if (widget.productos.isEmpty) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           _TableHeader(
-            sortBy: sortBy,
-            sortOrder: sortOrder,
-            onSort: onSort,
+            sortBy: widget.sortBy,
+            sortOrder: widget.sortOrder,
+            onSort: widget.onSort,
           ),
           Expanded(
             child: Center(
@@ -84,9 +103,7 @@ class ProductosTable extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text(
                     'No hay productos para mostrar',
-                    style: TextStyle(
-                      color: Colors.white.withAlpha(178),
-                    ),
+                    style: TextStyle(color: Colors.white.withAlpha(178)),
                   ),
                 ],
               ),
@@ -100,40 +117,44 @@ class ProductosTable extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         _TableHeader(
-          sortBy: sortBy,
-          sortOrder: sortOrder,
-          onSort: onSort,
+          sortBy: widget.sortBy,
+          sortOrder: widget.sortOrder,
+          onSort: widget.onSort,
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: SizedBox(
             height: 2,
-            child: isLoading
+            child: widget.isLoading
                 ? const LinearProgressIndicator(
                     backgroundColor: Colors.white12,
-                    color: Color(0xFFE31E24),
+                    color: AppTheme.primaryColor,
                     minHeight: 2,
                   )
-                : const SizedBox.shrink(),
+                : const SizedBox(height: 2),
           ),
         ),
         Expanded(
           child: AnimatedOpacity(
-            opacity: isLoading ? 0.5 : 1.0,
+            opacity: widget.isLoading ? 0.5 : 1.0,
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeInOut,
-            child: ListView.builder(
-              itemCount: productos.length,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemBuilder: (context, index) {
-                return _ProductoTableRow(
-                  producto: productos[index],
-                  onEdit: onEdit,
-                  onViewDetails: onViewDetails,
-                  onEnable: onEnable,
-                  isLast: index == productos.length - 1,
-                );
-              },
+            child: SmoothScroll(
+              controller: _scrollController,
+              child: ListView.builder(
+                controller: _scrollController,
+                itemCount: widget.productos.length,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemBuilder: (context, index) {
+                  return _ProductoTableRow(
+                    producto: widget.productos[index],
+                    onEdit: widget.onEdit,
+                    onViewDetails: widget.onViewDetails,
+                    onEnable: widget.onEnable,
+                    isLast: index == widget.productos.length - 1,
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -155,7 +176,7 @@ class _TableHeader extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       decoration: const BoxDecoration(
-        color: Color(0xFF1A1A1A),
+        color: AppTheme.darkSurface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
       ),
       child: Row(
@@ -164,18 +185,30 @@ class _TableHeader extends StatelessWidget {
           Expanded(flex: 2, child: _buildHeaderCell('SKU', 'sku')),
           Expanded(flex: 2, child: _buildHeaderCell('Categoría', 'categoria')),
           Expanded(
-              flex: 2,
-              child: _buildHeaderCell('Stock', 'stock', textAlign: TextAlign.right)),
+            flex: 2,
+            child: _buildHeaderCell(
+              'Stock',
+              'stock',
+              textAlign: TextAlign.right,
+            ),
+          ),
           Expanded(
-              flex: 2,
-              child: _buildHeaderCell('Precio', 'precioVenta',
-                  textAlign: TextAlign.right)),
+            flex: 2,
+            child: _buildHeaderCell(
+              'Precio',
+              'precioVenta',
+              textAlign: TextAlign.right,
+            ),
+          ),
           const Expanded(
             flex: 2,
             child: Text(
               'Acciones',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -183,8 +216,11 @@ class _TableHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildHeaderCell(String label, String field,
-      {TextAlign textAlign = TextAlign.left}) {
+  Widget _buildHeaderCell(
+    String label,
+    String field, {
+    TextAlign textAlign = TextAlign.left,
+  }) {
     final isSorted = sortBy == field;
     return InkWell(
       onTap: onSort != null ? () => onSort!(field) : null,
@@ -193,15 +229,19 @@ class _TableHeader extends StatelessWidget {
             ? MainAxisAlignment.end
             : MainAxisAlignment.start,
         children: [
-          Text(label,
-              style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.bold)),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           if (isSorted) ...[
             const SizedBox(width: 4),
             Icon(
               sortOrder == 'asc' ? Icons.arrow_upward : Icons.arrow_downward,
               size: 14,
-              color: const Color(0xFFE31E24),
+              color: AppTheme.primaryColor,
             ),
           ],
         ],
@@ -234,10 +274,8 @@ class _ProductoTableRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF222222),
-        border: Border(
-          bottom: BorderSide(color: Colors.white.withAlpha(25)),
-        ),
+        color: AppTheme.deepSurface,
+        border: Border(bottom: BorderSide(color: Colors.white.withAlpha(25))),
         borderRadius: isLast
             ? const BorderRadius.vertical(bottom: Radius.circular(8))
             : null,
@@ -255,7 +293,9 @@ class _ProductoTableRow extends StatelessWidget {
                   child: Text(
                     producto.nombre,
                     style: const TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold),
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -269,7 +309,10 @@ class _ProductoTableRow extends StatelessWidget {
             child: Text(
               producto.sku,
               style: const TextStyle(
-                  color: Colors.white70, fontFamily: 'monospace', fontSize: 12),
+                color: Colors.white70,
+                fontFamily: 'monospace',
+                fontSize: 12,
+              ),
             ),
           ),
 
@@ -295,17 +338,24 @@ class _ProductoTableRow extends StatelessWidget {
                     color: agotado
                         ? Colors.white24
                         : stockBajo
-                            ? const Color(0xFFE31E24)
-                            : Colors.white,
+                        ? AppTheme.primaryColor
+                        : Colors.white,
                     fontWeight: (stockBajo || agotado) ? FontWeight.bold : null,
                   ),
                 ),
                 if (stockBajo || agotado) ...[
                   const SizedBox(width: 4),
-                  Icon(
-                    agotado ? FontAwesomeIcons.ban.data : Icons.warning_amber_rounded,
-                    size: 14,
-                    color: agotado ? Colors.white24 : const Color(0xFFE31E24),
+                  Tooltip(
+                    message: agotado
+                        ? 'Agotado'
+                        : 'Mínimo: ${producto.stockMinimo ?? 0}',
+                    child: Icon(
+                      agotado
+                          ? FontAwesomeIcons.ban.data
+                          : Icons.warning_amber_rounded,
+                      size: 14,
+                      color: agotado ? Colors.white24 : AppTheme.primaryColor,
+                    ),
                   ),
                 ],
               ],
@@ -313,10 +363,7 @@ class _ProductoTableRow extends StatelessWidget {
           ),
 
           // Precio
-          Expanded(
-            flex: 2,
-            child: _buildPriceCell(),
-          ),
+          Expanded(flex: 2, child: _buildPriceCell()),
 
           // Acciones
           Expanded(
@@ -328,7 +375,9 @@ class _ProductoTableRow extends StatelessWidget {
                   _ActionButton(
                     icon: FontAwesomeIcons.boxOpen,
                     color: Colors.orange,
-                    onPressed: onEnable != null ? () => onEnable!(producto) : null,
+                    onPressed: onEnable != null
+                        ? () => onEnable!(producto)
+                        : null,
                     tooltip: 'Habilitar',
                   ),
                 _ActionButton(
@@ -377,12 +426,13 @@ class _ProductoTableRow extends StatelessWidget {
   Widget _buildPriceCell() {
     final double precioActivo = producto.getPrecioActual();
     final double ganancia = precioActivo - producto.precioCompra;
-    final double margen = producto.precioCompra > 0 
-        ? (ganancia / producto.precioCompra) * 100 
+    final double margen = producto.precioCompra > 0
+        ? (ganancia / producto.precioCompra) * 100
         : 0;
 
     return Tooltip(
-      message: 'Ganancia: S/ ${ganancia.toStringAsFixed(2)}\nMargen: ${margen.toStringAsFixed(2)}%',
+      message:
+          'Ganancia: S/ ${ganancia.toStringAsFixed(2)}\nMargen: ${margen.toStringAsFixed(2)}%',
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -391,7 +441,9 @@ class _ProductoTableRow extends StatelessWidget {
             Text(
               producto.getPrecioOfertaFormateado()!,
               style: const TextStyle(
-                color: Color(0xFFFFC107), // Ámbar brillante para el precio activo
+                color: Color(
+                  0xFFFFC107,
+                ), // Ámbar brillante para el precio activo
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
               ),

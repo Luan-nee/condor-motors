@@ -1,10 +1,11 @@
-import 'package:condorsmotors/models/marca.model.dart';
+﻿import 'package:condorsmotors/models/marca.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/repositories/categoria.repository.dart';
 import 'package:condorsmotors/repositories/marcas.repository.dart';
 import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:condorsmotors/repositories/sucursal.repository.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 
 /// Clase para representar el stock de un producto en una sucursal
@@ -200,7 +201,7 @@ class ProductosUtils {
   // Obtener color según el estado del stock
   static Color getColorStock(Producto producto) {
     if (tieneStockBajo(producto)) {
-      return const Color(0xFFE31E24);
+      return AppTheme.primaryColor;
     }
     return Colors.white;
   }

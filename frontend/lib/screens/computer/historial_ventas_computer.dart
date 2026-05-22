@@ -2,6 +2,7 @@ import 'package:condorsmotors/models/ventas.model.dart';
 import 'package:condorsmotors/providers/computer/ventas.computer.riverpod.dart';
 import 'package:condorsmotors/repositories/venta.repository.dart';
 import 'package:condorsmotors/screens/admin/widgets/venta/venta_detalle_dialog.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -62,7 +63,7 @@ class VentasListComputer extends StatelessWidget {
               icon: const FaIcon(FontAwesomeIcons.arrowsRotate, size: 14),
               label: const Text('Recargar'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE31E24),
+                backgroundColor: AppTheme.primaryColor,
               ),
             ),
           ],
@@ -136,7 +137,7 @@ class VentasListComputer extends StatelessWidget {
 
   Widget _buildEstadoChip(EstadoVenta estado) {
     Color color;
-    Color textColor = Colors.white;
+    const Color textColor = Colors.white;
 
     switch (estado) {
       case EstadoVenta.pendiente:
@@ -153,11 +154,11 @@ class VentasListComputer extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Text(
         estado.toText(),
-        style: TextStyle(
+        style: const TextStyle(
           color: textColor,
           fontSize: 12,
           fontWeight: FontWeight.bold,
@@ -231,7 +232,7 @@ class _HistorialVentasComputerScreenState
     return Scaffold(
       appBar: AppBar(
         title: Text('Historial de Ventas - ${widget.nombreSucursal}'),
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: AppTheme.darkSurface,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
@@ -242,7 +243,7 @@ class _HistorialVentasComputerScreenState
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
+              color: AppTheme.darkSurface,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.2),
@@ -265,7 +266,7 @@ class _HistorialVentasComputerScreenState
                               FontAwesomeIcons.magnifyingGlass,
                               size: 16),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                           ),
                           contentPadding: EdgeInsets.zero,
                         ),
@@ -280,7 +281,7 @@ class _HistorialVentasComputerScreenState
                           const FaIcon(FontAwesomeIcons.arrowsRotate, size: 14),
                       label: const Text('Refrescar'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE31E24),
+                        backgroundColor: AppTheme.primaryColor,
                       ),
                     ),
                   ],
@@ -303,7 +304,7 @@ class _HistorialVentasComputerScreenState
           if (state.paginacion.totalPages > 0)
             Container(
               padding: const EdgeInsets.all(16),
-              color: const Color(0xFF1A1A1A),
+              color: AppTheme.darkSurface,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -327,7 +328,7 @@ class _HistorialVentasComputerScreenState
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
                                 pageNumber == state.paginacion.currentPage
-                                    ? const Color(0xFFE31E24)
+                                    ? AppTheme.primaryColor
                                     : Colors.grey[800],
                             padding: EdgeInsets.zero,
                             minimumSize: const Size(40, 40),

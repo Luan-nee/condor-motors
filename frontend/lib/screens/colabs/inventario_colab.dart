@@ -1,5 +1,6 @@
 import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:condorsmotors/repositories/stock.repository.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -273,7 +274,7 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
                       hintText: 'Buscar por código, nombre o ubicación...',
                       prefixIcon: const Icon(Icons.search),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -326,7 +327,7 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
                         decoration: BoxDecoration(
                           color: _getEstadoColor(producto['estado'])
                               .withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                         ),
                         child: FaIcon(
                           producto['estado'] == 'AGOTADO'
@@ -366,7 +367,7 @@ class _InventarioColabScreenState extends State<InventarioColabScreen> {
                               color: Theme.of(context)
                                   .primaryColor
                                   .withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                             ),
                             child: Text(
                               producto['ubicacion'],

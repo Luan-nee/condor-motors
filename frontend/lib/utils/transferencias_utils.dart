@@ -1,4 +1,5 @@
 import 'package:condorsmotors/models/transferencias.model.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -88,10 +89,10 @@ class TransferenciasUtils {
   /// Obtiene el estilo para el badge de cantidad de productos
   static BoxDecoration getProductCountBadgeStyle() {
     return BoxDecoration(
-      color: const Color(0xFFE31E24).withValues(alpha: 0.1),
-      borderRadius: BorderRadius.circular(12),
+      color: AppTheme.primaryColor.withValues(alpha: 0.1),
+      borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       border: Border.all(
-        color: const Color(0xFFE31E24).withValues(alpha: 0.3),
+        color: AppTheme.primaryColor.withValues(alpha: 0.3),
       ),
     );
   }
@@ -101,7 +102,7 @@ class TransferenciasUtils {
     final Color color = getEstadoColor(estado);
     return BoxDecoration(
       color: color.withValues(alpha: 0.1),
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppTheme.smallRadius),
       border: Border.all(
         color: color.withValues(alpha: 0.3),
       ),

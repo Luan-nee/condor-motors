@@ -1,5 +1,6 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 
 /// Clase para dibujar el fondo de forma optimizada
@@ -14,18 +15,18 @@ class BackgroundPainter extends CustomPainter {
   final Paint _backgroundPaint = Paint()..style = PaintingStyle.fill;
   
   final Paint _particlePaint = Paint()
-    ..color = const Color(0xFFE31E24).withValues(alpha: 0.05)
+    ..color = AppTheme.primaryColor.withValues(alpha: 0.05)
     ..style = PaintingStyle.fill;
     
   final Paint _wavePaint = Paint()
-    ..color = const Color(0xFFE31E24).withValues(alpha: 0.03)
+    ..color = AppTheme.primaryColor.withValues(alpha: 0.03)
     ..style = PaintingStyle.stroke
     ..strokeWidth = 2;
     
   final Paint _glowPaint = Paint()..style = PaintingStyle.fill;
   
   final Paint _gridPaint = Paint()
-    ..color = const Color(0xFFE31E24).withValues(alpha: 0.02)
+    ..color = AppTheme.primaryColor.withValues(alpha: 0.02)
     ..style = PaintingStyle.stroke
     ..strokeWidth = 1;
     
@@ -75,9 +76,9 @@ class BackgroundPainter extends CustomPainter {
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: <Color>[
-          const Color(0xFF1A1A1A),
-          const Color(0xFF1A1A1A).withRed(40),
-          const Color(0xFF1A1A1A),
+          AppTheme.darkSurface,
+          AppTheme.darkSurface.withRed(40),
+          AppTheme.darkSurface,
         ],
         stops: const <double>[0.0, 0.5, 1.0],
       );
@@ -85,8 +86,8 @@ class BackgroundPainter extends CustomPainter {
 
       final RadialGradient glowRadial = RadialGradient(
         colors: <Color>[
-          const Color(0xFFE31E24).withValues(alpha: 0.1),
-          const Color(0xFFE31E24).withValues(alpha: 0.0),
+          AppTheme.primaryColor.withValues(alpha: 0.1),
+          AppTheme.primaryColor.withValues(alpha: 0.0),
         ],
       );
       _glowShader = glowRadial.createShader(Rect.fromCircle(
@@ -204,7 +205,7 @@ class BackgroundPainter extends CustomPainter {
     }
 
     // 6. Efecto de pulso principal
-    _pulsePaint.color = const Color(0xFFE31E24).withValues(
+    _pulsePaint.color = AppTheme.primaryColor.withValues(
         alpha: 0.12 * (1 + math.cos(animValue * math.pi * 2 * 3)) / 2);
 
     final double pulseRadius = (size.width * 0.25) *
@@ -228,7 +229,7 @@ class BackgroundPainter extends CustomPainter {
     _pulsePaint.strokeWidth = 3; // Restaurar ancho base
 
     // 7. Segundo grupo de pulsos
-    _smallPulsePaint.color = const Color(0xFFE31E24).withValues(
+    _smallPulsePaint.color = AppTheme.primaryColor.withValues(
         alpha: 0.08 * (1 + math.sin(animValue * math.pi * 2 * 4)) / 2);
 
     final Offset smallPulseCenter = Offset(size.width * 0.75, size.height * 0.4);

@@ -1,5 +1,6 @@
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -10,7 +11,7 @@ class StockUtils {
     if (stockActual <= 0) {
       return Colors.red.shade800; // Sin stock
     } else if (stockActual < stockMinimo) {
-      return const Color(0xFFE31E24); // Stock bajo
+      return AppTheme.primaryColor; // Stock bajo
     } else {
       return Colors.green; // Stock normal
     }

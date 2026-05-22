@@ -7,20 +7,23 @@ part of 'transferencias.colab.riverpod.dart';
 // **************************************************************************
 
 String _$transferenciasColabHash() =>
-    r'a30edaf61cc5a0c52d9dcfc715d9e8c23be17448';
+    r'1da15f06412cc16b3f63fa417039ada1dc2f1a1e';
 
 /// See also [TransferenciasColab].
 @ProviderFor(TransferenciasColab)
-final transferenciasColabProvider = AutoDisposeNotifierProvider<
-    TransferenciasColab, TransferenciasColabState>.internal(
-  TransferenciasColab.new,
-  name: r'transferenciasColabProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$transferenciasColabHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+final transferenciasColabProvider =
+    AutoDisposeNotifierProvider<
+      TransferenciasColab,
+      TransferenciasColabState
+    >.internal(
+      TransferenciasColab.new,
+      name: r'transferenciasColabProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$transferenciasColabHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
 
 typedef _$TransferenciasColab = AutoDisposeNotifier<TransferenciasColabState>;
 // ignore_for_file: type=lint

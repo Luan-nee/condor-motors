@@ -1,4 +1,5 @@
-import 'package:condorsmotors/models/paginacion.model.dart';
+﻿import 'package:condorsmotors/models/paginacion.model.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -242,7 +243,7 @@ class Paginador extends StatelessWidget {
     int closest = baseOpciones.first;
     int minDifference = (calculated - closest).abs();
 
-    for (int option in baseOpciones) {
+    for (final int option in baseOpciones) {
       final difference = (calculated - option).abs();
       if (difference < minDifference) {
         minDifference = difference;
@@ -255,9 +256,9 @@ class Paginador extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color bgColor = backgroundColor ?? const Color(0xFF2D2D2D);
+    final Color bgColor = backgroundColor ?? AppTheme.surfaceColor;
     final Color txtColor = textColor ?? Colors.white;
-    final Color accent = accentColor ?? const Color(0xFFE31E24);
+    final Color accent = accentColor ?? AppTheme.primaryColor;
 
     // Base de opciones estándar (sin el 10)
     const List<int> baseOpciones = [25, 50, 100, 200];

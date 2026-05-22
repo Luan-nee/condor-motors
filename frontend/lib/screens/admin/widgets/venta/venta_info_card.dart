@@ -1,4 +1,5 @@
 import 'package:condorsmotors/models/ventas.model.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -42,8 +43,8 @@ class VentaInfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
-        borderRadius: BorderRadius.circular(12),
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(51),
@@ -112,7 +113,7 @@ class VentaInfoCard extends StatelessWidget {
               Text(
                 value,
                 style: TextStyle(
-                  color: isPrice ? const Color(0xFFE31E24) : Colors.white,
+                  color: isPrice ? AppTheme.primaryColor : Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),
@@ -128,7 +129,7 @@ class VentaInfoCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color.withAlpha(38),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
         border: Border.all(color: color.withAlpha(77)),
       ),
       child: Row(
@@ -162,7 +163,7 @@ class VentaInfoCard extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: bannerColor.withAlpha(25),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.smallRadius),
           border: Border.all(color: bannerColor.withAlpha(77)),
         ),
         child: Row(

@@ -1,4 +1,4 @@
-import 'package:condorsmotors/models/paginacion.model.dart';
+﻿import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:condorsmotors/screens/colabs/selector_colab.dart';
@@ -623,7 +623,7 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
       ),
       child: DropdownButtonHideUnderline(
@@ -682,7 +682,7 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
       ),
       child: DropdownButtonHideUnderline(
@@ -1133,7 +1133,7 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                                           color: Colors.blue
                                               .withValues(alpha: 0.15),
                                           borderRadius:
-                                              BorderRadius.circular(12),
+                                              BorderRadius.circular(AppTheme.mediumRadius),
                                           border: Border.all(
                                             color: Colors.blue
                                                 .withValues(alpha: 0.3),
@@ -1228,7 +1228,7 @@ class _ProductosColabScreenState extends State<ProductosColabScreen> {
                                               color: Colors.blue
                                                   .withValues(alpha: 0.1),
                                               borderRadius:
-                                                  BorderRadius.circular(8),
+                                                  BorderRadius.circular(AppTheme.smallRadius),
                                               border: Border.all(
                                                 color: Colors.blue
                                                     .withValues(alpha: 0.3),

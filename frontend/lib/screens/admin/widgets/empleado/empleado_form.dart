@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:condorsmotors/models/empleado.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/empleados_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -306,9 +307,9 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: AppTheme.darkSurface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Container(
         width: 900,
@@ -367,7 +368,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                           icon: const Icon(Icons.upload_file),
                           label: const Text('Seleccionar Foto'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFE31E24),
+                            backgroundColor: AppTheme.primaryColor,
                             foregroundColor: Colors.white,
                           ),
                         ),
@@ -392,7 +393,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFFE31E24),
+                    color: AppTheme.primaryColor,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -544,7 +545,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFFE31E24),
+                    color: AppTheme.primaryColor,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -561,7 +562,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                           DropdownButtonFormField<String>(
                             initialValue: _selectedSucursalId,
                             style: const TextStyle(color: Colors.white),
-                            dropdownColor: const Color(0xFF2D2D2D),
+                            dropdownColor: AppTheme.surfaceColor,
                             decoration: InputDecoration(
                               labelText: 'Sucursal',
                               labelStyle:
@@ -571,7 +572,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                                     ? FontAwesomeIcons.building
                                     : FontAwesomeIcons.store,
                                 color: _esSucursalCentral
-                                    ? const Color(0xFF4CAF50)
+                                    ? AppTheme.successColor
                                     : Colors.white54,
                                 size: 20,
                               ),
@@ -589,7 +590,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                                       entry.value,
                                       style: TextStyle(
                                         color: esCentral
-                                            ? const Color(0xFF4CAF50)
+                                            ? AppTheme.successColor
                                             : Colors.white,
                                       ),
                                     ),
@@ -617,7 +618,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                                 children: <Widget>[
                                   const Icon(
                                     Icons.info_outline,
-                                    color: Color(0xFF4CAF50),
+                                    color: AppTheme.successColor,
                                     size: 14,
                                   ),
                                   const SizedBox(width: 8),
@@ -646,7 +647,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFFE31E24),
+                    color: AppTheme.primaryColor,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -654,12 +655,12 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2D2D2D),
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppTheme.surfaceColor,
+                    borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                     border: Border.all(
                       color: _isEmpleadoActivo
-                          ? const Color(0xFF4CAF50).withValues(alpha: 0.5)
-                          : const Color(0xFFE31E24).withValues(alpha: 0.5),
+                          ? AppTheme.successColor.withValues(alpha: 0.5)
+                          : AppTheme.primaryColor.withValues(alpha: 0.5),
                     ),
                   ),
                   child: Row(
@@ -668,8 +669,8 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1A1A1A),
-                          borderRadius: BorderRadius.circular(8),
+                          color: AppTheme.darkSurface,
+                          borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                         ),
                         child: Center(
                           child: FaIcon(
@@ -677,8 +678,8 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                                 ? FontAwesomeIcons.userCheck
                                 : FontAwesomeIcons.userXmark,
                             color: _isEmpleadoActivo
-                                ? const Color(0xFF4CAF50)
-                                : const Color(0xFFE31E24),
+                                ? AppTheme.successColor
+                                : AppTheme.primaryColor,
                             size: 18,
                           ),
                         ),
@@ -694,8 +695,8 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                                   : 'Colaborador Inactivo',
                               style: TextStyle(
                                 color: _isEmpleadoActivo
-                                    ? const Color(0xFF4CAF50)
-                                    : const Color(0xFFE31E24),
+                                    ? AppTheme.successColor
+                                    : AppTheme.primaryColor,
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -719,12 +720,12 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                         onChanged: (bool value) {
                           setState(() => _isEmpleadoActivo = value);
                         },
-                        activeThumbColor: const Color(0xFF4CAF50),
-                        inactiveThumbColor: const Color(0xFFE31E24),
+                        activeThumbColor: AppTheme.successColor,
+                        inactiveThumbColor: AppTheme.primaryColor,
                         activeTrackColor:
-                            const Color(0xFF4CAF50).withValues(alpha: 0.3),
+                            AppTheme.successColor.withValues(alpha: 0.3),
                         inactiveTrackColor:
-                            const Color(0xFFE31E24).withValues(alpha: 0.3),
+                            AppTheme.primaryColor.withValues(alpha: 0.3),
                       ),
                     ],
                   ),
@@ -738,7 +739,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFFE31E24),
+                    color: AppTheme.primaryColor,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -780,7 +781,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
                     const SizedBox(width: 16),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE31E24),
+                        backgroundColor: AppTheme.primaryColor,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
@@ -845,7 +846,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.red.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         border: Border.all(color: Colors.red.withValues(alpha: 0.5)),
       ),
       child: Row(
@@ -953,7 +954,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
               contentPadding:
                   const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppTheme.smallRadius),
               ),
             ),
             validator: (String? value) {
@@ -1016,7 +1017,7 @@ class _EmpleadoFormState extends State<EmpleadoForm> {
               contentPadding:
                   const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppTheme.smallRadius),
               ),
             ),
             validator: (String? value) {

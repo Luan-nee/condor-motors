@@ -4,6 +4,7 @@ import 'dart:math' show min;
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/repositories/cliente.repository.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/logger.dart';
 import 'package:flutter/material.dart';
 
@@ -766,9 +767,9 @@ class ProformaConversionManager {
   /// Construye el diálogo de procesamiento
   static Widget _buildProcessingDialog(String tipoDocumento) {
     return Dialog(
-      backgroundColor: const Color(0xFF2D2D2D),
+      backgroundColor: AppTheme.surfaceColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Padding(
         padding: const EdgeInsets.all(24),

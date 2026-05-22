@@ -2,6 +2,7 @@
 import 'package:condorsmotors/models/transferencias.model.dart';
 import 'package:condorsmotors/providers/admin/transferencias.admin.riverpod.dart';
 import 'package:condorsmotors/screens/admin/widgets/movimiento/transferencia_detail_dialog.dart'; // Importamos el nuevo widget unificado
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/transferencias_utils.dart';
 import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +18,8 @@ class MovimientosAdminScreen extends ConsumerStatefulWidget {
 }
 
 class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen> {
+  final GlobalKey<PopupMenuButtonState<String>> _filterMenuKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
@@ -110,45 +113,57 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
                       width: 46,
                       child: Tooltip(
                         message: 'Filtrar por estado',
-                        child: DecoratedBox(
+                        child: Ink(
                           decoration: BoxDecoration(
                             color: state.selectedFilter != 'Todos'
-                                ? const Color(0xFFE31E24).withValues(alpha: 0.1)
-                                : const Color(0xFF2D2D2D),
-                            borderRadius: BorderRadius.circular(8),
+                                ? AppTheme.primaryColor.withValues(alpha: 0.1)
+                                : AppTheme.surfaceColor,
+                            borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                             border: Border.all(
                               color: state.selectedFilter != 'Todos'
-                                  ? const Color(0xFFE31E24)
+                                  ? AppTheme.primaryColor
                                   : Colors.transparent,
                             ),
                           ),
-                          child: PopupMenuButton<String>(
-                            initialValue: state.selectedFilter,
-                            icon: FaIcon(
-                              FontAwesomeIcons.filter,
-                              size: 14,
-                              color: state.selectedFilter != 'Todos'
-                                  ? const Color(0xFFE31E24)
-                                  : Colors.white54,
-                            ),
-                            onSelected: notifier.cambiarFiltro,
-                            offset: const Offset(0, 46),
-                            itemBuilder: (context) => [
-                              const PopupMenuItem(
-                                value: 'Todos',
-                                child: Text('Todos los estados',
-                                    style: TextStyle(
-                                        color: Colors.white, fontSize: 13)),
-                              ),
-                              ...['Pedido', 'Enviado', 'Recibido'].map(
-                                (f) => PopupMenuItem(
-                                  value: f,
-                                  child: Text(f,
-                                      style: const TextStyle(
-                                          color: Colors.white, fontSize: 13)),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+                            hoverColor: Colors.white.withValues(alpha: 0.05),
+                            splashColor: Colors.white.withValues(alpha: 0.1),
+                            onTap: () {
+                              _filterMenuKey.currentState?.showButtonMenu();
+                            },
+                            child: Center(
+                              child: PopupMenuButton<String>(
+                                key: _filterMenuKey,
+                                initialValue: state.selectedFilter,
+                                tooltip: '',
+                                onSelected: notifier.cambiarFiltro,
+                                offset: const Offset(0, 46),
+                                itemBuilder: (context) => [
+                                  const PopupMenuItem(
+                                    value: 'Todos',
+                                    child: Text('Todos los estados',
+                                        style: TextStyle(
+                                            color: Colors.white, fontSize: 13)),
+                                  ),
+                                  ...['Pedido', 'Enviado', 'Recibido'].map(
+                                    (f) => PopupMenuItem(
+                                      value: f,
+                                      child: Text(f,
+                                          style: const TextStyle(
+                                              color: Colors.white, fontSize: 13)),
+                                    ),
+                                  ),
+                                ],
+                                child: FaIcon(
+                                  FontAwesomeIcons.filter,
+                                  size: 14,
+                                  color: state.selectedFilter != 'Todos'
+                                      ? AppTheme.primaryColor
+                                      : Colors.white54,
                                 ),
                               ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
@@ -163,11 +178,11 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
                             state.isLoading ? 'Recargando...' : 'Recargar datos',
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2D2D2D),
+                            backgroundColor: AppTheme.surfaceColor,
                             foregroundColor: Colors.white,
                             padding: EdgeInsets.zero,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                             ),
                             elevation: 0,
                           ),
@@ -197,8 +212,8 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
               Expanded(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1A1A1A),
-                    borderRadius: BorderRadius.circular(12),
+                    color: AppTheme.darkSurface,
+                    borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                     border: Border.all(
                       color: Colors.white.withValues(alpha: 0.1),
                     ),
@@ -209,7 +224,7 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
                       // Encabezado de la tabla dentro del mismo Container
                       Container(
                         decoration: const BoxDecoration(
-                          color: Color(0xFF2D2D2D),
+                          color: AppTheme.surfaceColor,
                           borderRadius:
                               BorderRadius.vertical(top: Radius.circular(12)),
                         ),
@@ -224,7 +239,7 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
                                 children: [
                                   FaIcon(
                                     FontAwesomeIcons.calendar,
-                                    color: Color(0xFFE31E24),
+                                    color: AppTheme.primaryColor,
                                     size: 14,
                                   ),
                                   SizedBox(width: 8),
@@ -304,9 +319,9 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
                   children: [
                     Paginador(
                       paginacion: state.paginacion,
-                      backgroundColor: const Color(0xFF1A1A1A),
+                      backgroundColor: AppTheme.darkSurface,
                       textColor: Colors.white,
-                      accentColor: const Color(0xFFE31E24),
+                      accentColor: AppTheme.primaryColor,
                       radius: 8,
                       mostrarOrdenacion: true,
                       camposParaOrdenar: const [
@@ -404,7 +419,7 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
                 Row(
                   children: [
                     const Icon(Icons.calendar_today,
-                        size: 14, color: Color(0xFFE31E24)),
+                        size: 14, color: AppTheme.primaryColor),
                     const SizedBox(width: 4),
                     Text(_formatFecha(transferencia.fechaCreacion),
                         style:
@@ -542,7 +557,7 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
               onPressed: () => _mostrarDetalleMovimiento(transferencia),
               icon: const FaIcon(
                 FontAwesomeIcons.magnifyingGlass,
-                color: Color(0xFFE31E24),
+                color: AppTheme.primaryColor,
                 size: 14,
               ),
               tooltip: 'Ver detalles',
@@ -599,11 +614,11 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
             label: const Text('Verificar de nuevo'),
             onPressed: notifier.recargarDatos,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2D2D2D),
+              backgroundColor: AppTheme.surfaceColor,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppTheme.smallRadius),
               ),
             ),
           ),
@@ -642,7 +657,7 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
                             color: step['isCompleted'] as bool
                                 ? (step['color'] as Color)
                                     .withValues(alpha: 0.1)
-                                : const Color(0xFF1A1A1A),
+                                : AppTheme.darkSurface,
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: step['isCompleted'] as bool
@@ -669,7 +684,7 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
                                 color: step['color'] as Color,
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: const Color(0xFF1A1A1A),
+                                  color: AppTheme.darkSurface,
                                 ),
                               ),
                               child: const FaIcon(

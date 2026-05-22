@@ -4,11 +4,12 @@ import 'package:condorsmotors/repositories/cliente.repository.dart';
 import 'package:condorsmotors/repositories/pedido.repository.dart';
 import 'package:condorsmotors/screens/admin/widgets/pedido/detalle_pedido.dart';
 import 'package:condorsmotors/screens/admin/widgets/pedido/form_pedido.dart';
+import 'package:condorsmotors/screens/admin/widgets/pedido/pedido_search_bar.dart';
+import 'package:condorsmotors/screens/admin/widgets/pedido/pedido_table.dart';
 import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:intl/intl.dart';
 
 class PedidoAdminScreen extends StatefulWidget {
   const PedidoAdminScreen({super.key});
@@ -317,7 +318,7 @@ class _PedidoAdminScreenState extends State<PedidoAdminScreen> {
                         style: const TextStyle(color: Colors.white),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2D2D2D),
+                        backgroundColor: AppTheme.surfaceColor,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -332,7 +333,7 @@ class _PedidoAdminScreenState extends State<PedidoAdminScreen> {
                           size: 16, color: Colors.white),
                       label: const Text('Nuevo Pedido'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE31E24),
+                        backgroundColor: AppTheme.primaryColor,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
@@ -346,14 +347,24 @@ class _PedidoAdminScreenState extends State<PedidoAdminScreen> {
               ],
             ),
             const SizedBox(height: 32),
-            _buildSearchBar(),
+            PedidoSearchBar(
+              controller: _searchController,
+              filtroEstado: _filtroEstado,
+              onFiltroChanged: (value) {
+                setState(() {
+                  _filtroEstado = value;
+                });
+                _cargarPedidos();
+              },
+              estadosPedido: estadosPedido,
+            ),
             if (errorMessage.isNotEmpty)
               Container(
                 padding: const EdgeInsets.all(16),
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
                   color: Colors.red.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                   border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
                 ),
                 child: Row(
@@ -374,314 +385,18 @@ class _PedidoAdminScreenState extends State<PedidoAdminScreen> {
                 ),
               ),
             Expanded(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A1A),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                  ),
-                ),
-                child: isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : pedidos.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: <Widget>[
-                                const FaIcon(
-                                  FontAwesomeIcons.boxOpen,
-                                  color: Colors.grey,
-                                  size: 48,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'No hay pedidos exclusivos disponibles',
-                                  style: TextStyle(
-                                    color: Colors.grey[400],
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                ElevatedButton.icon(
-                                  icon: const FaIcon(
-                                    FontAwesomeIcons.plus,
-                                    size: 14,
-                                  ),
-                                  label: const Text('Crear pedido'),
-                                  onPressed: _mostrarFormularioPedido,
-                                ),
-                              ],
-                            ),
-                          )
-                        : SingleChildScrollView(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: <Widget>[
-                                // Encabezado de la tabla
-                                Container(
-                                  decoration: const BoxDecoration(
-                                    color: AppTheme.cardColor,
-                                    borderRadius: BorderRadius.vertical(
-                                        top: Radius.circular(
-                                            AppTheme.mediumRadius)),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 16, horizontal: 20),
-                                  child: const Row(
-                                    children: <Widget>[
-                                      Expanded(
-                                        flex: 30,
-                                        child: Text('Descripción',
-                                            style: TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16)),
-                                      ),
-                                      Expanded(
-                                        flex: 25,
-                                        child: Text('Cliente',
-                                            style: TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16)),
-                                      ),
-                                      Expanded(
-                                        flex: 15,
-                                        child: Text('Sucursal',
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16)),
-                                      ),
-                                      Expanded(
-                                        flex: 15,
-                                        child: Text('Fecha',
-                                            style: TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16)),
-                                      ),
-                                      Expanded(
-                                        flex: 15,
-                                        child: Text('Monto Adelantado',
-                                            style: TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16)),
-                                      ),
-                                      Expanded(
-                                        flex: 15,
-                                        child: Text('Recojo',
-                                            style: TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16)),
-                                      ),
-                                      Expanded(
-                                        flex: 15,
-                                        child: Text('Detalles',
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16)),
-                                      ),
-                                      Expanded(
-                                        flex: 20,
-                                        child: Text('Acciones',
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16)),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                // Filas de pedidos
-                                ...pedidos.map((pedido) => Container(
-                                      decoration: BoxDecoration(
-                                        border: Border(
-                                          bottom: BorderSide(
-                                            color: Colors.white
-                                                .withValues(alpha: 0.1),
-                                          ),
-                                        ),
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 12, horizontal: 20),
-                                      child: Row(
-                                        children: <Widget>[
-                                          Expanded(
-                                            flex: 25,
-                                            child: Text(pedido.descripcion,
-                                                style: const TextStyle(
-                                                    color: Colors.white)),
-                                          ),
-                                          Expanded(
-                                            flex: 20,
-                                            child: Text(
-                                                _getCliente(pedido.clienteId)
-                                                        ?.denominacion ??
-                                                    pedido.clienteId.toString(),
-                                                style: const TextStyle(
-                                                    color: Colors.white)),
-                                          ),
-                                          Expanded(
-                                            flex: 15,
-                                            child: Text(
-                                                pedido.nombre.isNotEmpty
-                                                    ? pedido.nombre
-                                                    : 'Sucursal ${pedido.sucursalId}',
-                                                textAlign: TextAlign.center,
-                                                style: const TextStyle(
-                                                    color: Colors.white)),
-                                          ),
-                                          Expanded(
-                                            flex: 15,
-                                            child: Text(
-                                                DateFormat('dd/MM/yyyy').format(
-                                                    pedido.fechaCreacion),
-                                                style: const TextStyle(
-                                                    color: Colors.white)),
-                                          ),
-                                          Expanded(
-                                            flex: 15,
-                                            child: Text(
-                                                'S/ ${pedido.montoAdelantado}',
-                                                style: const TextStyle(
-                                                    color: Colors.white)),
-                                          ),
-                                          Expanded(
-                                            flex: 15,
-                                            child: Text(pedido.fechaRecojo,
-                                                style: const TextStyle(
-                                                    color: Colors.white)),
-                                          ),
-                                          Expanded(
-                                            flex: 15,
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                const FaIcon(
-                                                    FontAwesomeIcons.box,
-                                                    size: 12,
-                                                    color: Color(0xFFE31E24)),
-                                                const SizedBox(width: 6),
-                                                Text(
-                                                    '${pedido.detallesReserva.length}',
-                                                    style: const TextStyle(
-                                                        color:
-                                                            Color(0xFFE31E24),
-                                                        fontWeight:
-                                                            FontWeight.bold)),
-                                              ],
-                                            ),
-                                          ),
-                                          Expanded(
-                                            flex: 20,
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: <Widget>[
-                                                IconButton(
-                                                  icon: const FaIcon(
-                                                      FontAwesomeIcons.eye,
-                                                      color: Colors.white54,
-                                                      size: 16),
-                                                  onPressed: () =>
-                                                      _mostrarDetallePedido(
-                                                          pedido),
-                                                  constraints:
-                                                      const BoxConstraints(
-                                                          minWidth: 30,
-                                                          minHeight: 30),
-                                                  padding: EdgeInsets.zero,
-                                                ),
-                                                IconButton(
-                                                  icon: const FaIcon(
-                                                      FontAwesomeIcons
-                                                          .penToSquare,
-                                                      color: Colors.white54,
-                                                      size: 16),
-                                                  onPressed: () =>
-                                                      _mostrarFormularioPedido(
-                                                          pedido: pedido),
-                                                  constraints:
-                                                      const BoxConstraints(
-                                                          minWidth: 30,
-                                                          minHeight: 30),
-                                                  padding: EdgeInsets.zero,
-                                                ),
-                                                IconButton(
-                                                  icon: const FaIcon(
-                                                      FontAwesomeIcons.trash,
-                                                      color: Colors.red,
-                                                      size: 16),
-                                                  onPressed: () =>
-                                                      _confirmarEliminarPedido(
-                                                          pedido),
-                                                  constraints:
-                                                      const BoxConstraints(
-                                                          minWidth: 30,
-                                                          minHeight: 30),
-                                                  padding: EdgeInsets.zero,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    )),
-                              ],
-                            ),
-                          ),
+              child: PedidoTable(
+                pedidos: pedidos,
+                isLoading: isLoading,
+                getCliente: _getCliente,
+                onViewDetails: _mostrarDetallePedido,
+                onEdit: (pedido) => _mostrarFormularioPedido(pedido: pedido),
+                onDelete: _confirmarEliminarPedido,
+                onNew: _mostrarFormularioPedido,
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _searchController,
-              decoration: const InputDecoration(
-                labelText: 'Buscar pedidos',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          DropdownButton<String>(
-            value: _filtroEstado,
-            items: estadosPedido.map((estado) {
-              return DropdownMenuItem<String>(
-                value: estado,
-                child: Text(estado),
-              );
-            }).toList(),
-            onChanged: (value) {
-              if (value != null) {
-                setState(() {
-                  _filtroEstado = value;
-                });
-                _cargarPedidos();
-              }
-            },
-            hint: const Text('Estado'),
-          ),
-        ],
       ),
     );
   }

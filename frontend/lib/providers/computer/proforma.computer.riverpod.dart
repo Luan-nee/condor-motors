@@ -167,7 +167,7 @@ class ProformaComputer extends _$ProformaComputer {
     int actualPageSize = state.userPreferredPageSize;
 
     try {
-      String? sucursalIdStr = await _getSucursalId(sucursalId);
+      final String? sucursalIdStr = await _getSucursalId(sucursalId);
       if (sucursalIdStr == null) {
         if (!silencioso) {
           state = state.copyWith(
@@ -178,7 +178,7 @@ class ProformaComputer extends _$ProformaComputer {
       }
 
       // Usamos la preferencia guardada del usuario como base para la petición
-      int requestPageSize = state.userPreferredPageSize;
+      final int requestPageSize = state.userPreferredPageSize;
 
       final response = await _proformaRepository.getProformas(
         sucursalId: sucursalIdStr,
@@ -275,7 +275,7 @@ class ProformaComputer extends _$ProformaComputer {
   Future<bool> handleConvertToSale(Proforma proforma, int? sucursalId,
       {VoidCallback? onSuccess}) async {
     try {
-      String? sucursalIdStr = await _getSucursalId(sucursalId);
+      final String? sucursalIdStr = await _getSucursalId(sucursalId);
       if (sucursalIdStr == null) {
         Logger.error('No se pudo determinar la sucursal del usuario');
         return false;
@@ -448,7 +448,7 @@ class ProformaComputer extends _$ProformaComputer {
 
   Future<bool> deleteProforma(Proforma proforma, int? sucursalId) async {
     try {
-      String? sucursalIdStr = await _getSucursalId(sucursalId);
+      final String? sucursalIdStr = await _getSucursalId(sucursalId);
       if (sucursalIdStr == null) {
         return false;
       }
@@ -542,7 +542,7 @@ class ProformaComputer extends _$ProformaComputer {
 
   Future<List<Proforma>> _fetchProformasRealTime(int? sucursalId) async {
     try {
-      String? sucursalIdStr = await _getSucursalId(sucursalId);
+      final String? sucursalIdStr = await _getSucursalId(sucursalId);
       if (sucursalIdStr == null) {
         return [];
       }
@@ -570,14 +570,14 @@ class ProformaComputer extends _$ProformaComputer {
       return;
     }
 
-    Set<int> nuevosIds = proformasActualizadas.map((p) => p.id).toSet();
-    Set<int> proformasNuevas = nuevosIds.difference(state.proformasIds);
+    final Set<int> nuevosIds = proformasActualizadas.map((p) => p.id).toSet();
+    final Set<int> proformasNuevas = nuevosIds.difference(state.proformasIds);
 
     if (proformasNuevas.isNotEmpty) {
       Logger.info(
           'Se detectaron ${proformasNuevas.length} nuevas proformas en tiempo real!');
 
-      for (var id in proformasNuevas) {
+      for (final id in proformasNuevas) {
         final nuevaProforma =
             proformasActualizadas.firstWhere((p) => p.id == id);
         _notificarNuevaProforma(nuevaProforma);

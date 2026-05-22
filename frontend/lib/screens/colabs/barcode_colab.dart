@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/repositories/producto.repository.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -191,15 +192,15 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
       barrierDismissible: false,
       builder: (BuildContext context) => Dialog(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppTheme.largeRadius),
         ),
         child: Container(
           width: MediaQuery.of(context).size.width * 0.85,
           constraints: const BoxConstraints(maxWidth: 400),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E1E1E),
-            borderRadius: BorderRadius.circular(16),
+            color: AppTheme.cardColor,
+            borderRadius: BorderRadius.circular(AppTheme.largeRadius),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -212,7 +213,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: Colors.amber.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                     ),
                     child: const Icon(
                       Icons.qr_code_scanner,
@@ -240,7 +241,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.amber.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                   border: Border.all(
                     color: Colors.amber.withValues(alpha: 0.3),
                   ),
@@ -298,13 +299,13 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                   const SizedBox(width: 8),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4CAF50),
+                      backgroundColor: AppTheme.successColor,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 12,
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                       ),
                     ),
                     onPressed: () {
@@ -363,7 +364,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
     showDialog(
       context: context,
       builder: (BuildContext context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: AppTheme.cardColor,
         title: const Row(
           children: [
             Icon(Icons.error_outline, color: Colors.red),
@@ -406,10 +407,10 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
     showDialog(
       context: context,
       builder: (BuildContext context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: AppTheme.cardColor,
         title: Row(
           children: [
-            const Icon(Icons.shopping_cart, color: Color(0xFF4CAF50)),
+            const Icon(Icons.shopping_cart, color: AppTheme.successColor),
             const SizedBox(width: 8),
             Text(
               'Productos Encontrados (${products.length})',
@@ -430,7 +431,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
 
               return ListTile(
                 leading: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                   child: url.isNotEmpty
                       ? Image.network(
                           url,
@@ -467,7 +468,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                       'Stock: ${producto.stock}',
                       style: TextStyle(
                         color:
-                            tieneStock ? const Color(0xFF4CAF50) : Colors.red,
+                            tieneStock ? AppTheme.successColor : Colors.red,
                       ),
                     ),
                   ],
@@ -491,7 +492,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4CAF50),
+              backgroundColor: AppTheme.successColor,
             ),
             onPressed: () {
               Navigator.pop(context);
@@ -542,7 +543,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
 
         // Construir el mensaje de promoción
         String mensajePromocion = '';
-        Color colorPromocion = const Color(0xFF2E7D32);
+        Color colorPromocion = AppTheme.successDark;
         IconData iconoPromocion = Icons.bolt;
 
         if (enLiquidacion) {
@@ -563,7 +564,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
               _foundProduct!.cantidadGratisDescuento ?? 0;
           mensajePromocion =
               'Lleva $cantidadMinima y paga ${cantidadMinima - cantidadGratis}';
-          colorPromocion = const Color(0xFF4CAF50);
+          colorPromocion = AppTheme.successColor;
           iconoPromocion = Icons.card_giftcard;
         } else if (tieneDescuentoPorcentual) {
           final int porcentaje = _foundProduct!.porcentajeDescuento ?? 0;
@@ -625,7 +626,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                 ),
               ],
             ),
-            backgroundColor: const Color(0xFF1E1E1E),
+            backgroundColor: AppTheme.cardColor,
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 3),
             margin: const EdgeInsets.all(8),
@@ -664,15 +665,15 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: AppTheme.cardColor,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppTheme.largeRadius),
         ),
         title: Row(
           children: [
             Icon(
               tieneStock ? Icons.check_circle : Icons.error,
-              color: tieneStock ? const Color(0xFF4CAF50) : Colors.red,
+              color: tieneStock ? AppTheme.successColor : Colors.red,
               size: 24,
             ),
             const SizedBox(width: 8),
@@ -690,7 +691,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
             Row(
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                   child: url.isNotEmpty
                       ? Image.network(
                           url,
@@ -786,7 +787,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                     color: tieneStock
                         ? Colors.green.withValues(alpha: 0.2)
                         : Colors.red.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                     border: Border.all(
                       color: tieneStock
                           ? Colors.green.withValues(alpha: 0.5)
@@ -819,7 +820,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
               if (enLiquidacion) const SizedBox(height: 8),
               _buildPromocionInfo(
                 Icons.card_giftcard,
-                const Color(0xFF4CAF50),
+                AppTheme.successColor,
                 'Promoción "Lleva y Paga"',
                 'Lleva ${producto.cantidadMinimaDescuento ?? 0} y paga ${(producto.cantidadMinimaDescuento ?? 0) - (producto.cantidadGratisDescuento ?? 0)}',
               ),
@@ -884,10 +885,10 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor:
-                  tieneStock ? const Color(0xFF4CAF50) : Colors.grey,
+                  tieneStock ? AppTheme.successColor : Colors.grey,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppTheme.smallRadius),
               ),
             ),
             onPressed: tieneStock
@@ -920,7 +921,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
         border: Border.all(
           color: color.withValues(alpha: 0.3),
         ),
@@ -1004,7 +1005,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                           ],
                         ),
                         backgroundColor: _quickAdd
-                            ? const Color(0xFF2E7D32)
+                            ? AppTheme.successDark
                             : Colors.grey[700],
                         behavior: SnackBarBehavior.floating,
                         duration: const Duration(seconds: 2),
@@ -1036,7 +1037,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                       _quickAdd ? Colors.amber : Theme.of(context).primaryColor,
                   width: 3,
                 ),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1070,7 +1071,7 @@ class _BarcodeColabScreenState extends State<BarcodeColabScreen>
                         const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     decoration: BoxDecoration(
                       color: Colors.black54,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                     ),
                     child: Column(
                       children: [

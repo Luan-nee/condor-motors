@@ -160,7 +160,7 @@ class TransferenciasAdmin extends _$TransferenciasAdmin {
       }
 
       // Usamos la preferencia guardada del usuario como base para la petición
-      int requestPageSize = state.userPreferredPageSize;
+      final int requestPageSize = state.userPreferredPageSize;
 
       final paginatedResponse = await _transferenciaRepository.getTransferencias(
         sucursalId: sucursalId,

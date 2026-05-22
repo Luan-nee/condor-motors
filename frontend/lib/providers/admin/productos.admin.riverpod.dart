@@ -81,22 +81,26 @@ class ProductosAdminState {
       productos: productos ?? this.productos,
       productosFiltrados: productosFiltrados ?? this.productosFiltrados,
       categorias: categorias ?? this.categorias,
-      selectedCategoryId:
-          clearCategory ? null : (selectedCategoryId ?? this.selectedCategoryId),
-      filtroEstadoStock: clearFiltroEstadoStock ? null : (filtroEstadoStock ?? this.filtroEstadoStock),
+      selectedCategoryId: clearCategory
+          ? null
+          : (selectedCategoryId ?? this.selectedCategoryId),
+      filtroEstadoStock: clearFiltroEstadoStock
+          ? null
+          : (filtroEstadoStock ?? this.filtroEstadoStock),
       searchQuery: searchQuery ?? this.searchQuery,
       sortBy: sortBy ?? this.sortBy,
       order: order ?? this.order,
       currentPage: currentPage ?? this.currentPage,
       pageSize: pageSize ?? this.pageSize,
-      userPreferredPageSize: userPreferredPageSize ?? this.userPreferredPageSize,
+      userPreferredPageSize:
+          userPreferredPageSize ?? this.userPreferredPageSize,
       paginacion: paginacion ?? this.paginacion,
       errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class ProductosAdmin extends _$ProductosAdmin {
   late final ProductoRepository _productoRepository;
   late final CategoriaRepository _categoriaRepository;
@@ -115,10 +119,7 @@ class ProductosAdmin extends _$ProductosAdmin {
   }
 
   Future<void> inicializar() async {
-    await Future.wait([
-      cargarSucursales(),
-      cargarCategorias(),
-    ]);
+    await Future.wait([cargarSucursales(), cargarCategorias()]);
 
     // Seleccionar sucursal principal por defecto
     if (state.sucursales.isNotEmpty) {
@@ -164,10 +165,7 @@ class ProductosAdmin extends _$ProductosAdmin {
 
   Future<void> seleccionarSucursal(Sucursal sucursal) async {
     if (state.selectedSucursal?.id != sucursal.id) {
-      state = state.copyWith(
-        selectedSucursal: sucursal,
-        currentPage: 1,
-      );
+      state = state.copyWith(selectedSucursal: sucursal, currentPage: 1);
       await cargarProductos();
     }
   }
@@ -180,7 +178,7 @@ class ProductosAdmin extends _$ProductosAdmin {
     state = state.copyWith(isLoading: true);
     try {
       // Usamos la preferencia guardada del usuario como base para la petición
-      int requestPageSize = state.userPreferredPageSize;
+      final int requestPageSize = state.userPreferredPageSize;
 
       final response = await _productoRepository.getProductos(
         sucursalId: state.selectedSucursal!.id.toString(),
@@ -193,9 +191,11 @@ class ProductosAdmin extends _$ProductosAdmin {
         filterValue: state.selectedCategoryId,
         filterType: state.selectedCategoryId != null ? 'eq' : null,
         stockBajo: state.filtroEstadoStock == 'stockBajo' ? true : null,
-        stock: state.filtroEstadoStock == 'agotados' 
+        stock: state.filtroEstadoStock == 'agotados'
             ? {'value': 0, 'filterType': 'eq'}
-            : (state.filtroEstadoStock == 'disponibles' ? {'value': 1, 'filterType': 'gte'} : null),
+            : (state.filtroEstadoStock == 'disponibles'
+                  ? {'value': 1, 'filterType': 'gte'}
+                  : null),
         forceRefresh: forceRefresh,
       );
 
@@ -232,7 +232,7 @@ class ProductosAdmin extends _$ProductosAdmin {
   void actualizarCategoria(String? categoryId) {
     // Manejar el caso 'all' viniendo desde el componente UI
     final bool isAll = categoryId == null || categoryId == 'all';
-    
+
     state = state.copyWith(
       selectedCategoryId: isAll ? null : categoryId,
       clearCategory: isAll,
@@ -258,29 +258,41 @@ class ProductosAdmin extends _$ProductosAdmin {
   void cambiarTamanioPagina(int tamanio) {
     state = state.copyWith(
       userPreferredPageSize: tamanio,
-      pageSize: tamanio, 
-      currentPage: 1
+      pageSize: tamanio,
+      currentPage: 1,
     );
     cargarProductos();
   }
 
   void ordenarPor(String campo) {
-    state = state.copyWith(sortBy: campo);
+    if (state.sortBy == campo) {
+      state = state.copyWith(
+        order: state.order == 'asc' ? 'desc' : 'asc',
+        currentPage: 1,
+      );
+    } else {
+      state = state.copyWith(sortBy: campo, order: 'desc', currentPage: 1);
+    }
     cargarProductos();
   }
 
-  Future<void> habilitarProducto(int productoId, Map<String, dynamic> datos) async {
+  Future<void> habilitarProducto(
+    int productoId,
+    Map<String, dynamic> datos,
+  ) async {
     if (state.selectedSucursal == null) {
       return;
     }
-    
+
     try {
       await _productoRepository.addProducto(
         sucursalId: state.selectedSucursal!.id.toString(),
         productoId: productoId,
         productoData: datos,
       );
-      _productoRepository.invalidateCache(state.selectedSucursal!.id.toString());
+      _productoRepository.invalidateCache(
+        state.selectedSucursal!.id.toString(),
+      );
       await cargarProductos(forceRefresh: true);
     } catch (e) {
       rethrow;

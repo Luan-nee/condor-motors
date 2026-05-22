@@ -179,7 +179,7 @@ class EmpleadoRepository implements BaseRepository {
       final List<Sucursal> sucursalesData = await getSucursales();
       final Map<String, String> sucursales = <String, String>{};
 
-      for (Sucursal sucursal in sucursalesData) {
+      for (final Sucursal sucursal in sucursalesData) {
         final String id = sucursal.id.toString();
         String nombre = sucursal.nombre;
         final bool esCentral = sucursal.sucursalCentral;

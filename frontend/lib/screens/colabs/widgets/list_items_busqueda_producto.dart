@@ -1,6 +1,7 @@
 import 'package:condorsmotors/models/color.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/repositories/producto.repository.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/busqueda_producto_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -54,7 +55,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
       elevation: 0,
       color: darkSurface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: InkWell(
         onTap: () => onProductoSeleccionado(producto),
@@ -233,7 +234,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
       builder: (BuildContext context) => Dialog(
         backgroundColor: darkSurface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppTheme.largeRadius),
         ),
         child: Container(
           padding: const EdgeInsets.all(24),
@@ -252,7 +253,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
                       height: 60,
                       decoration: BoxDecoration(
                         color: darkBackground,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                         border: Border.all(
                           color: colorPromocion,
                           width: 2,
@@ -264,7 +265,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
                                 '';
                         if (url.isNotEmpty) {
                           return ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                             child: Image.network(
                               url,
                               width: 60,
@@ -420,7 +421,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                     ),
                   ),
                 ),
@@ -446,7 +447,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppTheme.smallRadius),
           ),
           child: Icon(
             icon,
@@ -610,7 +611,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
         border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Text(
@@ -630,7 +631,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
     }
 
     ColorApp? color;
-    for (ColorApp c in colores) {
+    for (final ColorApp c in colores) {
       if (c.nombre.toLowerCase() == colorNombre.toString().toLowerCase()) {
         color = c;
         break;

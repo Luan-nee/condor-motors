@@ -73,7 +73,7 @@ class StocksAdminState {
   }
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class StocksAdmin extends _$StocksAdmin {
   late final StockRepository _stockRepository;
 
@@ -124,7 +124,7 @@ class StocksAdmin extends _$StocksAdmin {
     state = state.copyWith(isLoadingProductos: true);
     try {
       // Usamos la preferencia guardada del usuario como base para la petición
-      int requestPageSize = state.userPreferredPageSize;
+      final int requestPageSize = state.userPreferredPageSize;
 
       dynamic stockFilter;
       bool? stockBajoFilter;

@@ -1,5 +1,6 @@
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/repositories/producto.repository.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -46,8 +47,8 @@ class ProductoVentaItemWidget extends StatelessWidget {
 
     if (promocionActivada) {
       if (tienePromocionGratis) {
-        borderColor = const Color(0xFF2E7D32); // Verde oscuro
-        backgroundColor = const Color(0xFF2E7D32).withValues(alpha: 0.1);
+        borderColor = AppTheme.successDark; // Verde oscuro
+        backgroundColor = AppTheme.successDark.withValues(alpha: 0.1);
         promocionIcon = Icons.card_giftcard;
         promocionTooltip = 'Promoción "Lleva y Paga" activada';
       } else if (tieneDescuentoPorcentual &&
@@ -68,7 +69,7 @@ class ProductoVentaItemWidget extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         side: borderColor != null
             ? BorderSide(color: borderColor, width: 1.5)
             : (stockLimitado
@@ -86,7 +87,7 @@ class ProductoVentaItemWidget extends StatelessWidget {
                 // Imagen del producto
                 if (url.isNotEmpty)
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                     child: Image.network(
                       url,
                       width: 48,
@@ -102,7 +103,7 @@ class ProductoVentaItemWidget extends StatelessWidget {
                     height: 48,
                     decoration: BoxDecoration(
                       color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                     ),
                     child: const Icon(Icons.image_not_supported,
                         color: Colors.grey, size: 32),
@@ -264,11 +265,11 @@ class ProductoVentaItemWidget extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 4, vertical: 2),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF2E7D32)
+                              color: AppTheme.successDark
                                   .withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                               border: Border.all(
-                                color: const Color(0xFF2E7D32)
+                                color: AppTheme.successDark
                                     .withValues(alpha: 0.3),
                               ),
                             ),
@@ -278,7 +279,7 @@ class ProductoVentaItemWidget extends StatelessWidget {
                                 const Icon(
                                   Icons.card_giftcard,
                                   size: 12,
-                                  color: Color(0xFF2E7D32),
+                                  color: AppTheme.successDark,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
@@ -286,7 +287,7 @@ class ProductoVentaItemWidget extends StatelessWidget {
                                   style: const TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF2E7D32),
+                                    color: AppTheme.successDark,
                                   ),
                                 ),
                               ],

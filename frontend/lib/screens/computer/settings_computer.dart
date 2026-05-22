@@ -1,4 +1,5 @@
 import 'package:condorsmotors/providers/print.riverpod.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -61,7 +62,7 @@ class _SettingsComputerScreenState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
+        color: AppTheme.surfaceColor,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.2),
@@ -74,7 +75,7 @@ class _SettingsComputerScreenState
         children: [
           const FaIcon(
             FontAwesomeIcons.gear,
-            color: Color(0xFFE31E24),
+            color: AppTheme.primaryColor,
             size: 20,
           ),
           const SizedBox(width: 12),
@@ -107,7 +108,7 @@ class _SettingsComputerScreenState
     final printProvider = ref.read(printConfigProvider.notifier);
 
     return Card(
-      color: const Color(0xFF1A1A1A),
+      color: AppTheme.darkSurface,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -117,7 +118,7 @@ class _SettingsComputerScreenState
               children: [
                 FaIcon(
                   FontAwesomeIcons.print,
-                  color: Color(0xFFE31E24),
+                  color: AppTheme.primaryColor,
                   size: 16,
                 ),
                 SizedBox(width: 12),
@@ -234,7 +235,7 @@ class _SettingsComputerScreenState
                   final impresora = await showDialog<String>(
                     context: context,
                     builder: (context) => Dialog(
-                      backgroundColor: const Color(0xFF1A1A1A),
+                      backgroundColor: AppTheme.darkSurface,
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: Column(
@@ -258,19 +259,19 @@ class _SettingsComputerScreenState
                                   subtitle: Text(
                                     printer.isDefault ? 'Predeterminada' : '',
                                     style: const TextStyle(
-                                      color: Color(0xFFE31E24),
+                                      color: AppTheme.primaryColor,
                                       fontSize: 12,
                                     ),
                                   ),
                                   leading: Icon(
                                     Icons.print,
                                     color: printer.isDefault
-                                        ? const Color(0xFFE31E24)
+                                        ? AppTheme.primaryColor
                                         : Colors.white70,
                                   ),
                                   selected: printer.name ==
                                       printProvider.impresoraSeleccionada,
-                                  selectedTileColor: const Color(0xFF2D2D2D),
+                                  selectedTileColor: AppTheme.surfaceColor,
                                   onTap: () {
                                     Navigator.of(context).pop(printer.name);
                                   },
@@ -311,7 +312,7 @@ class _SettingsComputerScreenState
                 style: TextStyle(color: Colors.white70, fontSize: 12),
               ),
               collapsedIconColor: Colors.white70,
-              iconColor: const Color(0xFFE31E24),
+              iconColor: AppTheme.primaryColor,
               children: [
                 _buildAdvancedPrintConfig(),
               ],
@@ -392,7 +393,7 @@ class _SettingsComputerScreenState
           onChanged: (v) => setState(() {
             printProvider.guardarConfiguracion(rotacionAutomatica: v);
           }),
-          activeThumbColor: const Color(0xFFE31E24),
+          activeThumbColor: AppTheme.primaryColor,
         ),
         SwitchListTile(
           title: const Text('Ajuste automático',
@@ -401,18 +402,18 @@ class _SettingsComputerScreenState
           onChanged: (v) => setState(() {
             printProvider.guardarConfiguracion(ajusteAutomatico: v);
           }),
-          activeThumbColor: const Color(0xFFE31E24),
+          activeThumbColor: AppTheme.primaryColor,
         ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
           child: Center(
             child: OutlinedButton.icon(
               icon:
-                  const Icon(Icons.restore, size: 18, color: Color(0xFFE31E24)),
+                  const Icon(Icons.restore, size: 18, color: AppTheme.primaryColor),
               label: const Text('Restaurar valores predeterminados',
-                  style: TextStyle(color: Color(0xFFE31E24))),
+                  style: TextStyle(color: AppTheme.primaryColor)),
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFFE31E24)),
+                side: const BorderSide(color: AppTheme.primaryColor),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
@@ -458,7 +459,7 @@ class _SettingsComputerScreenState
           divisions: ((max - min) * 2).toInt(),
           label: value.toStringAsFixed(1),
           onChanged: onChanged,
-          activeColor: const Color(0xFFE31E24),
+          activeColor: AppTheme.primaryColor,
           inactiveColor: Colors.white24,
         ),
       ],

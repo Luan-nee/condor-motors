@@ -1,6 +1,7 @@
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:condorsmotors/screens/admin/widgets/stock/stock_detalle_sucursal.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -9,12 +10,14 @@ class StockTableRow extends StatelessWidget {
   final Producto producto;
   final Function(Producto)? onVerStockDetalles;
   final Function(Producto)? onVerDetalles;
+  final bool isLast;
 
   const StockTableRow({
     super.key,
     required this.producto,
     this.onVerStockDetalles,
     this.onVerDetalles,
+    required this.isLast,
   });
 
   @override
@@ -25,49 +28,38 @@ class StockTableRow extends StatelessWidget {
     final Color statusColor = _getStatusColor(producto);
     final FaIconData statusIcon = _getStatusIcon(producto);
     final String statusText = _getStatusText(producto);
+    final String? imageUrl = ProductoRepository.getProductoImageUrl(producto);
 
     return Container(
       decoration: BoxDecoration(
+        color: AppTheme.deepSurface,
         border: Border(
-          bottom: BorderSide(
-            color: Colors.white.withValues(alpha: 0.1),
-          ),
+          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
         ),
+        borderRadius: isLast
+            ? const BorderRadius.vertical(bottom: Radius.circular(8))
+            : null,
       ),
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       child: Row(
         children: <Widget>[
-          // Nombre del producto (30%)
+          // Nombre del producto (35%)
           Expanded(
-            flex: 30,
+            flex: 35,
             child: Row(
               children: <Widget>[
-                // Imagen del producto
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    ProductoRepository.getProductoImageUrl(producto) ?? '',
-                    width: 48,
-                    height: 48,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      width: 48,
-                      height: 48,
-                      color: Colors.grey[800],
-                      child: const Icon(Icons.image_not_supported,
-                          color: Colors.white38, size: 24),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
+                // Imagen del producto (36x36, compact y redonda como en productos)
+                _buildProductImage(imageUrl),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: <Widget>[
-                          Expanded(
+                          Flexible(
                             child: Text(
                               producto.nombre,
                               style: const TextStyle(
@@ -77,86 +69,35 @@ class StockTableRow extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
+
                           // Mostrar badge de liquidación si aplica
-                          if (producto.liquidacion)
-                            Container(
-                              margin: const EdgeInsets.only(left: 8),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.orange.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(
-                                    color:
-                                        Colors.orange.withValues(alpha: 0.5)),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: <Widget>[
-                                  FaIcon(
-                                    FontAwesomeIcons.fire,
-                                    size: 10,
-                                    color: Colors.orange,
-                                  ),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'Liquidación',
-                                    style: TextStyle(
-                                      color: Colors.orange,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
-                      if (producto.descripcion != null &&
-                          producto.descripcion!.isNotEmpty) ...<Widget>[
-                        const SizedBox(height: 4),
-                        Text(
-                          producto.descripcion!,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.7),
-                            fontSize: 12,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                      // Mostrar precio de liquidación si aplica
-                      if (producto.liquidacion &&
-                          producto.precioOferta != null) ...<Widget>[
-                        const SizedBox(height: 4),
-                        Row(
-                          children: <Widget>[
-                            Flexible(
-                              child: Text(
-                                'Precio: ${producto.getPrecioActualFormateado()}',
-                                style: const TextStyle(
-                                  color: Colors.orange,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                producto.getPrecioVentaFormateado(),
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.6),
-                                  fontSize: 11,
-                                  decoration: TextDecoration.lineThrough,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                          if (producto.liquidacion) ...<Widget>[
+                            const SizedBox(width: 6),
+                            const FaIcon(
+                              FontAwesomeIcons.fire,
+                              size: 10,
+                              color: Colors.orange,
                             ),
                           ],
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      // Mostrar precio de venta / liquidación
+                      Text(
+                        producto.liquidacion && producto.precioOferta != null
+                            ? 'Precio: S/ ${producto.precioOferta!.toStringAsFixed(2)}'
+                            : 'Precio: S/ ${producto.precioVenta.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          color: producto.liquidacion
+                              ? const Color(0xFFFFC107)
+                              : Colors.white54,
+                          fontSize: 11,
+                          fontWeight: producto.liquidacion
+                              ? FontWeight.bold
+                              : null,
                         ),
-                      ],
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ],
                   ),
                 ),
@@ -168,7 +109,8 @@ class StockTableRow extends StatelessWidget {
             flex: 15,
             child: Text(
               producto.categoria,
-              style: const TextStyle(color: Colors.white),
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white70, fontSize: 13),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -177,20 +119,36 @@ class StockTableRow extends StatelessWidget {
             flex: 15,
             child: Text(
               producto.marca,
-              style: const TextStyle(color: Colors.white),
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white70, fontSize: 13),
               overflow: TextOverflow.ellipsis,
             ),
           ),
           // Stock actual (10%)
           Expanded(
             flex: 10,
-            child: Text(
-              stockActual.toString(),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: statusColor,
-                fontWeight: FontWeight.bold,
-              ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  stockActual.toString(),
+                  style: TextStyle(
+                    color: (producto.stock <= 0 || producto.stockBajo == true)
+                        ? statusColor
+                        : Colors.white.withValues(alpha: 0.9),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (producto.stock <= 0 ||
+                    producto.stockBajo == true) ...<Widget>[
+                  const SizedBox(width: 6),
+                  Tooltip(
+                    message: statusText,
+                    child: FaIcon(statusIcon, color: statusColor, size: 11),
+                  ),
+                ],
+              ],
             ),
           ),
           // Stock mínimo (10%)
@@ -199,43 +157,7 @@ class StockTableRow extends StatelessWidget {
             child: Text(
               stockMinimo > 0 ? stockMinimo.toString() : '-',
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white),
-            ),
-          ),
-          // Estado (15%)
-          Expanded(
-            flex: 15,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      FaIcon(
-                        statusIcon,
-                        color: statusColor,
-                        size: 12,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        statusText,
-                        style: TextStyle(
-                          color: statusColor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              style: const TextStyle(color: Colors.white54),
             ),
           ),
           // Acciones (15%)
@@ -244,29 +166,9 @@ class StockTableRow extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                IconButton(
-                  icon: const FaIcon(
-                    FontAwesomeIcons.boxesStacked,
-                    color: Colors.blue,
-                    size: 16,
-                  ),
-                  onPressed: () {
-                    onVerStockDetalles?.call(producto);
-                  },
-                  constraints: const BoxConstraints(
-                    minWidth: 30,
-                    minHeight: 30,
-                  ),
-                  padding: EdgeInsets.zero,
-                  tooltip: 'Ver detalles del inventario',
-                  splashRadius: 20,
-                ),
-                IconButton(
-                  icon: const FaIcon(
-                    FontAwesomeIcons.eye,
-                    color: Colors.white70,
-                    size: 16,
-                  ),
+                _ActionButton(
+                  icon: FontAwesomeIcons.magnifyingGlass,
+                  color: Colors.white54,
                   onPressed: () {
                     if (onVerDetalles != null) {
                       onVerDetalles!(producto);
@@ -274,20 +176,20 @@ class StockTableRow extends StatelessWidget {
                       showDialog(
                         context: context,
                         builder: (BuildContext context) {
-                          return StockDetalleSucursalDialog(
-                            producto: producto,
-                          );
+                          return StockDetalleSucursalDialog(producto: producto);
                         },
                       );
                     }
                   },
-                  constraints: const BoxConstraints(
-                    minWidth: 30,
-                    minHeight: 30,
-                  ),
-                  padding: EdgeInsets.zero,
                   tooltip: 'Ver detalles del producto',
-                  splashRadius: 20,
+                ),
+                _ActionButton(
+                  icon: FontAwesomeIcons.penToSquare,
+                  color: Colors.white54,
+                  onPressed: () {
+                    onVerStockDetalles?.call(producto);
+                  },
+                  tooltip: 'Gestionar stock e inventario',
                 ),
               ],
             ),
@@ -297,12 +199,35 @@ class StockTableRow extends StatelessWidget {
     );
   }
 
+  Widget _buildProductImage(String? url) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(6),
+        color: Colors.black26,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: url != null && url.isNotEmpty
+            ? Image.network(
+                url,
+                fit: BoxFit.cover,
+                cacheWidth: 72,
+                errorBuilder: (_, _, _) =>
+                    const Icon(Icons.image, color: Colors.white12, size: 18),
+              )
+            : const Icon(Icons.image, color: Colors.white12, size: 18),
+      ),
+    );
+  }
+
   Color _getStatusColor(Producto producto) {
     if (producto.stock <= 0) {
       return const Color(0xFF4A4A4A);
     }
     if (producto.stockBajo == true) {
-      return const Color(0xFFE31E24);
+      return AppTheme.primaryColor;
     }
     return Colors.green;
   }
@@ -332,7 +257,44 @@ class StockTableRow extends StatelessWidget {
     super.debugFillProperties(properties);
     properties
       ..add(DiagnosticsProperty<Producto>('producto', producto))
-      ..add(ObjectFlagProperty<Function(Producto)?>.has('onVerStockDetalles', onVerStockDetalles))
-      ..add(ObjectFlagProperty<Function(Producto)?>.has('onVerDetalles', onVerDetalles));
+      ..add(DiagnosticsProperty<bool>('isLast', isLast))
+      ..add(
+        ObjectFlagProperty<Function(Producto)?>.has(
+          'onVerStockDetalles',
+          onVerStockDetalles,
+        ),
+      )
+      ..add(
+        ObjectFlagProperty<Function(Producto)?>.has(
+          'onVerDetalles',
+          onVerDetalles,
+        ),
+      );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final FaIconData icon;
+  final Color color;
+  final VoidCallback? onPressed;
+  final String tooltip;
+
+  const _ActionButton({
+    required this.icon,
+    required this.color,
+    this.onPressed,
+    required this.tooltip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: FaIcon(icon, color: color, size: 16),
+      onPressed: onPressed,
+      tooltip: tooltip,
+      splashRadius: 20,
+      constraints: const BoxConstraints(),
+      padding: const EdgeInsets.all(8),
+    );
   }
 }

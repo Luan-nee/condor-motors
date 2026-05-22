@@ -1,3 +1,4 @@
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -118,7 +119,7 @@ class _LoginFormState extends State<LoginForm> {
             constraints: const BoxConstraints(maxWidth: 400),
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A).withValues(alpha: 0.85),
+              color: AppTheme.darkSurface.withValues(alpha: 0.85),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
                 color: Colors.white.withValues(alpha: 0.1),
@@ -177,21 +178,21 @@ class _LoginFormState extends State<LoginForm> {
                       labelText: 'Usuario',
                       labelStyle: const TextStyle(color: Colors.white70),
                       prefixIcon: const Icon(Icons.person,
-                          color: Color(0xFFE31E24)),
+                          color: AppTheme.primaryColor),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                         borderSide:
                             const BorderSide(color: Colors.white24),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                         borderSide:
                             const BorderSide(color: Colors.white24),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                         borderSide: const BorderSide(
-                            color: Color(0xFFE31E24), width: 2),
+                            color: AppTheme.primaryColor, width: 2),
                       ),
                     ),
                     validator: (String? value) {
@@ -217,13 +218,13 @@ class _LoginFormState extends State<LoginForm> {
                       labelText: 'Clave',
                       labelStyle: const TextStyle(color: Colors.white70),
                       prefixIcon: const Icon(Icons.lock,
-                          color: Color(0xFFE31E24)),
+                          color: AppTheme.primaryColor),
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscurePassword
                               ? Icons.visibility
                               : Icons.visibility_off,
-                          color: const Color(0xFFE31E24),
+                          color: AppTheme.primaryColor,
                         ),
                         onPressed: () {
                           setState(() {
@@ -232,19 +233,19 @@ class _LoginFormState extends State<LoginForm> {
                         },
                       ),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                         borderSide:
                             const BorderSide(color: Colors.white24),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                         borderSide:
                             const BorderSide(color: Colors.white24),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                         borderSide: const BorderSide(
-                            color: Color(0xFFE31E24), width: 2),
+                            color: AppTheme.primaryColor, width: 2),
                       ),
                     ),
                     validator: (String? value) {
@@ -264,7 +265,7 @@ class _LoginFormState extends State<LoginForm> {
                         children: <Widget>[
                           const Icon(
                             Icons.warning_amber_rounded,
-                            color: Color(0xFFE31E24),
+                            color: AppTheme.primaryColor,
                             size: 16,
                           ),
                           const SizedBox(width: 8),
@@ -297,7 +298,7 @@ class _LoginFormState extends State<LoginForm> {
                               (Set<WidgetState> states) {
                                 if (states
                                     .contains(WidgetState.selected)) {
-                                  return const Color(0xFFE31E24);
+                                  return AppTheme.primaryColor;
                                 }
                                 return Colors.white54;
                               },
@@ -326,7 +327,7 @@ class _LoginFormState extends State<LoginForm> {
                               (Set<WidgetState> states) {
                                 if (states
                                     .contains(WidgetState.selected)) {
-                                  return const Color(0xFFE31E24);
+                                  return AppTheme.primaryColor;
                                 }
                                 return Colors.white54;
                               },
@@ -360,7 +361,7 @@ class _LoginFormState extends State<LoginForm> {
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: Colors.red.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                         border: Border.all(
                           color: Colors.red.withValues(alpha: 0.3),
                         ),
@@ -397,7 +398,7 @@ class _LoginFormState extends State<LoginForm> {
                       curve: Curves.easeInOut,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFE31E24),
+                          backgroundColor: AppTheme.primaryColor,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(25),

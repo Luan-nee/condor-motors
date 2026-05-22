@@ -1,6 +1,8 @@
 import 'dart:math' show min;
+
 import 'package:condorsmotors/models/ventas.model.dart';
 import 'package:condorsmotors/providers/print.riverpod.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -89,9 +91,9 @@ class _VentaDetalleComputerState extends ConsumerState<VentaDetalleComputer>
     // Si la venta es null (cargando o error), mostrar un estado de carga/error
     if (widget.venta == null) {
       return Dialog(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: AppTheme.darkSurface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppTheme.largeRadius),
         ),
         child: Container(
           padding: const EdgeInsets.all(32),
@@ -134,9 +136,9 @@ class _VentaDetalleComputerState extends ConsumerState<VentaDetalleComputer>
     final double total = venta.calcularTotal(); // Usar método del modelo
 
     return Dialog(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: AppTheme.darkSurface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppTheme.largeRadius),
       ),
       insetPadding: EdgeInsets.symmetric(
         horizontal: min(MediaQuery.of(context).size.width * 0.05, 24.0),
@@ -172,8 +174,8 @@ class _VentaDetalleComputerState extends ConsumerState<VentaDetalleComputer>
                           curve: Curves.easeInOut,
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF2D2D2D),
-                            borderRadius: BorderRadius.circular(8),
+                            color: AppTheme.surfaceColor,
+                            borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                             boxShadow: [
                               BoxShadow(
                                 color: widget.isLoadingFullData
@@ -232,8 +234,8 @@ class _VentaDetalleComputerState extends ConsumerState<VentaDetalleComputer>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE31E24),
-                          borderRadius: BorderRadius.circular(12),
+                          color: AppTheme.primaryColor,
+                          borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                         ),
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
@@ -297,15 +299,15 @@ class _VentaDetalleComputerState extends ConsumerState<VentaDetalleComputer>
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2D2D2D),
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppTheme.surfaceColor,
+                    borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                   ),
                   child: Center(
                     child: FaIcon(
                       tienePdf
                           ? FontAwesomeIcons.filePdf
                           : FontAwesomeIcons.fileInvoice,
-                      color: const Color(0xFFE31E24),
+                      color: AppTheme.primaryColor,
                       size: 16,
                     ),
                   ),
@@ -489,7 +491,7 @@ class _VentaDetalleComputerState extends ConsumerState<VentaDetalleComputer>
                           decoration: BoxDecoration(
                             color: estadoColor.withValues(
                                 alpha: widget.isLoadingFullData ? 0.1 : 0.2),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -768,7 +770,7 @@ class _VentaDetalleComputerState extends ConsumerState<VentaDetalleComputer>
                           : (cancelada
                               ? Colors.orange.shade900.withValues(alpha: 0.1)
                               : Colors.green.withValues(alpha: 0.1)),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                     ),
                     child: Row(
                       children: [
@@ -822,7 +824,7 @@ class _VentaDetalleComputerState extends ConsumerState<VentaDetalleComputer>
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.blue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -897,7 +899,7 @@ class _VentaDetalleComputerState extends ConsumerState<VentaDetalleComputer>
             horizontal: 16,
           ),
           decoration: const BoxDecoration(
-            color: Color(0xFF2D2D2D),
+            color: AppTheme.surfaceColor,
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(8),
               topRight: Radius.circular(8),
@@ -958,9 +960,9 @@ class _VentaDetalleComputerState extends ConsumerState<VentaDetalleComputer>
             minHeight: min(detalles.length * 50.0, maxProductListHeight),
           ),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1A1A),
+            color: AppTheme.darkSurface,
             border: Border.all(
-              color: const Color(0xFF2D2D2D),
+              color: AppTheme.surfaceColor,
             ),
             borderRadius: const BorderRadius.only(
               bottomLeft: Radius.circular(8),
@@ -1092,7 +1094,7 @@ class _VentaDetalleComputerState extends ConsumerState<VentaDetalleComputer>
                   ? 'Imprimir Ticket'
                   : 'Imprimir A4'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2D2D2D),
+                backgroundColor: AppTheme.surfaceColor,
                 foregroundColor: Colors.white,
               ),
               onPressed: () async {
@@ -1167,10 +1169,10 @@ URL: $localPdfLink
                 ),
                 label: const Text('Imprimir'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2D2D2D),
+                  backgroundColor: AppTheme.surfaceColor,
                   foregroundColor: Colors.white,
                   disabledBackgroundColor:
-                      const Color(0xFF2D2D2D).withValues(alpha: 0.5),
+                      AppTheme.surfaceColor.withValues(alpha: 0.5),
                   disabledForegroundColor: Colors.white.withValues(alpha: 0.5),
                 ),
                 onPressed: null,
@@ -1222,7 +1224,7 @@ URL: $localPdfLink
         decoration: const BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              color: Color(0xFF2D2D2D),
+              color: AppTheme.surfaceColor,
             ),
           ),
         ),

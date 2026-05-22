@@ -1,3 +1,4 @@
+﻿import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -61,11 +62,11 @@ class EmptyState extends StatelessWidget {
                 icon: const FaIcon(FontAwesomeIcons.plus, size: 14),
                 label: Text(buttonLabel!),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE31E24),
+                  backgroundColor: AppTheme.primaryColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                   ),
                 ),
                 onPressed: onAction,

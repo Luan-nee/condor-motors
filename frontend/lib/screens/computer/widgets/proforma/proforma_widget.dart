@@ -4,6 +4,7 @@ import 'package:condorsmotors/models/proforma.model.dart';
 import 'package:condorsmotors/providers/computer/proforma.computer.riverpod.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma/form_proforma_keynum.dart';
 import 'package:condorsmotors/screens/computer/widgets/proforma/proforma_utils.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/documento_utils.dart';
 import 'package:condorsmotors/utils/logger.dart';
 import 'package:condorsmotors/utils/ventas_utils.dart';
@@ -60,8 +61,8 @@ class ProformaWidget extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,7 +156,7 @@ class ProformaWidget extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppTheme.largeRadius),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
@@ -186,8 +187,8 @@ class ProformaWidget extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -266,8 +267,8 @@ class ProformaWidget extends ConsumerWidget {
   Widget _buildProductList(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -418,8 +419,8 @@ class ProformaWidget extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -541,10 +542,10 @@ class ProformaWidget extends ConsumerWidget {
       final proformaProvider = ref.read(proformaComputerProvider.notifier);
 
       // Mostrar diálogo de confirmación
-      bool? confirmar = await showDialog<bool>(
+      final bool? confirmar = await showDialog<bool>(
         context: context,
         builder: (BuildContext dialogContext) => AlertDialog(
-          backgroundColor: const Color(0xFF2D2D2D),
+          backgroundColor: AppTheme.surfaceColor,
           title: const Row(
             children: [
               Icon(Icons.delete, color: Colors.red),
@@ -584,7 +585,7 @@ class ProformaWidget extends ConsumerWidget {
           context: context,
           barrierDismissible: false,
           builder: (BuildContext context) => const Dialog(
-            backgroundColor: Color(0xFF2D2D2D),
+            backgroundColor: AppTheme.surfaceColor,
             child: Padding(
               padding: EdgeInsets.all(20),
               child: Row(
@@ -745,7 +746,7 @@ class ProformaWidget extends ConsumerWidget {
         showDialog(
           context: originalContext,
           builder: (BuildContext context) => AlertDialog(
-            backgroundColor: const Color(0xFF2D2D2D),
+            backgroundColor: AppTheme.surfaceColor,
             title: const Row(
               children: [
                 Icon(Icons.error, color: Colors.red),
@@ -774,9 +775,9 @@ class ProformaWidget extends ConsumerWidget {
 
   Widget _buildProcessingDialog(String tipoDocumento) {
     return Dialog(
-      backgroundColor: const Color(0xFF2D2D2D),
+      backgroundColor: AppTheme.surfaceColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -1053,9 +1054,9 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
     final bool isLargeScreen = screenSize.width > 1200;
 
     return Dialog(
-      backgroundColor: const Color(0xFF2D2D2D),
+      backgroundColor: AppTheme.surfaceColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Container(
         padding: const EdgeInsets.all(24),
@@ -1080,7 +1081,7 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                         children: [
                           const Icon(
                             Icons.shopping_cart,
-                            color: Color(0xFF4CAF50),
+                            color: AppTheme.successColor,
                             size: 24,
                           ),
                           const SizedBox(width: 8),
@@ -1108,8 +1109,8 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1A1A1A),
-                        borderRadius: BorderRadius.circular(8),
+                        color: AppTheme.darkSurface,
+                        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1337,17 +1338,17 @@ class _ProformaSaleDialogState extends State<ProformaSaleDialog> {
                       margin: const EdgeInsets.only(bottom: 8),
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        color: AppTheme.successColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                         border: Border.all(
-                          color: const Color(0xFF4CAF50).withValues(alpha: 0.3),
+                          color: AppTheme.successColor.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(
                         children: [
                           const Icon(
                             Icons.info_outline,
-                            color: Color(0xFF4CAF50),
+                            color: AppTheme.successColor,
                             size: 16,
                           ),
                           const SizedBox(width: 8),

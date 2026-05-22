@@ -1,5 +1,6 @@
 import 'package:condorsmotors/models/estadisticas.model.dart';
 import 'package:condorsmotors/providers/admin/dashboard.admin.riverpod.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -74,7 +75,7 @@ class _DashboardAdminScreenState extends ConsumerState<DashboardAdminScreen> {
       body: isLoading
           ? const Center(
               child: CircularProgressIndicator(
-                color: Color(0xFFE31E24),
+                color: AppTheme.primaryColor,
               ),
             )
           : Padding(
@@ -124,11 +125,11 @@ class _DashboardAdminScreenState extends ConsumerState<DashboardAdminScreen> {
                           message: 'Recargar estadísticas',
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2D2D2D),
+                              backgroundColor: AppTheme.surfaceColor,
                               foregroundColor: Colors.white,
                               padding: EdgeInsets.zero,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                               ),
                               elevation: 0,
                             ),
@@ -192,7 +193,7 @@ class _DashboardAdminScreenState extends ConsumerState<DashboardAdminScreen> {
           child: _buildSummaryCard(
             'Ventas Hoy',
             '${ventasHoy.toInt()}', // Mostrar cantidad
-            const FaIcon(FontAwesomeIcons.chartLine, color: Color(0xFFE31E24)),
+            const FaIcon(FontAwesomeIcons.chartLine, color: AppTheme.primaryColor),
           ),
         ),
         const SizedBox(width: 16),
@@ -200,7 +201,7 @@ class _DashboardAdminScreenState extends ConsumerState<DashboardAdminScreen> {
           child: _buildSummaryCard(
             'Ventas del Mes',
             '${ventasEsteMes.toInt()}', // Mostrar cantidad
-            const FaIcon(FontAwesomeIcons.chartBar, color: Color(0xFFE31E24)),
+            const FaIcon(FontAwesomeIcons.chartBar, color: AppTheme.primaryColor),
           ),
         ),
         const SizedBox(width: 16),
@@ -208,7 +209,7 @@ class _DashboardAdminScreenState extends ConsumerState<DashboardAdminScreen> {
           child: _buildSummaryCard(
             'Ingresos Hoy',
             _formatoMoneda.format(totalVentasHoy),
-            const FaIcon(FontAwesomeIcons.moneyBill, color: Color(0xFFE31E24)),
+            const FaIcon(FontAwesomeIcons.moneyBill, color: AppTheme.primaryColor),
           ),
         ),
         const SizedBox(width: 16),
@@ -216,7 +217,7 @@ class _DashboardAdminScreenState extends ConsumerState<DashboardAdminScreen> {
           child: _buildSummaryCard(
             'Ingresos del Mes',
             _formatoMoneda.format(totalVentasEsteMes),
-            const FaIcon(FontAwesomeIcons.sackDollar, color: Color(0xFFE31E24)),
+            const FaIcon(FontAwesomeIcons.sackDollar, color: AppTheme.primaryColor),
           ),
         ),
       ],
@@ -227,8 +228,8 @@ class _DashboardAdminScreenState extends ConsumerState<DashboardAdminScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.darkSurface,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,8 +302,8 @@ class _DashboardAdminScreenState extends ConsumerState<DashboardAdminScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.darkSurface,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -404,7 +405,7 @@ class _DashboardAdminScreenState extends ConsumerState<DashboardAdminScreen> {
 
     // Encontrar el valor máximo de ventas entre todas las sucursales
     double maxValue = 0;
-    for (var sucursal in ventasSucursales) {
+    for (final sucursal in ventasSucursales) {
       if (sucursal.ventas > maxValue) {
         maxValue = sucursal.ventas.toDouble();
       }
@@ -457,7 +458,7 @@ class _DashboardAdminScreenState extends ConsumerState<DashboardAdminScreen> {
           barRods: [
             BarChartRodData(
               toY: 0,
-              color: const Color(0xFFE31E24),
+              color: AppTheme.primaryColor,
               width: 16,
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(4),
@@ -479,7 +480,7 @@ class _DashboardAdminScreenState extends ConsumerState<DashboardAdminScreen> {
           BarChartRodData(
             // Usar cantidad de ventas para el gráfico
             toY: sucursalEstadistica.ventas.toDouble(),
-            color: const Color(0xFFE31E24),
+            color: AppTheme.primaryColor,
             width: 16,
             borderRadius: const BorderRadius.vertical(
               top: Radius.circular(4),
@@ -497,8 +498,8 @@ class _DashboardAdminScreenState extends ConsumerState<DashboardAdminScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.darkSurface,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -522,7 +523,7 @@ class _DashboardAdminScreenState extends ConsumerState<DashboardAdminScreen> {
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.redAccent.withAlpha(51),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppTheme.largeRadius),
                     ),
                     child: Row(
                       children: [
@@ -545,7 +546,7 @@ class _DashboardAdminScreenState extends ConsumerState<DashboardAdminScreen> {
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.orangeAccent.withAlpha(51),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppTheme.largeRadius),
                     ),
                     child: Row(
                       children: [
@@ -615,7 +616,7 @@ class _DashboardAdminScreenState extends ConsumerState<DashboardAdminScreen> {
       return SizedBox(
         width: constraints.maxWidth,
         child: DataTable(
-          headingRowColor: WidgetStateProperty.all(const Color(0xFF222222)),
+          headingRowColor: WidgetStateProperty.all(AppTheme.deepSurface),
           columnSpacing: 10,
           horizontalMargin: 8,
           columns: const [
@@ -720,8 +721,8 @@ class _DashboardAdminScreenState extends ConsumerState<DashboardAdminScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.darkSurface,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -751,7 +752,7 @@ class _DashboardAdminScreenState extends ConsumerState<DashboardAdminScreen> {
                     )
                   : DataTable(
                       headingRowColor:
-                          WidgetStateProperty.all(const Color(0xFF222222)),
+                          WidgetStateProperty.all(AppTheme.deepSurface),
                       columnSpacing: 10,
                       horizontalMargin: 8,
                       columns: const [

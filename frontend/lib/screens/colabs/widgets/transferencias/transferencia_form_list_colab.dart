@@ -4,6 +4,7 @@ import 'package:condorsmotors/models/transferencias.model.dart';
 import 'package:condorsmotors/providers/colabs/transferencias.colab.riverpod.dart';
 import 'package:condorsmotors/screens/colabs/widgets/transferencias/transferencia_filter_bar.dart';
 import 'package:condorsmotors/screens/colabs/widgets/transferencias/transferencia_product_card.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -103,9 +104,9 @@ class _TransferenciaFormListColabState
     final size = MediaQuery.of(context).size;
 
     return Dialog(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: AppTheme.darkSurface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Container(
         width: size.width * 0.95,
@@ -165,7 +166,7 @@ class _TransferenciaFormListColabState
               child: state.isLoading
                   ? const Center(
                       child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+                        valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
                       ),
                     )
                   : _buildProductList(state),
@@ -181,7 +182,7 @@ class _TransferenciaFormListColabState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
-        color: Color(0xFF2D2D2D),
+        color: AppTheme.surfaceColor,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(12),
           topRight: Radius.circular(12),
@@ -189,7 +190,7 @@ class _TransferenciaFormListColabState
       ),
       child: Row(
         children: [
-          const FaIcon(FontAwesomeIcons.box, size: 20, color: Color(0xFFE31E24)),
+          const FaIcon(FontAwesomeIcons.box, size: 20, color: AppTheme.primaryColor),
           const SizedBox(width: 8),
           const Text(
             'Seleccionar Productos',
@@ -219,10 +220,10 @@ class _TransferenciaFormListColabState
           Container(
             margin: const EdgeInsets.only(bottom: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFF2D2D2D),
-              borderRadius: BorderRadius.circular(8),
+              color: AppTheme.surfaceColor,
+              borderRadius: BorderRadius.circular(AppTheme.smallRadius),
               border: Border.all(
-                color: const Color(0xFFE31E24).withValues(alpha: 0.3),
+                color: AppTheme.primaryColor.withValues(alpha: 0.3),
               ),
             ),
             child: ExpansionTile(
@@ -233,7 +234,7 @@ class _TransferenciaFormListColabState
                   const Text(
                     'Productos con Stock Bajo',
                     style: TextStyle(
-                      color: Color(0xFFE31E24),
+                      color: AppTheme.primaryColor,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
@@ -242,8 +243,8 @@ class _TransferenciaFormListColabState
                   _buildBadge(state.productosBajoStockParaTransferir.length.toString()),
                 ],
               ),
-              iconColor: const Color(0xFFE31E24),
-              collapsedIconColor: const Color(0xFFE31E24),
+              iconColor: AppTheme.primaryColor,
+              collapsedIconColor: AppTheme.primaryColor,
               children: state.productosBajoStockParaTransferir.map((p) => _buildItem(p, true)).toList(),
             ),
           ),
@@ -284,9 +285,9 @@ class _TransferenciaFormListColabState
                 ref.read(transferenciasColabProvider.notifier).cambiarTamanoPagina(pageSize);
                 _loadData(resetPaginacion: true);
               },
-              backgroundColor: const Color(0xFF2D2D2D),
+              backgroundColor: AppTheme.surfaceColor,
               textColor: Colors.white,
-              accentColor: const Color(0xFFE31E24),
+              accentColor: AppTheme.primaryColor,
             ),
           ),
       ],
@@ -311,13 +312,13 @@ class _TransferenciaFormListColabState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: const Color(0xFFE31E24).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        color: AppTheme.primaryColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Text(
         label,
         style: const TextStyle(
-          color: Color(0xFFE31E24),
+          color: AppTheme.primaryColor,
           fontSize: 12,
           fontWeight: FontWeight.bold,
         ),
@@ -329,7 +330,7 @@ class _TransferenciaFormListColabState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
-        color: Color(0xFF2D2D2D),
+        color: AppTheme.surfaceColor,
         borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(12),
           bottomRight: Radius.circular(12),
@@ -348,7 +349,7 @@ class _TransferenciaFormListColabState
             icon: const FaIcon(FontAwesomeIcons.check, size: 16),
             label: const Text('Confirmar'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE31E24),
+              backgroundColor: AppTheme.primaryColor,
               foregroundColor: Colors.white,
               disabledBackgroundColor: Colors.grey,
             ),

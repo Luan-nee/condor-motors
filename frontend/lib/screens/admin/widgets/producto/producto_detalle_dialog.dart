@@ -1,9 +1,9 @@
 import 'package:condorsmotors/models/color.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
-
 import 'package:condorsmotors/repositories/color.repository.dart';
 import 'package:condorsmotors/repositories/producto.repository.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/productos_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -171,7 +171,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                   maxHeight: MediaQuery.of(context).size.height * 0.8,
                 ),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.5),
@@ -181,7 +181,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                   ],
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                   child: Image.network(
                     fotoUrl,
                     fit: BoxFit.contain,
@@ -191,8 +191,8 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                       width: 300,
                       height: 300,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2D2D2D),
-                        borderRadius: BorderRadius.circular(12),
+                        color: AppTheme.surfaceColor,
+                        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                       ),
                       child: const Center(
                         child: Column(
@@ -262,8 +262,8 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
         ),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: const Color(0xFF2D2D2D),
-            borderRadius: BorderRadius.circular(12),
+            color: AppTheme.surfaceColor,
+            borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
           ),
           child: Padding(
             padding: const EdgeInsets.all(24.0),
@@ -319,8 +319,8 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     return Card(
       elevation: 4,
       margin: EdgeInsets.zero,
-      color: const Color(0xFF2D2D2D),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      color: AppTheme.surfaceColor,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.smallRadius)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
@@ -331,8 +331,8 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
-                borderRadius: BorderRadius.circular(8),
+                color: AppTheme.darkSurface,
+                borderRadius: BorderRadius.circular(AppTheme.smallRadius),
               ),
               child: (() {
                 // Usar la misma lógica que productos_form.dart
@@ -342,7 +342,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                     'ProductoDetalleDialog: Foto URL del producto: $fotoUrl');
                 if (fotoUrl != null && fotoUrl.isNotEmpty) {
                   return ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                     child: Stack(
                       children: [
                         Material(
@@ -400,7 +400,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                       FontAwesomeIcons.box,
                       size: 32,
                       color: widget.producto.tieneStockBajo()
-                          ? const Color(0xFFE31E24).withValues(alpha: 0.7)
+                          ? AppTheme.primaryColor.withValues(alpha: 0.7)
                           : Colors.white.withValues(alpha: 0.7),
                     ),
                   );
@@ -505,8 +505,8 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     return Card(
       elevation: 4,
       margin: EdgeInsets.zero,
-      color: const Color(0xFF2D2D2D),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      color: AppTheme.surfaceColor,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.smallRadius)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -542,14 +542,14 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                   Container(
                     height: isPantallaReducida ? 40 : 48,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1A1A1A),
-                      borderRadius: BorderRadius.circular(8),
+                      color: AppTheme.darkSurface,
+                      borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                       border: Border.all(color: Colors.white10),
                     ),
                     child: TabBar(
                       controller: _atributosTabController,
                       isScrollable: true,
-                      indicatorColor: const Color(0xFFE31E24),
+                      indicatorColor: AppTheme.primaryColor,
                       indicatorSize: TabBarIndicatorSize.label,
                       labelColor: Colors.white,
                       unselectedLabelColor: Colors.white70,
@@ -579,7 +579,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                             children: <Widget>[
                               FaIcon(FontAwesomeIcons.boxOpen,
                                   size: isPantallaReducida ? 14 : 16,
-                                  color: const Color(0xFFE31E24)),
+                                  color: AppTheme.primaryColor),
                               SizedBox(width: isPantallaReducida ? 4 : 8),
                               const Text('Stock',
                                   style: TextStyle(fontSize: 15)),
@@ -610,9 +610,9 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                       padding: const EdgeInsets.only(top: 16.0),
                       child: Card(
                         margin: EdgeInsets.zero,
-                        color: const Color(0xFF1A1A1A),
+                        color: AppTheme.darkSurface,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
+                            borderRadius: BorderRadius.circular(AppTheme.smallRadius)),
                         child: TabBarView(
                           controller: _atributosTabController,
                           children: <Widget>[
@@ -651,7 +651,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.black12,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppTheme.smallRadius),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -689,7 +689,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                         'Stock bajo',
                         _isLoading ? '...' : '${_obtenerCantidadStockBajo()}',
                         icon: FontAwesomeIcons.triangleExclamation,
-                        color: const Color(0xFFE31E24),
+                        color: AppTheme.primaryColor,
                         isSmall: isPantallaReducida,
                       ),
                       _buildCompactEstadistica(
@@ -712,7 +712,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.black12,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppTheme.smallRadius),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -813,7 +813,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.black12,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppTheme.smallRadius),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -889,7 +889,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
           children: <Widget>[
             const Icon(
               Icons.error_outline,
-              color: Color(0xFFE31E24),
+              color: AppTheme.primaryColor,
               size: 48,
             ),
             const SizedBox(height: 16),
@@ -907,7 +907,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               label: const Text('Reintentar', style: TextStyle(fontSize: 15)),
               onPressed: _cargarDetallesProducto,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE31E24),
+                backgroundColor: AppTheme.primaryColor,
                 foregroundColor: Colors.white,
               ),
             ),
@@ -1216,7 +1216,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         border: Border.all(
           color: color.withValues(alpha: 0.3),
         ),
@@ -1333,7 +1333,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.black12,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppTheme.smallRadius),
               ),
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -1403,7 +1403,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
           children: <Widget>[
             const Icon(
               Icons.error_outline,
-              color: Color(0xFFE31E24),
+              color: AppTheme.primaryColor,
               size: 48,
             ),
             const SizedBox(height: 16),
@@ -1421,7 +1421,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               label: const Text('Reintentar', style: TextStyle(fontSize: 15)),
               onPressed: _cargarDetallesProducto,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE31E24),
+                backgroundColor: AppTheme.primaryColor,
                 foregroundColor: Colors.white,
               ),
             ),
@@ -1498,7 +1498,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
       statusIcon = FontAwesomeIcons.ban;
       statusText = 'Agotado';
     } else if (stockBajo) {
-      indicadorColor = const Color(0xFFE31E24);
+      indicadorColor = AppTheme.primaryColor;
       statusIcon = FontAwesomeIcons.triangleExclamation;
       statusText = 'Stock bajo';
     }
@@ -1673,7 +1673,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
         Expanded(
             child: _buildAtributo('Stock actual', '${widget.producto.stock}',
                 color: widget.producto.tieneStockBajo()
-                    ? const Color(0xFFE31E24)
+                    ? AppTheme.primaryColor
                     : null)),
         Expanded(
             child: _buildAtributo('Stock mínimo',
@@ -1685,7 +1685,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                     ? 'Stock bajo'
                     : (widget.producto.stock <= 0 ? 'Agotado' : 'Disponible'),
                 color: widget.producto.tieneStockBajo()
-                    ? const Color(0xFFE31E24)
+                    ? AppTheme.primaryColor
                     : (widget.producto.stock <= 0
                         ? Colors.red
                         : Colors.green))),
@@ -1703,7 +1703,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
               width: 150,
               child: _buildAtributo('Stock actual', '${widget.producto.stock}',
                   color: widget.producto.tieneStockBajo()
-                      ? const Color(0xFFE31E24)
+                      ? AppTheme.primaryColor
                       : null)),
           SizedBox(
               width: 150,
@@ -1717,7 +1717,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
                       ? 'Stock bajo'
                       : (widget.producto.stock <= 0 ? 'Agotado' : 'Disponible'),
                   color: widget.producto.tieneStockBajo()
-                      ? const Color(0xFFE31E24)
+                      ? AppTheme.primaryColor
                       : (widget.producto.stock <= 0
                           ? Colors.red
                           : Colors.green))),
@@ -1798,7 +1798,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
+        color: AppTheme.darkSurface,
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
@@ -1825,7 +1825,7 @@ class _ProductoDetalleDialogState extends State<ProductoDetalleDialog>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
+        color: AppTheme.darkSurface,
         borderRadius: BorderRadius.circular(4),
       ),
       child: Row(

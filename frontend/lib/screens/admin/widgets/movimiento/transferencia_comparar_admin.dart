@@ -1,4 +1,5 @@
 import 'package:condorsmotors/models/transferencias.model.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -37,9 +38,9 @@ class _TransferenciaCompararAdminState
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color(0xFF2D2D2D),
+      backgroundColor: AppTheme.surfaceColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Container(
         width: MediaQuery.of(context).size.width * 0.8,
@@ -85,12 +86,12 @@ class _TransferenciaCompararAdminState
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE31E24).withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppTheme.primaryColor.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                 ),
                 child: const FaIcon(
                   FontAwesomeIcons.scaleBalanced,
-                  color: Color(0xFFE31E24),
+                  color: AppTheme.primaryColor,
                   size: 20,
                 ),
               ),
@@ -119,8 +120,8 @@ class _TransferenciaCompararAdminState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF222222),
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.deepSurface,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -188,8 +189,8 @@ class _TransferenciaCompararAdminState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF222222),
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.deepSurface,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,7 +200,7 @@ class _TransferenciaCompararAdminState
               const FaIcon(
                 FontAwesomeIcons.boxesStacked,
                 size: 16,
-                color: Color(0xFFE31E24),
+                color: AppTheme.primaryColor,
               ),
               const SizedBox(width: 12),
               Text(
@@ -270,13 +271,13 @@ class _TransferenciaCompararAdminState
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color:
-                      (stockSuficiente ? Colors.green : const Color(0xFFE31E24))
+                      (stockSuficiente ? Colors.green : AppTheme.primaryColor)
                           .withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppTheme.largeRadius),
                   border: Border.all(
                     color: (stockSuficiente
                             ? Colors.green
-                            : const Color(0xFFE31E24))
+                            : AppTheme.primaryColor)
                         .withValues(alpha: 0.3),
                   ),
                 ),
@@ -288,7 +289,7 @@ class _TransferenciaCompararAdminState
                       size: 14,
                       color: stockSuficiente
                           ? Colors.green
-                          : const Color(0xFFE31E24),
+                          : AppTheme.primaryColor,
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -298,7 +299,7 @@ class _TransferenciaCompararAdminState
                       style: TextStyle(
                         color: stockSuficiente
                             ? Colors.green
-                            : const Color(0xFFE31E24),
+                            : AppTheme.primaryColor,
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -344,8 +345,8 @@ class _TransferenciaCompararAdminState
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.darkSurface,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.1),
         ),
@@ -416,7 +417,7 @@ class _TransferenciaCompararAdminState
                           const SizedBox(width: 4),
                           const Icon(
                             Icons.warning,
-                            color: Color(0xFFE31E24),
+                            color: AppTheme.primaryColor,
                             size: 16,
                           ),
                         ],
@@ -465,7 +466,7 @@ class _TransferenciaCompararAdminState
                 : const Icon(Icons.check),
             label: Text(_isLoading ? 'Enviando...' : 'Confirmar Envío'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE31E24),
+              backgroundColor: AppTheme.primaryColor,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),

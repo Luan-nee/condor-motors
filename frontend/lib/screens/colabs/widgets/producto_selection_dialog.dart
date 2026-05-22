@@ -1,5 +1,6 @@
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/transferencias.model.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -102,9 +103,9 @@ class _ProductoSelectionDialogState extends State<ProductoSelectionDialog> {
     // Optimizado: calcular lista filtrada una sola vez
     final List<Producto> filteredProductos = _getFilteredProductos();
     return Dialog(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: AppTheme.darkSurface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -112,7 +113,7 @@ class _ProductoSelectionDialogState extends State<ProductoSelectionDialog> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
-              color: Color(0xFF2D2D2D),
+              color: AppTheme.surfaceColor,
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),
@@ -123,7 +124,7 @@ class _ProductoSelectionDialogState extends State<ProductoSelectionDialog> {
                 const FaIcon(
                   FontAwesomeIcons.boxOpen,
                   size: 20,
-                  color: Color(0xFFE31E24),
+                  color: AppTheme.primaryColor,
                 ),
                 const SizedBox(width: 8),
                 const Text(
@@ -154,19 +155,19 @@ class _ProductoSelectionDialogState extends State<ProductoSelectionDialog> {
                 hintStyle: TextStyle(color: Colors.grey[400]),
                 prefixIcon: const Icon(Icons.search, color: Colors.white54),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                   borderSide: BorderSide(color: Colors.grey[800]!),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                   borderSide: BorderSide(color: Colors.grey[800]!),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFFE31E24)),
+                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+                  borderSide: const BorderSide(color: AppTheme.primaryColor),
                 ),
                 filled: true,
-                fillColor: const Color(0xFF2D2D2D),
+                fillColor: AppTheme.surfaceColor,
               ),
               onChanged: (value) => setState(() {}),
             ),
@@ -176,7 +177,7 @@ class _ProductoSelectionDialogState extends State<ProductoSelectionDialog> {
                 ? const Center(
                     child: CircularProgressIndicator(
                       valueColor:
-                          AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+                          AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
                     ),
                   )
                 : _error != null
@@ -240,11 +241,11 @@ class _ProductoSelectionDialogState extends State<ProductoSelectionDialog> {
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF2D2D2D),
-                                  borderRadius: BorderRadius.circular(8),
+                                  color: AppTheme.surfaceColor,
+                                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                                   border: Border.all(
                                     color: isSelected
-                                        ? const Color(0xFFE31E24)
+                                        ? AppTheme.primaryColor
                                         : Colors.transparent,
                                   ),
                                 ),
@@ -278,13 +279,13 @@ class _ProductoSelectionDialogState extends State<ProductoSelectionDialog> {
                                   leading: Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFE31E24)
+                                      color: AppTheme.primaryColor
                                           .withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                                     ),
                                     child: const FaIcon(
                                       FontAwesomeIcons.box,
-                                      color: Color(0xFFE31E24),
+                                      color: AppTheme.primaryColor,
                                       size: 16,
                                     ),
                                   ),
@@ -306,18 +307,18 @@ class _ProductoSelectionDialogState extends State<ProductoSelectionDialog> {
                                           height: 40,
                                           decoration: BoxDecoration(
                                             color: isSelected
-                                                ? const Color(0xFFE31E24)
+                                                ? AppTheme.primaryColor
                                                     .withValues(alpha: 0.1)
                                                 : Colors.transparent,
                                             borderRadius:
-                                                BorderRadius.circular(8),
+                                                BorderRadius.circular(AppTheme.smallRadius),
                                           ),
                                           child: Center(
                                             child: Text(
                                               cantidad.toString(),
                                               style: TextStyle(
                                                 color: isSelected
-                                                    ? const Color(0xFFE31E24)
+                                                    ? AppTheme.primaryColor
                                                     : Colors.white,
                                                 fontWeight: FontWeight.bold,
                                               ),
@@ -341,7 +342,7 @@ class _ProductoSelectionDialogState extends State<ProductoSelectionDialog> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
-              color: Color(0xFF2D2D2D),
+              color: AppTheme.surfaceColor,
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(12),
                 bottomRight: Radius.circular(12),
@@ -375,7 +376,7 @@ class _ProductoSelectionDialogState extends State<ProductoSelectionDialog> {
                       icon: const FaIcon(FontAwesomeIcons.check, size: 16),
                       label: const Text('Confirmar'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE31E24),
+                        backgroundColor: AppTheme.primaryColor,
                         foregroundColor: Colors.white,
                         disabledBackgroundColor: Colors.grey,
                       ),

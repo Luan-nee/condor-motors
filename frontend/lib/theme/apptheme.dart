@@ -15,6 +15,14 @@ abstract class AppTheme {
   static const Color cardColor = Color(0xFF1E1E1E);
   static const Color scaffoldBackgroundColor = Color(0xFF121212);
   static const Color appBarColor = Color(0xFF1E1E1E);
+  
+  // Getters Alias semánticos para retrocompatibilidad
+  static const Color surfaceColor = cardColor;
+  static const Color darkSurface = backgroundColor;
+  static const Color successColor = Color(0xFF4CAF50);
+  static const Color successDark = Color(0xFF2E7D32);
+  static const Color deepSurface = Color(0xFF1A1A1A);
+  static const Color deepestSurface = Color(0xFF0F0F0F);
 
   // Radios de borde comunes
   static const double smallRadius = 8.0;

@@ -1,5 +1,6 @@
-import 'package:condorsmotors/models/empleado.model.dart';
+﻿import 'package:condorsmotors/models/empleado.model.dart';
 import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_horario_dialog.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -158,7 +159,7 @@ class EmpleadosUtils {
 
   /// Obtiene el color para el estado de un empleado (activo/inactivo)
   static Color getColorEstadoEmpleado({required bool activo}) {
-    return activo ? const Color(0xFF4CAF50) : Colors.grey;
+    return activo ? AppTheme.successColor : Colors.grey;
   }
 
   /// Obtiene una etiqueta descriptiva para un grupo de empleados según su estado
@@ -171,7 +172,7 @@ class EmpleadosUtils {
 
     switch (grupo) {
       case 'activos':
-        color = const Color(0xFF4CAF50);
+        color = AppTheme.successColor;
         icono = FontAwesomeIcons.userCheck;
         texto = 'Colaboradores Activos';
       case 'inactivos':
@@ -189,7 +190,7 @@ class EmpleadosUtils {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         border: Border.all(
           color: color.withValues(alpha: 0.3),
         ),
@@ -328,7 +329,7 @@ class EmpleadosUtils {
       context: context,
       barrierDismissible: barrierDismissible,
       builder: (BuildContext context) => Dialog(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: AppTheme.darkSurface,
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Column(
@@ -405,7 +406,7 @@ class EmpleadosUtils {
             height: 20,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
             ),
           ),
         ),
@@ -414,10 +415,10 @@ class EmpleadosUtils {
       return Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFF2D2D2D),
-          borderRadius: BorderRadius.circular(8),
+          color: AppTheme.surfaceColor,
+          borderRadius: BorderRadius.circular(AppTheme.smallRadius),
           border: Border.all(
-            color: const Color(0xFFE31E24).withValues(alpha: 0.2),
+            color: AppTheme.primaryColor.withValues(alpha: 0.2),
           ),
         ),
         child: Column(
@@ -427,7 +428,7 @@ class EmpleadosUtils {
               children: <Widget>[
                 FaIcon(
                   FontAwesomeIcons.userShield,
-                  color: Color(0xFFE31E24),
+                  color: AppTheme.primaryColor,
                   size: 14,
                 ),
                 SizedBox(width: 8),
@@ -436,7 +437,7 @@ class EmpleadosUtils {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFFE31E24),
+                    color: AppTheme.primaryColor,
                   ),
                 ),
               ],
@@ -507,7 +508,7 @@ class EmpleadosUtils {
             height: 20,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE31E24)),
+              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
             ),
           ),
         ),
@@ -516,10 +517,10 @@ class EmpleadosUtils {
       return Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFF2D2D2D),
-          borderRadius: BorderRadius.circular(8),
+          color: AppTheme.surfaceColor,
+          borderRadius: BorderRadius.circular(AppTheme.smallRadius),
           border: Border.all(
-            color: const Color(0xFFE31E24).withValues(alpha: 0.2),
+            color: AppTheme.primaryColor.withValues(alpha: 0.2),
           ),
         ),
         child: Column(
@@ -529,7 +530,7 @@ class EmpleadosUtils {
               children: <Widget>[
                 FaIcon(
                   FontAwesomeIcons.userShield,
-                  color: Color(0xFFE31E24),
+                  color: AppTheme.primaryColor,
                   size: 14,
                 ),
                 SizedBox(width: 8),
@@ -538,7 +539,7 @@ class EmpleadosUtils {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFFE31E24),
+                    color: AppTheme.primaryColor,
                   ),
                 ),
               ],

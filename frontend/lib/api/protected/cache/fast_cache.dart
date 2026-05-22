@@ -101,7 +101,7 @@ class FastCache {
     String? oldestKey;
     DateTime? oldestAccess;
 
-    for (MapEntry<String, _CacheEntry> entry in _cache.entries) {
+    for (final MapEntry<String, _CacheEntry> entry in _cache.entries) {
       if (oldestAccess == null ||
           entry.value.lastAccessed.isBefore(oldestAccess)) {
         oldestAccess = entry.value.lastAccessed;

@@ -1,8 +1,16 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:condorsmotors/models/transferencias.model.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+/// Servicio de notificaciones para transferencias de inventario.
+///
+/// Patron: Facade sobre [FlutterLocalNotificationsPlugin].
+/// En Windows, las notificaciones toast se delegan a [win_toast] via
+/// la inicializacion del plugin con [WindowsInitializationSettings].
+///
+/// Complejidad: O(1) por llamada — operaciones de I/O asincronas sin iteracion.
 class TransferenciaNotificacion {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
@@ -14,22 +22,36 @@ class TransferenciaNotificacion {
     if (_initialized) {
       return;
     }
-    const AndroidInitializationSettings androidInit =
-        AndroidInitializationSettings('ic_stat_notify');
-    const DarwinInitializationSettings iosInit = DarwinInitializationSettings();
-    const WindowsInitializationSettings windowsInit =
-        WindowsInitializationSettings(
-      appName: 'CondorMotors',
-      appUserModelId: 'condor_motors_app',
-      guid: 'condor-motors-transferencias',
-    );
-    const InitializationSettings initSettings = InitializationSettings(
-      android: androidInit,
-      iOS: iosInit,
-      windows: windowsInit,
-    );
+
+    // En Windows usamos WindowsInitializationSettings con el GUID del toast activator.
+    // En Android usamos AndroidInitializationSettings con el icono de notificacion.
+    InitializationSettings initSettings;
+
+    if (Platform.isWindows) {
+      const WindowsInitializationSettings windowsInit =
+          WindowsInitializationSettings(
+        appName: 'CondorMotors',
+        appUserModelId: 'condor_motors_app',
+        guid: '936C39FC-6BBC-4A57-B8F8-7C627E401B2F',
+      );
+      initSettings = const InitializationSettings(windows: windowsInit);
+    } else if (Platform.isAndroid) {
+      const AndroidInitializationSettings androidInit =
+          AndroidInitializationSettings('ic_stat_notify');
+      const DarwinInitializationSettings iosInit =
+          DarwinInitializationSettings();
+      initSettings = const InitializationSettings(
+        android: androidInit,
+        iOS: iosInit,
+      );
+    } else {
+      const DarwinInitializationSettings iosInit =
+          DarwinInitializationSettings();
+      initSettings = const InitializationSettings(iOS: iosInit);
+    }
+
     await _notificationsPlugin.initialize(
-      initSettings,
+      settings: initSettings,
       onDidReceiveNotificationResponse: (details) {
         final payload =
             details.payload != null ? jsonDecode(details.payload!) : null;
@@ -45,30 +67,40 @@ class TransferenciaNotificacion {
     required int id,
     String? payload,
   }) async {
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-      'transferencias_channel',
-      'Transferencias',
-      channelDescription: 'Notificaciones de nuevas transferencias',
-      importance: Importance.max,
-      priority: Priority.high,
-      icon: 'ic_stat_notify',
-    );
-    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails();
-    const NotificationDetails details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
+    NotificationDetails details;
+
+    if (Platform.isWindows) {
+      // Windows: sin NotificationDetails adicionales — el plugin usa XML toast interno.
+      const WindowsNotificationDetails windowsDetails =
+          WindowsNotificationDetails();
+      details = const NotificationDetails(windows: windowsDetails);
+    } else {
+      const AndroidNotificationDetails androidDetails =
+          AndroidNotificationDetails(
+        'transferencias_channel',
+        'Transferencias',
+        channelDescription: 'Notificaciones de nuevas transferencias',
+        importance: Importance.max,
+        priority: Priority.high,
+        icon: 'ic_stat_notify',
+      );
+      const DarwinNotificationDetails iosDetails = DarwinNotificationDetails();
+      details = const NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+    }
+
     await _notificationsPlugin.show(
-      id,
-      title,
-      body,
-      details,
+      id: id,
+      title: title,
+      body: body,
+      notificationDetails: details,
       payload: payload,
     );
   }
 
-  /// Notificación para transferencia en estado 'pedido'
+  /// Notificacion para transferencia en estado 'pedido'
   static Future<void> showTransferenciaPedido(TransferenciaInventario t,
       {String? sucursalSolicitante}) async {
     final cantidadProductos = t.productos?.length ?? 0;
@@ -90,7 +122,7 @@ class TransferenciaNotificacion {
     );
   }
 
-  /// Notificación para transferencia en estado 'enviado' a la sucursal actual
+  /// Notificacion para transferencia en estado 'enviado' a la sucursal actual
   static Future<void> showTransferenciaEnviada(TransferenciaInventario t,
       {String? sucursalSolicitante}) async {
     final cantidadProductos = t.productos?.length ?? 0;

@@ -339,7 +339,7 @@ class PrintConfig extends _$PrintConfig {
 
       state = state.copyWith(impresorasDisponibles: impresoras);
 
-      bool impresoraSeleccionadaDisponible = state.impresoraSeleccionada !=
+      final bool impresoraSeleccionadaDisponible = state.impresoraSeleccionada !=
               null &&
           impresoras.any(
               (p) => p.name == state.impresoraSeleccionada && p.isAvailable);
@@ -471,7 +471,7 @@ class PrintConfig extends _$PrintConfig {
       }
 
       final List<int> bytesBuilder = [];
-      await for (var data in response) {
+      await for (final data in response) {
         bytesBuilder.addAll(data);
       }
       final Uint8List bytes = Uint8List.fromList(bytesBuilder);

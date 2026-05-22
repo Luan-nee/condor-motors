@@ -1,3 +1,4 @@
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 
 class TransferenciaFilterBar extends StatelessWidget {
@@ -44,8 +45,8 @@ class TransferenciaFilterBar extends StatelessWidget {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
-        borderRadius: BorderRadius.circular(12),
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Column(
         children: [
@@ -112,8 +113,8 @@ class TransferenciaFilterBar extends StatelessWidget {
   }) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: isExpanded ? color.withValues(alpha: 0.2) : const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(8),
+        color: isExpanded ? color.withValues(alpha: 0.2) : AppTheme.darkSurface,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
       ),
       child: IconButton(
         icon: Row(
@@ -148,7 +149,7 @@ class TransferenciaFilterBar extends StatelessWidget {
       width: double.infinity,
       margin: const EdgeInsets.only(top: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
       ),
       child: Column(
@@ -217,7 +218,7 @@ class TransferenciaFilterBar extends StatelessWidget {
       width: double.infinity,
       margin: const EdgeInsets.only(top: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
       ),
       child: Column(
@@ -254,7 +255,7 @@ class TransferenciaFilterBar extends StatelessWidget {
               child: DropdownButton<String>(
                 value: filtroCategoria,
                 isExpanded: true,
-                dropdownColor: const Color(0xFF2D2D2D),
+                dropdownColor: AppTheme.surfaceColor,
                 style: const TextStyle(color: Colors.white),
                 items: ['Todos', 'Repuestos', 'Accesorios', 'Lubricantes']
                     .map((String categoria) {
@@ -281,7 +282,7 @@ class TransferenciaFilterBar extends StatelessWidget {
       width: double.infinity,
       margin: const EdgeInsets.only(top: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
       ),
       child: Column(
@@ -320,7 +321,7 @@ class TransferenciaFilterBar extends StatelessWidget {
                   child: DropdownButton<String>(
                     value: ordenarPor,
                     isExpanded: true,
-                    dropdownColor: const Color(0xFF2D2D2D),
+                    dropdownColor: AppTheme.surfaceColor,
                     style: const TextStyle(color: Colors.white),
                     items: [
                       {'value': 'nombre', 'label': 'Nombre'},
@@ -344,7 +345,7 @@ class TransferenciaFilterBar extends StatelessWidget {
                   child: DropdownButton<String>(
                     value: orden,
                     isExpanded: true,
-                    dropdownColor: const Color(0xFF2D2D2D),
+                    dropdownColor: AppTheme.surfaceColor,
                     style: const TextStyle(color: Colors.white),
                     items: [
                       {'value': 'asc', 'label': 'Ascendente'},

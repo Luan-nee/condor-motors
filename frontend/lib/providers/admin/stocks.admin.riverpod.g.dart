@@ -6,20 +6,21 @@ part of 'stocks.admin.riverpod.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$stocksAdminHash() => r'500409a9fe02b78a41b4c640c250952aa3804e7b';
+String _$stocksAdminHash() => r'8fd2137501406a2e186c2c6634b24c2420d80884';
 
 /// See also [StocksAdmin].
 @ProviderFor(StocksAdmin)
 final stocksAdminProvider =
-    AutoDisposeNotifierProvider<StocksAdmin, StocksAdminState>.internal(
-  StocksAdmin.new,
-  name: r'stocksAdminProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product') ? null : _$stocksAdminHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+    NotifierProvider<StocksAdmin, StocksAdminState>.internal(
+      StocksAdmin.new,
+      name: r'stocksAdminProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$stocksAdminHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
 
-typedef _$StocksAdmin = AutoDisposeNotifier<StocksAdminState>;
+typedef _$StocksAdmin = Notifier<StocksAdminState>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

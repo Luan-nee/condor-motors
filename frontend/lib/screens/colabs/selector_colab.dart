@@ -4,6 +4,7 @@ import 'package:condorsmotors/screens/colabs/productos_colab.dart';
 import 'package:condorsmotors/screens/colabs/settings_colab.dart';
 import 'package:condorsmotors/screens/colabs/transferencias_colab.dart';
 import 'package:condorsmotors/screens/colabs/ventas_colab.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
@@ -32,7 +33,7 @@ class SelectorColabScreen extends ConsumerWidget {
     final nombre = empleadoData?['nombre'] ?? 'Colaborador';
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: AppTheme.darkSurface,
       body: SafeArea(
         child: Container(
           padding: EdgeInsets.symmetric(
@@ -46,8 +47,8 @@ class SelectorColabScreen extends ConsumerWidget {
               Container(
                 padding: EdgeInsets.all(isMobile ? 16 : 20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2D2D2D),
-                  borderRadius: BorderRadius.circular(16),
+                  color: AppTheme.surfaceColor,
+                  borderRadius: BorderRadius.circular(AppTheme.largeRadius),
                   boxShadow: <BoxShadow>[
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.2),
@@ -61,13 +62,13 @@ class SelectorColabScreen extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE31E24).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                       ),
                       child: const FaIcon(
                         FontAwesomeIcons.userGear,
                         size: 24,
-                        color: Color(0xFFE31E24),
+                        color: AppTheme.primaryColor,
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -98,7 +99,7 @@ class SelectorColabScreen extends ConsumerWidget {
                     // Botón de cierre de sesión
                     InkWell(
                       onTap: () => _showLogoutDialog(context, ref),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                       child: Container(
                         padding: EdgeInsets.symmetric(
                           horizontal: isMobile ? 8 : 12,
@@ -106,7 +107,7 @@ class SelectorColabScreen extends ConsumerWidget {
                         ),
                         decoration: BoxDecoration(
                           color: Colors.red.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                           border: Border.all(
                             color: Colors.red.withValues(alpha: 0.3),
                           ),
@@ -172,7 +173,7 @@ class SelectorColabScreen extends ConsumerWidget {
                       'Registrar ventas',
                       FontAwesomeIcons.cashRegister,
                       const VentasColabScreen(),
-                      const Color(0xFF4CAF50),
+                      AppTheme.successColor,
                       'Crear nuevas ventas y gestionar productos',
                     ),
                     _buildOptionCard(
@@ -190,7 +191,7 @@ class SelectorColabScreen extends ConsumerWidget {
                       'Solicitar productos',
                       FontAwesomeIcons.truck,
                       const TransferenciasColabScreen(),
-                      const Color(0xFFE31E24),
+                      AppTheme.primaryColor,
                       'Gestionar traslados entre sucursales',
                     ),
                     // Opción de configuración
@@ -258,14 +259,14 @@ class SelectorColabScreen extends ConsumerWidget {
     final bool isMobile = screenWidth < 600;
 
     // Envolver la pantalla con su Provider si es necesario
-    Widget wrappedScreen = screen;
+    final Widget wrappedScreen = screen;
     // FIX: VentasColab ya usa Riverpod, no necesita ChangeNotifierProvider
 
     return Card(
       elevation: 0,
-      color: const Color(0xFF2D2D2D),
+      color: AppTheme.surfaceColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppTheme.largeRadius),
       ),
       child: InkWell(
         onTap: () {
@@ -274,7 +275,7 @@ class SelectorColabScreen extends ConsumerWidget {
             MaterialPageRoute(builder: (BuildContext context) => wrappedScreen),
           );
         },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppTheme.largeRadius),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -285,7 +286,7 @@ class SelectorColabScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                 ),
                 child: FaIcon(
                   icon,
@@ -331,7 +332,7 @@ class SelectorColabScreen extends ConsumerWidget {
                 ),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,

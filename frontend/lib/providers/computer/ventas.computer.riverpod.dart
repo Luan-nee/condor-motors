@@ -160,9 +160,9 @@ class VentasComputer extends _$VentasComputer {
 
     try {
       final data = await _sucursalRepository.getSucursales();
-      List<Sucursal> sucursalesParsed = [];
+      final List<Sucursal> sucursalesParsed = [];
 
-      for (var item in data) {
+      for (final item in data) {
         try {
           sucursalesParsed.add(item);
         } catch (e) {
@@ -201,7 +201,7 @@ class VentasComputer extends _$VentasComputer {
         return false;
       }
 
-      String sucursalIdStr = sucursalId.toString();
+      final String sucursalIdStr = sucursalId.toString();
       try {
         final sucursalCompleta = await _sucursalRepository.getSucursalData(
           sucursalIdStr,
@@ -275,7 +275,7 @@ class VentasComputer extends _$VentasComputer {
 
     try {
       // Usamos la preferencia guardada del usuario como base para la petición
-      int requestPageSize = state.userPreferredPageSize;
+      final int requestPageSize = state.userPreferredPageSize;
 
       final response = await _ventaRepository.getVentas(
         sucursalId: sucursalId ?? state.sucursalSeleccionada!.id,

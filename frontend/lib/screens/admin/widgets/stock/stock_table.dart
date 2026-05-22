@@ -1,10 +1,12 @@
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/screens/admin/widgets/stock/stock_table_row.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
+import 'package:condorsmotors/widgets/common/smooth_scroll.widget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-class TableProducts extends StatelessWidget {
+class TableProducts extends StatefulWidget {
   final String selectedSucursalId;
   final List<Producto>? productos;
   final bool isLoading;
@@ -34,69 +36,115 @@ class TableProducts extends StatelessWidget {
     this.filtrosActivos = false,
   });
 
+  @override
+  State<TableProducts> createState() => _TableProductsState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(StringProperty('selectedSucursalId', selectedSucursalId))
+      ..add(IterableProperty<Producto>('productos', productos))
+      ..add(DiagnosticsProperty<bool>('isLoading', isLoading))
+      ..add(StringProperty('error', error))
+      ..add(ObjectFlagProperty<VoidCallback?>.has('onRetry', onRetry))
+      ..add(
+        ObjectFlagProperty<Function(Producto)?>.has(
+          'onEditProducto',
+          onEditProducto,
+        ),
+      )
+      ..add(
+        ObjectFlagProperty<Function(Producto)?>.has(
+          'onVerDetalles',
+          onVerDetalles,
+        ),
+      )
+      ..add(
+        ObjectFlagProperty<Function(Producto)?>.has(
+          'onVerStockDetalles',
+          onVerStockDetalles,
+        ),
+      )
+      ..add(ObjectFlagProperty<Function(String)?>.has('onSort', onSort))
+      ..add(StringProperty('sortBy', sortBy))
+      ..add(StringProperty('sortOrder', sortOrder))
+      ..add(DiagnosticsProperty<bool>('filtrosActivos', filtrosActivos));
+  }
+}
+
+class _TableProductsState extends State<TableProducts> {
+  late final ScrollController _scrollController;
+
   final List<String> _columnHeaders = const <String>[
     'Producto',
     'Categoría',
     'Marca',
     'Stock',
     'Mínimo',
-    'Estado',
     'Acciones',
   ];
 
   @override
-  Widget build(BuildContext context) {
-    final bool hasProducts = productos != null && productos!.isNotEmpty;
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          // Encabezado de la tabla (Siempre Estático y Persistente)
-          Container(
-            color: const Color(0xFF2D2D2D),
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            child: Row(
-              children: _buildStandardHeaders(),
-            ),
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool hasProducts =
+        widget.productos != null && widget.productos!.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        // Encabezado de la tabla (Diseño flotante premium con top border radius)
+        Container(
+          margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+          decoration: const BoxDecoration(
+            color: AppTheme.darkSurface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
           ),
-          
-          // Barra de progreso lineal roja de 2px cuando está cargando pero ya hay datos en pantalla
-          SizedBox(
+          child: Row(children: _buildStandardHeaders()),
+        ),
+
+        // Barra de progreso lineal roja de 2px cuando está cargando pero ya hay datos en pantalla
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: SizedBox(
             height: 2,
-            child: (isLoading && hasProducts)
+            child: (widget.isLoading && hasProducts)
                 ? const LinearProgressIndicator(
                     backgroundColor: Colors.white12,
-                    color: Color(0xFFE31E24),
+                    color: AppTheme.primaryColor,
                     minHeight: 2,
                   )
-                : const SizedBox.shrink(),
+                : const SizedBox(height: 2),
           ),
+        ),
 
-          // Cuerpo dinámico condicional
-          Expanded(
-            child: _buildTableBody(context, hasProducts),
-          ),
-        ],
-      ),
+        // Cuerpo dinámico condicional
+        Expanded(child: _buildTableBody(context, hasProducts)),
+      ],
     );
   }
 
   Widget _buildTableBody(BuildContext context, bool hasProducts) {
     // 1. Si está cargando y no hay datos previos
-    if (isLoading && !hasProducts) {
+    if (widget.isLoading && !hasProducts) {
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            CircularProgressIndicator(
-              color: Color(0xFFE31E24),
-            ),
+            CircularProgressIndicator(color: AppTheme.primaryColor),
             SizedBox(height: 16),
             Text(
               'Cargando inventario...',
@@ -108,30 +156,30 @@ class TableProducts extends StatelessWidget {
     }
 
     // 2. Si ocurrió un error
-    if (error != null) {
+    if (widget.error != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             const Icon(
               Icons.error_outline,
-              color: Color(0xFFE31E24),
+              color: AppTheme.primaryColor,
               size: 48,
             ),
             const SizedBox(height: 16),
             Text(
-              'Error al cargar datos: $error',
+              'Error al cargar datos: ${widget.error}',
               style: const TextStyle(color: Colors.white),
               textAlign: TextAlign.center,
             ),
-            if (onRetry != null) ...<Widget>[
+            if (widget.onRetry != null) ...<Widget>[
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 icon: const Icon(Icons.refresh),
                 label: const Text('Reintentar'),
-                onPressed: onRetry,
+                onPressed: widget.onRetry,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE31E24),
+                  backgroundColor: AppTheme.primaryColor,
                   foregroundColor: Colors.white,
                 ),
               ),
@@ -142,7 +190,7 @@ class TableProducts extends StatelessWidget {
     }
 
     // 3. Si no hay sucursal seleccionada
-    if (selectedSucursalId.isEmpty) {
+    if (widget.selectedSucursalId.isEmpty) {
       return const Center(
         child: Text(
           'Seleccione una sucursal para ver su inventario',
@@ -153,24 +201,41 @@ class TableProducts extends StatelessWidget {
 
     // 4. Si la lista está vacía
     if (!hasProducts) {
-      return _buildNoProductosMessage(hayFiltrosAplicados: filtrosActivos);
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: DecoratedBox(
+          decoration: const BoxDecoration(
+            color: AppTheme.deepSurface,
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
+          ),
+          child: _buildNoProductosMessage(
+            hayFiltrosAplicados: widget.filtrosActivos,
+          ),
+        ),
+      );
     }
 
-    // 5. Renderizado normal de la lista con micro-animación de opacidad
+    // 5. Renderizado normal de la lista con micro-animación de opacidad y scroll suave
     return AnimatedOpacity(
-      opacity: isLoading ? 0.5 : 1.0,
+      opacity: widget.isLoading ? 0.5 : 1.0,
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeInOut,
-      child: ListView.builder(
-        itemCount: productos!.length,
-        itemBuilder: (context, index) {
-          final producto = productos![index];
-          return StockTableRow(
-            producto: producto,
-            onVerStockDetalles: onVerStockDetalles,
-            onVerDetalles: onVerDetalles,
-          );
-        },
+      child: SmoothScroll(
+        controller: _scrollController,
+        child: ListView.builder(
+          controller: _scrollController,
+          itemCount: widget.productos!.length,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemBuilder: (context, index) {
+            final producto = widget.productos![index];
+            return StockTableRow(
+              producto: producto,
+              onVerStockDetalles: widget.onVerStockDetalles,
+              onVerDetalles: widget.onVerDetalles,
+              isLast: index == widget.productos!.length - 1,
+            );
+          },
+        ),
       ),
     );
   }
@@ -184,17 +249,17 @@ class TableProducts extends StatelessWidget {
             hayFiltrosAplicados
                 ? FontAwesomeIcons.filter
                 : FontAwesomeIcons.boxOpen,
-            color: hayFiltrosAplicados ? Colors.amber : Colors.white54,
-            size: 64,
+            color: hayFiltrosAplicados ? Colors.amber : Colors.white24,
+            size: 48,
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           Text(
             hayFiltrosAplicados
                 ? 'No se encontraron productos'
                 : 'No hay productos en esta sucursal',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
+            style: TextStyle(
+              color: Colors.white.withAlpha(178),
+              fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
             textAlign: TextAlign.center,
@@ -205,27 +270,30 @@ class TableProducts extends StatelessWidget {
                 ? 'Ningún producto coincide con los filtros o criterios de búsqueda aplicados'
                 : 'Considera agregar productos a esta sucursal',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.7),
-              fontSize: 14,
+              color: Colors.white.withValues(alpha: 0.5),
+              fontSize: 13,
             ),
             textAlign: TextAlign.center,
           ),
           if (hayFiltrosAplicados) ...<Widget>[
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             ElevatedButton.icon(
-              onPressed: onRetry ??
+              onPressed:
+                  widget.onRetry ??
                   () {
                     debugPrint(
-                        'No se configuró un manejador para reiniciar filtros');
+                      'No se configuró un manejador para reiniciar filtros',
+                    );
                   },
-              icon: const FaIcon(FontAwesomeIcons.arrowsRotate, size: 16),
+              icon: const FaIcon(FontAwesomeIcons.arrowsRotate, size: 14),
               label: const Text('Reiniciar filtros'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2D2D2D),
+                backgroundColor: AppTheme.surfaceColor,
                 foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                textStyle: const TextStyle(fontSize: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
               ),
             ),
           ],
@@ -234,59 +302,75 @@ class TableProducts extends StatelessWidget {
     );
   }
 
+  Widget _buildHeaderCell(
+    String label,
+    String field, {
+    TextAlign textAlign = TextAlign.left,
+    required int flex,
+  }) {
+    final isSorted = widget.sortBy == field;
+    final isCenter = textAlign == TextAlign.center;
+    final isRight = textAlign == TextAlign.right;
+
+    return Expanded(
+      flex: flex,
+      child: InkWell(
+        onTap: widget.onSort != null ? () => widget.onSort!(field) : null,
+        child: Row(
+          mainAxisAlignment: isRight
+              ? MainAxisAlignment.end
+              : (isCenter ? MainAxisAlignment.center : MainAxisAlignment.start),
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (isSorted) ...[
+              const SizedBox(width: 4),
+              Icon(
+                widget.sortOrder == 'asc'
+                    ? Icons.arrow_upward
+                    : Icons.arrow_downward,
+                size: 14,
+                color: AppTheme.primaryColor,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   List<Widget> _buildStandardHeaders() {
     return <Widget>[
-      Expanded(
-        flex: 30,
-        child: Text(
-          _columnHeaders[0],
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      Expanded(
+      _buildHeaderCell(_columnHeaders[0], 'nombre', flex: 35),
+      _buildHeaderCell(
+        _columnHeaders[1],
+        'categoria',
+        textAlign: TextAlign.center,
         flex: 15,
-        child: Text(
-          _columnHeaders[1],
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
       ),
-      Expanded(
+      _buildHeaderCell(
+        _columnHeaders[2],
+        'marca',
+        textAlign: TextAlign.center,
         flex: 15,
-        child: Text(
-          _columnHeaders[2],
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
       ),
-      Expanded(
+      _buildHeaderCell(
+        _columnHeaders[3],
+        'stock',
+        textAlign: TextAlign.center,
         flex: 10,
-        child: Text(
-          _columnHeaders[3],
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
       ),
-      Expanded(
+      _buildHeaderCell(
+        _columnHeaders[4],
+        'stockMinimo',
+        textAlign: TextAlign.center,
         flex: 10,
-        child: Text(
-          _columnHeaders[4],
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
       ),
       Expanded(
         flex: 15,
@@ -299,38 +383,6 @@ class TableProducts extends StatelessWidget {
           ),
         ),
       ),
-      Expanded(
-        flex: 15,
-        child: Text(
-          _columnHeaders[6],
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
     ];
-  }
-
-  @override
-  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
-    properties
-      ..add(StringProperty('selectedSucursalId', selectedSucursalId))
-      ..add(IterableProperty<Producto>('productos', productos))
-      ..add(DiagnosticsProperty<bool>('isLoading', isLoading))
-      ..add(StringProperty('error', error))
-      ..add(ObjectFlagProperty<VoidCallback?>.has('onRetry', onRetry))
-      ..add(ObjectFlagProperty<Function(Producto)?>.has(
-          'onEditProducto', onEditProducto))
-      ..add(ObjectFlagProperty<Function(Producto)?>.has(
-          'onVerDetalles', onVerDetalles))
-      ..add(ObjectFlagProperty<Function(Producto)?>.has(
-          'onVerStockDetalles', onVerStockDetalles))
-      ..add(ObjectFlagProperty<Function(String)?>.has('onSort', onSort))
-      ..add(StringProperty('sortBy', sortBy))
-      ..add(StringProperty('sortOrder', sortOrder))
-      ..add(DiagnosticsProperty<bool>('filtrosActivos', filtrosActivos));
   }
 }

@@ -12,14 +12,14 @@ String _$categoriasAdminHash() => r'd556c34166d822004356857ea6ae9fa0f038e123';
 @ProviderFor(CategoriasAdmin)
 final categoriasAdminProvider =
     AutoDisposeNotifierProvider<CategoriasAdmin, CategoriasAdminState>.internal(
-  CategoriasAdmin.new,
-  name: r'categoriasAdminProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$categoriasAdminHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+      CategoriasAdmin.new,
+      name: r'categoriasAdminProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$categoriasAdminHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
 
 typedef _$CategoriasAdmin = AutoDisposeNotifier<CategoriasAdminState>;
 // ignore_for_file: type=lint

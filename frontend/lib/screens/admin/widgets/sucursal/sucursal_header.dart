@@ -1,3 +1,4 @@
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/debouncer.util.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -67,7 +68,7 @@ class _SucursalHeaderState extends State<SucursalHeader> {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: const BoxDecoration(
-            color: Color(0xFF1E1E1E),
+            color: AppTheme.cardColor,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -94,8 +95,8 @@ class _SucursalHeaderState extends State<SucursalHeader> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2D2D2D),
-                      borderRadius: BorderRadius.circular(8),
+                      color: AppTheme.surfaceColor,
+                      borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                     ),
                     child: Text(
                       widget.totalSucursales.toString(),
@@ -135,9 +136,9 @@ class _SucursalHeaderState extends State<SucursalHeader> {
                           child: Switch(
                             value: widget.mostrarAgrupados,
                             onChanged: widget.onToggleAgrupados,
-                            activeThumbColor: const Color(0xFFE31E24),
+                            activeThumbColor: AppTheme.primaryColor,
                             activeTrackColor:
-                                const Color(0xFFE31E24).withValues(alpha: 0.3),
+                                AppTheme.primaryColor.withValues(alpha: 0.3),
                           ),
                         ),
                       ),
@@ -164,14 +165,14 @@ class _SucursalHeaderState extends State<SucursalHeader> {
                       style: const TextStyle(color: Colors.white, fontSize: 13),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2D2D2D),
+                      backgroundColor: AppTheme.surfaceColor,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 12,
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                       ),
                     ),
                     onPressed: widget.isLoading ? null : widget.onReload,
@@ -186,14 +187,14 @@ class _SucursalHeaderState extends State<SucursalHeader> {
                       style: TextStyle(fontSize: 13),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE31E24),
+                      backgroundColor: AppTheme.primaryColor,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
                         vertical: 16,
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                       ),
                     ),
                     onPressed: widget.onAddNew,
@@ -217,7 +218,7 @@ class _SucursalHeaderState extends State<SucursalHeader> {
                         )
                       : null,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                     borderSide: BorderSide.none,
                   ),
                   filled: true,

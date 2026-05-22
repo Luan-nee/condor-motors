@@ -1,4 +1,5 @@
 import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -47,12 +48,12 @@ class SucursalDetalles extends StatelessWidget {
       child: Card(
         elevation: 2,
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-        color: const Color(0xFF1A1A1A),
+        color: AppTheme.darkSurface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.smallRadius),
           side: BorderSide(
             color: sucursal.sucursalCentral
-                ? const Color(0xFFE31E24).withValues(alpha: 0.3)
+                ? AppTheme.primaryColor.withValues(alpha: 0.3)
                 : Colors.white.withValues(alpha: 0.1),
           ),
         ),
@@ -67,8 +68,8 @@ class SucursalDetalles extends StatelessWidget {
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
                   color: sucursal.sucursalCentral
-                      ? const Color(0xFFE31E24).withValues(alpha: 0.1)
-                      : const Color(0xFF2D2D2D),
+                      ? AppTheme.primaryColor.withValues(alpha: 0.1)
+                      : AppTheme.surfaceColor,
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(8),
                     topRight: Radius.circular(8),
@@ -85,14 +86,14 @@ class SucursalDetalles extends StatelessWidget {
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
                             color: sucursal.sucursalCentral
-                                ? const Color(0xFFE31E24).withValues(alpha: 0.2)
+                                ? AppTheme.primaryColor.withValues(alpha: 0.2)
                                 : Colors.black26,
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: FaIcon(
                             icon,
                             color: sucursal.sucursalCentral
-                                ? const Color(0xFFE31E24)
+                                ? AppTheme.primaryColor
                                 : Colors.white,
                             size: 20,
                           ),
@@ -122,9 +123,9 @@ class SucursalDetalles extends StatelessWidget {
                               horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: sucursal.sucursalCentral
-                                ? const Color(0xFFE31E24).withValues(alpha: 0.2)
+                                ? AppTheme.primaryColor.withValues(alpha: 0.2)
                                 : Colors.black26,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                           ),
                           child: Text(
                             sucursal.sucursalCentral ? 'CENTRAL' : 'LOCAL',
@@ -132,7 +133,7 @@ class SucursalDetalles extends StatelessWidget {
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                               color: sucursal.sucursalCentral
-                                  ? const Color(0xFFE31E24)
+                                  ? AppTheme.primaryColor
                                   : Colors.white70,
                             ),
                           ),
@@ -183,7 +184,7 @@ class SucursalDetalles extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF2D2D2D),
+                          color: AppTheme.surfaceColor,
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
                             color: Colors.grey.withValues(alpha: 0.3),
@@ -334,7 +335,7 @@ class SucursalDetalles extends StatelessWidget {
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: isConfigured
-            ? const Color(0xFF2D2D2D)
+            ? AppTheme.surfaceColor
             : Colors.red.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
@@ -391,7 +392,7 @@ class SucursalDetalles extends StatelessWidget {
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: isConfigured
-            ? const Color(0xFF2D2D2D)
+            ? AppTheme.surfaceColor
             : Colors.red.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(

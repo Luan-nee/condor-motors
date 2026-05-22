@@ -1,6 +1,7 @@
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/models/proforma.model.dart' as model_proforma;
 import 'package:condorsmotors/repositories/index.repository.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -669,7 +670,7 @@ class VentasPendientesUtils {
     final bool? resultado = await showDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF2D2D2D),
+        backgroundColor: AppTheme.surfaceColor,
         title: Row(
           children: [
             if (icono != null) ...[

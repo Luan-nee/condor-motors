@@ -1,5 +1,6 @@
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/screens/admin/widgets/sucursal/sucursal_row.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 
 class SucursalTable extends StatelessWidget {
@@ -24,9 +25,9 @@ class SucursalTable extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: EdgeInsets.zero,
-      color: const Color(0xFF1A1A1A),
+      color: AppTheme.darkSurface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(

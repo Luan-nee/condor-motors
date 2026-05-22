@@ -1,5 +1,6 @@
 import 'package:condorsmotors/models/empleado.model.dart';
 import 'package:condorsmotors/screens/admin/widgets/empleado/empleado_list.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/empleados_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -68,8 +69,8 @@ class _EmpleadosTableState extends State<EmpleadosTable> {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(12),
+        color: AppTheme.darkSurface,
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.1),
         ),
@@ -86,7 +87,7 @@ class _EmpleadosTableState extends State<EmpleadosTable> {
                   const SizedBox(height: 16),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE31E24),
+                      backgroundColor: AppTheme.primaryColor,
                       foregroundColor: Colors.white,
                     ),
                     onPressed: widget.onRefresh,
@@ -102,7 +103,7 @@ class _EmpleadosTableState extends State<EmpleadosTable> {
                   // Encabezado de la tabla
                   Container(
                     decoration: const BoxDecoration(
-                      color: Color(0xFF2D2D2D),
+                      color: AppTheme.surfaceColor,
                       borderRadius:
                           BorderRadius.vertical(top: Radius.circular(12)),
                     ),
@@ -185,7 +186,7 @@ class _EmpleadosTableState extends State<EmpleadosTable> {
                   if (hayEmpleadosInactivos) ...[
                     DecoratedBox(
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2D2D2D),
+                        color: AppTheme.surfaceColor,
                         border: Border(
                           top: BorderSide(
                             color: Colors.white.withValues(alpha: 0.1),

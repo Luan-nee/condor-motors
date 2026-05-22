@@ -2,6 +2,7 @@ import 'package:condorsmotors/models/ventas.model.dart';
 import 'package:condorsmotors/providers/computer/ventas.computer.riverpod.dart';
 import 'package:condorsmotors/providers/print.riverpod.dart';
 import 'package:condorsmotors/screens/computer/widgets/venta/venta_detalle_computer.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/debouncer.util.dart';
 import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:flutter/material.dart';
@@ -85,7 +86,7 @@ class _VentasComputerScreenState extends ConsumerState<VentasComputerScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF2D2D2D),
+          color: AppTheme.surfaceColor,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.2),
@@ -98,7 +99,7 @@ class _VentasComputerScreenState extends ConsumerState<VentasComputerScreen> {
           children: [
             const FaIcon(
               FontAwesomeIcons.fileInvoiceDollar,
-              color: Color(0xFFE31E24),
+              color: AppTheme.primaryColor,
               size: 20,
             ),
             const SizedBox(width: 12),
@@ -126,7 +127,7 @@ class _VentasComputerScreenState extends ConsumerState<VentasComputerScreen> {
               label: const Text('Nueva Venta'),
               style: ElevatedButton.styleFrom(
                 foregroundColor: Colors.white,
-                backgroundColor: const Color(0xFFE31E24),
+                backgroundColor: AppTheme.primaryColor,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 12,
@@ -151,8 +152,8 @@ class _VentasComputerScreenState extends ConsumerState<VentasComputerScreen> {
     return Container(
       height: 40,
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.darkSurface,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.1),
         ),
@@ -231,7 +232,7 @@ class _VentasComputerScreenState extends ConsumerState<VentasComputerScreen> {
       children: [
         Container(
           padding: const EdgeInsets.all(12),
-          color: const Color(0xFF222222),
+          color: AppTheme.deepSurface,
           child: Row(
             children: [
               const Spacer(),
@@ -243,7 +244,7 @@ class _VentasComputerScreenState extends ConsumerState<VentasComputerScreen> {
                 label: const Text('Actualizar'),
                 style: ElevatedButton.styleFrom(
                   foregroundColor: Colors.white,
-                  backgroundColor: const Color(0xFFE31E24),
+                  backgroundColor: AppTheme.primaryColor,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 8,
@@ -271,9 +272,9 @@ class _VentasComputerScreenState extends ConsumerState<VentasComputerScreen> {
               children: <Widget>[
                 Paginador(
                   paginacion: estado.paginacion,
-                  backgroundColor: const Color(0xFF2D2D2D),
+                  backgroundColor: AppTheme.surfaceColor,
                   textColor: Colors.white,
-                  accentColor: const Color(0xFFE31E24),
+                  accentColor: AppTheme.primaryColor,
                   radius: 8.0,
                   onPageChanged: ventasProvider.cambiarPagina,
                   onPageSizeChanged: ventasProvider.cambiarItemsPorPagina,
@@ -307,7 +308,7 @@ class _VentasComputerScreenState extends ConsumerState<VentasComputerScreen> {
         ElevatedButton(
           onPressed: onAction,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFE31E24),
+            backgroundColor: AppTheme.primaryColor,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           ),
@@ -366,7 +367,7 @@ class _VentaComputerItem extends ConsumerWidget {
                       height: 50,
                       decoration: BoxDecoration(
                         color: notifier.getEstadoColor(estado).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                       ),
                       child: Center(
                         child: FaIcon(
@@ -438,7 +439,7 @@ class _VentaComputerItem extends ConsumerWidget {
                               horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: notifier.getEstadoColor(estado).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                           ),
                           child: Text(
                             estado,

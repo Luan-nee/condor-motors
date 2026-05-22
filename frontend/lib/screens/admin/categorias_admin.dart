@@ -1,5 +1,6 @@
 import 'package:condorsmotors/models/categoria.model.dart';
 import 'package:condorsmotors/providers/admin/categorias.admin.riverpod.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/widgets/common/empty_state.widget.dart';
 import 'package:condorsmotors/widgets/common/error_banner.widget.dart';
 import 'package:flutter/material.dart';
@@ -32,8 +33,8 @@ class _CategoriasAdminScreenState extends ConsumerState<CategoriasAdminScreen> {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) => Dialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: AppTheme.darkSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.mediumRadius)),
         child: Container(
           padding: const EdgeInsets.all(24),
           constraints: const BoxConstraints(maxWidth: 400),
@@ -62,7 +63,7 @@ class _CategoriasAdminScreenState extends ConsumerState<CategoriasAdminScreen> {
                     labelStyle: TextStyle(color: Colors.white70),
                     border: OutlineInputBorder(),
                     enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFE31E24), width: 2)),
+                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppTheme.primaryColor, width: 2)),
                   ),
                   validator: (value) => (value == null || value.isEmpty) ? 'Por favor ingrese un nombre' : null,
                 ),
@@ -76,7 +77,7 @@ class _CategoriasAdminScreenState extends ConsumerState<CategoriasAdminScreen> {
                     labelStyle: TextStyle(color: Colors.white70),
                     border: OutlineInputBorder(),
                     enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFE31E24), width: 2)),
+                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppTheme.primaryColor, width: 2)),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -90,7 +91,7 @@ class _CategoriasAdminScreenState extends ConsumerState<CategoriasAdminScreen> {
                     const SizedBox(width: 16),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE31E24),
+                        backgroundColor: AppTheme.primaryColor,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                       ),
@@ -176,11 +177,11 @@ class _CategoriasAdminScreenState extends ConsumerState<CategoriasAdminScreen> {
                             : 'Recargar categorías',
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2D2D2D),
+                            backgroundColor: AppTheme.surfaceColor,
                             foregroundColor: Colors.white,
                             padding: EdgeInsets.zero,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                             ),
                             elevation: 0,
                           ),
@@ -210,11 +211,11 @@ class _CategoriasAdminScreenState extends ConsumerState<CategoriasAdminScreen> {
                             style: TextStyle(
                                 fontSize: 14, fontWeight: FontWeight.bold)),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFE31E24),
+                          backgroundColor: AppTheme.primaryColor,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                           ),
                           elevation: 0,
                         ),
@@ -234,8 +235,8 @@ class _CategoriasAdminScreenState extends ConsumerState<CategoriasAdminScreen> {
             Expanded(
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A1A),
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppTheme.darkSurface,
+                  borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                   border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                 ),
                 child: _buildTableContent(state, notifier),
@@ -250,7 +251,7 @@ class _CategoriasAdminScreenState extends ConsumerState<CategoriasAdminScreen> {
   Widget _buildTableHeader() {
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF2D2D2D),
+        color: AppTheme.surfaceColor,
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
@@ -302,7 +303,7 @@ class _CategoriasAdminScreenState extends ConsumerState<CategoriasAdminScreen> {
           child: (state.isLoading && state.categorias.isNotEmpty)
               ? const LinearProgressIndicator(
                   backgroundColor: Colors.white12,
-                  color: Color(0xFFE31E24),
+                  color: AppTheme.primaryColor,
                   minHeight: 2,
                 )
               : const SizedBox.shrink(),
@@ -311,7 +312,7 @@ class _CategoriasAdminScreenState extends ConsumerState<CategoriasAdminScreen> {
           child: state.isLoading && state.categorias.isEmpty
               ? const Center(
                   child: CircularProgressIndicator(
-                    color: Color(0xFFE31E24),
+                    color: AppTheme.primaryColor,
                   ),
                 )
               : AnimatedOpacity(
@@ -362,7 +363,7 @@ class _CategoriaAdminRow extends ConsumerWidget {
             child: Row(
               children: <Widget>[
                 const FaIcon(FontAwesomeIcons.folder,
-                    color: Color(0xFFE31E24), size: 20),
+                    color: AppTheme.primaryColor, size: 20),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -388,20 +389,20 @@ class _CategoriaAdminRow extends ConsumerWidget {
             child: Center(
               child: Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE31E24).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     const FaIcon(FontAwesomeIcons.box,
-                        size: 12, color: Color(0xFFE31E24)),
+                        size: 12, color: AppTheme.primaryColor),
                     const SizedBox(width: 6),
                     Text(
                       categoria.totalProductos.toString(),
                       style: const TextStyle(
-                          color: Color(0xFFE31E24), fontWeight: FontWeight.bold),
+                          color: AppTheme.primaryColor, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),

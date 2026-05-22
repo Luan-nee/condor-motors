@@ -1,4 +1,5 @@
 import 'package:condorsmotors/models/producto.model.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -25,11 +26,11 @@ class TransferenciaProductCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         border: isBajoStock
             ? Border.all(
-                color: const Color(0xFFE31E24).withValues(alpha: 0.5),
+                color: AppTheme.primaryColor.withValues(alpha: 0.5),
               )
             : null,
       ),
@@ -41,12 +42,12 @@ class TransferenciaProductCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE31E24).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                 ),
                 child: const FaIcon(
                   FontAwesomeIcons.box,
-                  color: Color(0xFFE31E24),
+                  color: AppTheme.primaryColor,
                   size: 16,
                 ),
               ),
@@ -73,7 +74,7 @@ class TransferenciaProductCard extends StatelessWidget {
                           'Stock: ${producto.stock}/$stockMinimo',
                           style: TextStyle(
                             color: isBajoStock
-                                ? const Color(0xFFE31E24)
+                                ? AppTheme.primaryColor
                                 : Colors.grey[400],
                             fontSize: 12,
                           ),
@@ -85,14 +86,14 @@ class TransferenciaProductCard extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFE31E24)
+                              color: AppTheme.primaryColor
                                   .withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                             ),
                             child: Text(
                               'Faltan: $stockDiferencia',
                               style: const TextStyle(
-                                color: Color(0xFFE31E24),
+                                color: AppTheme.primaryColor,
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -149,7 +150,7 @@ class TransferenciaProductCard extends StatelessWidget {
                   borderSide: BorderSide(color: Colors.grey),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFFE31E24)),
+                  borderSide: BorderSide(color: AppTheme.primaryColor),
                 ),
               ),
               onFieldSubmitted: (value) {
@@ -161,7 +162,7 @@ class TransferenciaProductCard extends StatelessWidget {
           const SizedBox(width: 4),
           IconButton(
             icon: const Icon(Icons.add_circle_outline, size: 24),
-            color: const Color(0xFFE31E24),
+            color: AppTheme.primaryColor,
             padding: const EdgeInsets.all(4),
             constraints: const BoxConstraints(),
             onPressed: () => onCantidadChanged(cantidadSeleccionada + 1),

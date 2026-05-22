@@ -1,4 +1,5 @@
 import 'package:condorsmotors/models/producto.model.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/stock_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -54,8 +55,8 @@ class _InventarioResumenState extends State<InventarioResumen> {
     return Container(
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: const Color(0xFF2D2D2D),
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
       ),
       child: Theme(
         data: Theme.of(context).copyWith(
@@ -115,7 +116,7 @@ class _InventarioResumenState extends State<InventarioResumen> {
                     'Stock bajo',
                     stockBajoCount.toString(),
                     FontAwesomeIcons.triangleExclamation,
-                    const Color(0xFFE31E24),
+                    AppTheme.primaryColor,
                     'Necesitan reabastecimiento',
                     stockBajoCount > 0,
                   ),
@@ -146,7 +147,7 @@ class _InventarioResumenState extends State<InventarioResumen> {
       decoration: BoxDecoration(
         color:
             highlight ? color.withValues(alpha: 0.15) : const Color(0xFF333333),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         border:
             highlight ? Border.all(color: color.withValues(alpha: 0.3)) : null,
       ),

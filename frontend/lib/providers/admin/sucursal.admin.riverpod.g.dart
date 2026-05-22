@@ -12,14 +12,14 @@ String _$sucursalAdminHash() => r'6ae45a194e7cec0bc17c8016f42bd65c5f6eec4f';
 @ProviderFor(SucursalAdmin)
 final sucursalAdminProvider =
     AutoDisposeNotifierProvider<SucursalAdmin, SucursalAdminState>.internal(
-  SucursalAdmin.new,
-  name: r'sucursalAdminProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$sucursalAdminHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+      SucursalAdmin.new,
+      name: r'sucursalAdminProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$sucursalAdminHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
 
 typedef _$SucursalAdmin = AutoDisposeNotifier<SucursalAdminState>;
 // ignore_for_file: type=lint

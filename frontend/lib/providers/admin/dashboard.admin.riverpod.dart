@@ -184,7 +184,7 @@ class DashboardAdmin extends _$DashboardAdmin {
       );
 
       int agotados = 0;
-      for (dynamic producto in paginatedProductos.items) {
+      for (final dynamic producto in paginatedProductos.items) {
         if (producto.stock <= 0) {
           agotados++;
         }

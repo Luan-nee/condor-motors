@@ -1,4 +1,5 @@
 import 'package:condorsmotors/models/empleado.model.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/utils/empleados_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -33,10 +34,10 @@ class EmpleadoHorarioViewer extends StatelessWidget {
       width: width,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: backgroundColor ?? const Color(0xFF2D2D2D),
-        borderRadius: BorderRadius.circular(8),
+        color: backgroundColor ?? AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
         border: Border.all(
-          color: const Color(0xFFE31E24).withValues(alpha: 0.2),
+          color: AppTheme.primaryColor.withValues(alpha: 0.2),
         ),
       ),
       child: Column(
@@ -48,7 +49,7 @@ class EmpleadoHorarioViewer extends StatelessWidget {
               children: <Widget>[
                 FaIcon(
                   FontAwesomeIcons.clock,
-                  color: Color(0xFFE31E24),
+                  color: AppTheme.primaryColor,
                   size: 16,
                 ),
                 SizedBox(width: 8),
@@ -57,7 +58,7 @@ class EmpleadoHorarioViewer extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFFE31E24),
+                    color: AppTheme.primaryColor,
                   ),
                 ),
               ],
@@ -97,13 +98,13 @@ class EmpleadoHorarioViewer extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1A1A),
-            borderRadius: BorderRadius.circular(8),
+            color: AppTheme.darkSurface,
+            borderRadius: BorderRadius.circular(AppTheme.smallRadius),
           ),
           child: Center(
             child: FaIcon(
               icon,
-              color: const Color(0xFFE31E24),
+              color: AppTheme.primaryColor,
               size: 16,
             ),
           ),
@@ -159,9 +160,9 @@ class EmpleadoHorarioDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: AppTheme.darkSurface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Container(
         width: 400,
@@ -202,7 +203,7 @@ class EmpleadoHorarioDialog extends StatelessWidget {
             Center(
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2D2D2D),
+                  backgroundColor: AppTheme.surfaceColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,

@@ -8,6 +8,7 @@ import 'package:condorsmotors/screens/colabs/ventas/producto_venta_item.widget.d
 import 'package:condorsmotors/screens/colabs/widgets/busqueda_producto.dart';
 import 'package:condorsmotors/screens/colabs/widgets/cliente/busqueda_cliente.dart';
 import 'package:condorsmotors/screens/colabs/widgets/cliente/busqueda_cliente_form.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -84,9 +85,9 @@ class _VentasColabScreenState extends ConsumerState<VentasColabScreen>
     showDialog(
       context: context,
       builder: (BuildContext context) => Dialog(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: AppTheme.darkSurface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppTheme.largeRadius),
         ),
         insetPadding: const EdgeInsets.symmetric(
           horizontal: 8,
@@ -164,9 +165,9 @@ class _VentasColabScreenState extends ConsumerState<VentasColabScreen>
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) => Dialog(
-        backgroundColor: const Color(0xFF2D2D2D),
+        backgroundColor: AppTheme.surfaceColor,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppTheme.largeRadius),
         ),
         child: Container(
           padding: const EdgeInsets.all(24),
@@ -251,7 +252,7 @@ class _VentasColabScreenState extends ConsumerState<VentasColabScreen>
           final dialogState = ref.watch(ventasColabProvider);
           return Dialog(
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppTheme.largeRadius),
             ),
             insetPadding: const EdgeInsets.symmetric(
               horizontal: 8,
@@ -546,7 +547,7 @@ class _VentasColabScreenState extends ConsumerState<VentasColabScreen>
             children: <Widget>[
               const FaIcon(
                 FontAwesomeIcons.fileInvoiceDollar,
-                color: Color(0xFF4CAF50),
+                color: AppTheme.successColor,
                 size: 64,
               ),
               const SizedBox(height: 16),
@@ -631,10 +632,10 @@ class _VentasColabScreenState extends ConsumerState<VentasColabScreen>
             height: double.infinity,
             child: Center(
               child: Card(
-                color: const Color(0xFF2D2D2D),
+                color: AppTheme.surfaceColor,
                 elevation: 8,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppTheme.largeRadius),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(24.0),
@@ -855,7 +856,7 @@ class _VentasColabScreenState extends ConsumerState<VentasColabScreen>
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: _mostrarDialogoClientes,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           child: Row(
@@ -904,7 +905,7 @@ class _VentasColabScreenState extends ConsumerState<VentasColabScreen>
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                         ),
                       ),
                       icon: const FaIcon(FontAwesomeIcons.barcode),
@@ -921,7 +922,7 @@ class _VentasColabScreenState extends ConsumerState<VentasColabScreen>
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                         ),
                       ),
                       icon: const FaIcon(FontAwesomeIcons.magnifyingGlass),
@@ -995,8 +996,8 @@ class _VentasColabScreenState extends ConsumerState<VentasColabScreen>
                         child: Center(
                           child: Material(
                             elevation: 4,
-                            borderRadius: BorderRadius.circular(8),
-                            color: const Color(0xFF2E7D32), // Verde oscuro
+                            borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+                            color: AppTheme.successDark, // Verde oscuro
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 16, vertical: 10),
@@ -1097,7 +1098,7 @@ class _VentasColabScreenState extends ConsumerState<VentasColabScreen>
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                             ),
                           ),
                           icon: const FaIcon(FontAwesomeIcons.trash, size: 16),
@@ -1116,11 +1117,11 @@ class _VentasColabScreenState extends ConsumerState<VentasColabScreen>
                         flex: 2,
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF4CAF50),
+                            backgroundColor: AppTheme.successColor,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                             ),
                           ),
                           icon: const FaIcon(FontAwesomeIcons.check, size: 16),

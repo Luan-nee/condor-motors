@@ -12,13 +12,14 @@ String _$dashComputerHash() => r'f1878e8aef0e074d44d71d93e1987f697c020eef';
 @ProviderFor(DashComputer)
 final dashComputerProvider =
     NotifierProvider<DashComputer, DashComputerState>.internal(
-  DashComputer.new,
-  name: r'dashComputerProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product') ? null : _$dashComputerHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+      DashComputer.new,
+      name: r'dashComputerProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$dashComputerHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
 
 typedef _$DashComputer = Notifier<DashComputerState>;
 // ignore_for_file: type=lint

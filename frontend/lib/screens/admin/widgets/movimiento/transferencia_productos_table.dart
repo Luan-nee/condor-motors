@@ -1,4 +1,5 @@
 import 'package:condorsmotors/models/transferencias.model.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 
 class TransferenciaProductosTable extends StatelessWidget {
@@ -115,14 +116,14 @@ class TransferenciaProductosTable extends StatelessWidget {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE31E24).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
+                          color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
                         ),
                         child: Text(
                           '${producto.cantidad}',
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                            color: Color(0xFFE31E24),
+                            color: AppTheme.primaryColor,
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),

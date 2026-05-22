@@ -1,4 +1,5 @@
 import 'package:condorsmotors/providers/computer/dash.computer.riverpod.dart';
+import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -112,9 +113,9 @@ class _DashboardComputerScreenState
     final notifier = ref.read(dashComputerProvider.notifier);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: AppTheme.darkSurface,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF2D2D2D),
+        backgroundColor: AppTheme.surfaceColor,
         title: Text(
           'Dashboard - ${state.nombreSucursal}',
           style: const TextStyle(color: Colors.white),
@@ -207,9 +208,9 @@ class _DashboardComputerScreenState
     }).toList();
 
     return Card(
-      color: const Color(0xFF2D2D2D),
+      color: AppTheme.surfaceColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -221,13 +222,13 @@ class _DashboardComputerScreenState
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppTheme.successColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                   ),
                   child: const FaIcon(
                     FontAwesomeIcons.cashRegister,
                     size: 16,
-                    color: Color(0xFF4CAF50),
+                    color: AppTheme.successColor,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -269,7 +270,7 @@ class _DashboardComputerScreenState
                     trailing: Text(
                       'S/ ${venta.total.toStringAsFixed(2)}',
                       style: const TextStyle(
-                        color: Color(0xFF4CAF50),
+                        color: AppTheme.successColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -288,9 +289,9 @@ class _DashboardComputerScreenState
         provider.productosStockBajo.map(ProductoStockBajo.fromJson).toList();
 
     return Card(
-      color: const Color(0xFF2D2D2D),
+      color: AppTheme.surfaceColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -305,13 +306,13 @@ class _DashboardComputerScreenState
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE31E24).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                       ),
                       child: const FaIcon(
                         FontAwesomeIcons.triangleExclamation,
                         size: 16,
-                        color: Color(0xFFE31E24),
+                        color: AppTheme.primaryColor,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -429,13 +430,13 @@ class _DashboardComputerScreenState
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE31E24).withValues(alpha: 0.1),
+                        color: AppTheme.primaryColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         '${producto.stock}',
                         style: const TextStyle(
-                          color: Color(0xFFE31E24),
+                          color: AppTheme.primaryColor,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
