@@ -425,7 +425,7 @@ class _HistorialVentasComputerScreenState
         final bool resultado = await _ventaRepository.anularVenta(
           venta.id.toString(),
           motivoController.text,
-          sucursalId: widget.sucursalId?.toString(),
+          sucursalId: widget.sucursalId?.toString() ?? '',
         );
 
         if (!mounted) {

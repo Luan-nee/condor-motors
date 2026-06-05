@@ -4,91 +4,74 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'empleados.admin.riverpod.g.dart';
 
-class EmpleadosAdminState {
-  final bool isLoading;
+/// Datos estructurados para el estado del módulo de administración de empleados.
+class EmpleadosAdminData {
   final List<Empleado> empleados;
   final Map<String, String> nombresSucursales;
   final List<Map<String, dynamic>> rolesCuentas;
-  final String? errorMessage;
 
-  EmpleadosAdminState({
-    this.isLoading = false,
-    this.empleados = const [],
-    this.nombresSucursales = const {},
-    this.rolesCuentas = const [],
-    this.errorMessage,
+  EmpleadosAdminData({
+    required this.empleados,
+    required this.nombresSucursales,
+    required this.rolesCuentas,
   });
-
-  EmpleadosAdminState copyWith({
-    bool? isLoading,
-    List<Empleado>? empleados,
-    Map<String, String>? nombresSucursales,
-    List<Map<String, dynamic>>? rolesCuentas,
-    String? errorMessage,
-  }) {
-    return EmpleadosAdminState(
-      isLoading: isLoading ?? this.isLoading,
-      empleados: empleados ?? this.empleados,
-      nombresSucursales: nombresSucursales ?? this.nombresSucursales,
-      rolesCuentas: rolesCuentas ?? this.rolesCuentas,
-      errorMessage: errorMessage ?? this.errorMessage,
-    );
-  }
 }
 
+/// Notifier para la gestión de colaboradores en el panel de administración.
+///
+/// Patron: [AsyncNotifier] de Riverpod 2.x.
+/// Maneja la agregación de datos de múltiples fuentes de forma reactiva e inmutable.
 @riverpod
 class EmpleadosAdmin extends _$EmpleadosAdmin {
   late final EmpleadoRepository _empleadoRepository;
 
   @override
-  EmpleadosAdminState build() {
+  FutureOr<EmpleadosAdminData> build() {
     _empleadoRepository = EmpleadoRepository.instance;
-    Future.microtask(cargarDatos);
-    return EmpleadosAdminState();
+    return _fetchDatos();
   }
 
+  /// Método privado para agrupar las peticiones concurrentes
+  Future<EmpleadosAdminData> _fetchDatos() async {
+    final sucursalesFuture = _empleadoRepository.getNombresSucursales();
+    final empleadosFuture = _empleadoRepository.getEmpleados(useCache: false);
+    final rolesFuture = _empleadoRepository.getRolesCuentas();
+
+    final results = await Future.wait([
+      sucursalesFuture,
+      empleadosFuture,
+      rolesFuture,
+    ]);
+
+    return EmpleadosAdminData(
+      nombresSucursales: results[0] as Map<String, String>,
+      empleados: (results[1] as EmpleadosPaginados).empleados,
+      rolesCuentas: results[2] as List<Map<String, dynamic>>,
+    );
+  }
+
+  /// Carga o recarga los datos desde la API
   Future<void> cargarDatos() async {
-    state = state.copyWith(isLoading: true);
-    try {
-      final sucursalesFuture = _empleadoRepository.getNombresSucursales();
-      final empleadosFuture = _empleadoRepository.getEmpleados(useCache: false);
-      final rolesFuture = _empleadoRepository.getRolesCuentas();
-
-      final results = await Future.wait([
-        sucursalesFuture,
-        empleadosFuture,
-        rolesFuture,
-      ]);
-
-      state = state.copyWith(
-        nombresSucursales: results[0] as Map<String, String>,
-        empleados: (results[1] as EmpleadosPaginados).empleados,
-        rolesCuentas: results[2] as List<Map<String, dynamic>>,
-        isLoading: false,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        errorMessage: 'Error al cargar datos: $e',
-        isLoading: false,
-      );
-    }
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(_fetchDatos);
   }
 
+  /// Elimina un colaborador por su ID
+  ///
+  /// Lanza la excepción para que el ScaffoldMessenger capture el error en la UI.
   Future<void> eliminarEmpleado(String id) async {
-    state = state.copyWith(isLoading: true);
-    try {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
       await _empleadoRepository.deleteEmpleado(id);
-      await cargarDatos();
-    } catch (e) {
-      state = state.copyWith(
-        errorMessage: 'Error al eliminar: $e',
-        isLoading: false,
-      );
-      rethrow;
-    }
+      return _fetchDatos();
+    });
   }
 
+  /// Limpia el estado de error y retorna al último valor de datos disponible
   void limpiarError() {
-    state = state.copyWith();
+    final currentVal = state.value;
+    if (currentVal != null) {
+      state = AsyncData(currentVal);
+    }
   }
 }

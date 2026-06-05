@@ -23,6 +23,11 @@ class _ColaboradoresAdminScreenState extends ConsumerState<ColaboradoresAdminScr
     final state = ref.watch(empleadosAdminProvider);
     final notifier = ref.read(empleadosAdminProvider.notifier);
 
+    final data = state.value;
+    final empleados = data?.empleados ?? const [];
+    final nombresSucursales = data?.nombresSucursales ?? const {};
+    final rolesCuentas = data?.rolesCuentas ?? const [];
+
     return Scaffold(
       backgroundColor: AppTheme.darkSurface,
       body: Padding(
@@ -42,11 +47,11 @@ class _ColaboradoresAdminScreenState extends ConsumerState<ColaboradoresAdminScr
                       children: <Widget>[
                         Text(
                           'COLABORADORES',
-                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
                         ),
                         Text(
                           'gestión de empleados',
-                          style: TextStyle(fontSize: 16, color: Colors.white70),
+                          style: TextStyle(fontSize: 12, color: Colors.white70),
                         ),
                       ],
                     ),
@@ -54,53 +59,81 @@ class _ColaboradoresAdminScreenState extends ConsumerState<ColaboradoresAdminScr
                 ),
                 Row(
                   children: <Widget>[
-                    ElevatedButton.icon(
-                      icon: state.isLoading
-                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : const FaIcon(FontAwesomeIcons.arrowsRotate, size: 16, color: Colors.white),
-                      label: Text(state.isLoading ? 'Recargando...' : 'Recargar', style: const TextStyle(color: Colors.white)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.surfaceColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    SizedBox(
+                      height: 46,
+                      width: 46,
+                      child: Tooltip(
+                        message: state.isLoading
+                            ? 'Recargando...'
+                            : 'Recargar colaboradores',
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.surfaceColor,
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+                            ),
+                            elevation: 0,
+                          ),
+                          onPressed: state.isLoading ? null : notifier.cargarDatos,
+                          child: state.isLoading
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const FaIcon(FontAwesomeIcons.arrowsRotate, size: 16),
+                        ),
                       ),
-                      onPressed: state.isLoading ? null : notifier.cargarDatos,
                     ),
-                    const SizedBox(width: 16),
-                    ElevatedButton.icon(
-                      icon: const FaIcon(FontAwesomeIcons.plus, size: 16, color: Colors.white),
-                      label: const Text('Agregar', style: TextStyle(color: Colors.white)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    const SizedBox(width: 12),
+                    SizedBox(
+                      height: 46,
+                      child: ElevatedButton.icon(
+                        icon: const FaIcon(FontAwesomeIcons.plus, size: 14, color: Colors.white),
+                        label: const Text(
+                          'Nuevo',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+                          ),
+                          elevation: 0,
+                        ),
+                        onPressed: () => _mostrarFormularioEmpleado(nombresSucursales, notifier),
                       ),
-                      onPressed: () => _mostrarFormularioEmpleado(state.nombresSucursales, notifier),
                     ),
                   ],
                 ),
               ],
             ),
             const SizedBox(height: 32),
-            if (state.errorMessage != null && state.errorMessage!.isNotEmpty)
+            if (state.hasError && !state.isLoading)
               ErrorBanner(
-                message: state.errorMessage!,
+                message: state.error.toString(),
                 onClose: notifier.limpiarError,
               ),
             Expanded(
-              child: state.isLoading
-                  ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
-                  : EmpleadosTable(
-                      empleados: state.empleados,
-                      nombresSucursales: state.nombresSucursales,
-                      rolesCuentas: state.rolesCuentas,
-                      obtenerRolDeEmpleado: _obtenerRolDeEmpleado,
-                      onEmpleadoEdited: (e) => _mostrarFormularioEmpleado(state.nombresSucursales, notifier, e),
-                      onEmpleadoDeleted: (e) => _eliminarEmpleado(e, notifier),
-                      onEmpleadoDetails: (e) => _mostrarDetallesEmpleado(state.nombresSucursales, notifier, e),
-                      onEditCuenta: (e) => _mostrarDialogoCuentaEmpleado(state.rolesCuentas, notifier, e),
-                      onRefresh: notifier.cargarDatos,
-                    ),
+                    child: EmpleadosTable(
+                        empleados: empleados,
+                        nombresSucursales: nombresSucursales,
+                        rolesCuentas: rolesCuentas,
+                        obtenerRolDeEmpleado: _obtenerRolDeEmpleado,
+                        onEmpleadoEdited: (e) => _mostrarFormularioEmpleado(nombresSucursales, notifier, e),
+                        onEmpleadoDeleted: (e) => _eliminarEmpleado(e, notifier),
+                        onEmpleadoDetails: (e) => _mostrarDetallesEmpleado(nombresSucursales, notifier, e),
+                        onEditCuenta: (e) => _mostrarDialogoCuentaEmpleado(rolesCuentas, notifier, e),
+                        onRefresh: notifier.cargarDatos,
+                        isLoading: state.isLoading,
+                      ),
             ),
           ],
         ),

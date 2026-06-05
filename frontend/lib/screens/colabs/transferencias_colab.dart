@@ -477,7 +477,6 @@ class _TransferenciasColabScreenState
                                   color: step['color'] as Color,
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: AppTheme.darkSurface,
                                     width: 2,
                                   ),
                                 ),

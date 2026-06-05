@@ -53,33 +53,6 @@ class _ProductosTableState extends State<ProductosTable> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.isLoading && widget.productos.isEmpty) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _TableHeader(
-            sortBy: widget.sortBy,
-            sortOrder: widget.sortOrder,
-            onSort: widget.onSort,
-          ),
-          const Expanded(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  CircularProgressIndicator(color: AppTheme.primaryColor),
-                  SizedBox(height: 16),
-                  Text(
-                    'Cargando productos...',
-                    style: TextStyle(color: Colors.white54),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      );
-    }
 
     if (widget.productos.isEmpty) {
       return Column(
@@ -92,21 +65,35 @@ class _ProductosTableState extends State<ProductosTable> {
           ),
           Expanded(
             child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  const FaIcon(
-                    FontAwesomeIcons.boxOpen,
-                    color: Colors.white24,
-                    size: 48,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No hay productos para mostrar',
-                    style: TextStyle(color: Colors.white.withAlpha(178)),
-                  ),
-                ],
-              ),
+              child: widget.isLoading
+                  ? const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        CircularProgressIndicator(
+                          color: AppTheme.primaryColor,
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'Cargando inventario...',
+                          style: TextStyle(color: Colors.white54),
+                        ),
+                      ],
+                    )
+                  : Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        const FaIcon(
+                          FontAwesomeIcons.boxOpen,
+                          color: Colors.white24,
+                          size: 48,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No hay productos para mostrar',
+                          style: TextStyle(color: Colors.white.withAlpha(178)),
+                        ),
+                      ],
+                    ),
             ),
           ),
         ],

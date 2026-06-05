@@ -21,46 +21,18 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
   final GlobalKey<PopupMenuButtonState<String>> _filterMenuKey = GlobalKey();
 
   @override
-  void initState() {
-    super.initState();
-    // Cargamos los movimientos cuando se inicializa la pantalla
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _cargarMovimientos();
-    });
-  }
-
-  Future<void> _cargarMovimientos({bool forceRefresh = false}) async {
-    if (!mounted) {
-      return;
-    }
-
-    final notifier = ref.read(transferenciasAdminProvider.notifier);
-    final state = ref.read(transferenciasAdminProvider);
-
-    // Actualizamos los filtros en el notifier
-    notifier.actualizarFiltros(
-      fechaInicio: state.fechaInicio,
-      fechaFin: state.fechaFin,
-    );
-
-    await notifier.cargarTransferencias(
-      forceRefresh: forceRefresh,
-    );
-
-    // Si hay error, mostrar snackbar
-    if (ref.read(transferenciasAdminProvider).errorMessage != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(ref.read(transferenciasAdminProvider).errorMessage!),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-
-  @override
   Widget build(BuildContext context) {
+    ref.listen(transferenciasAdminProvider.select((s) => s.errorMessage), (prev, next) {
+      if (next != null && next.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    });
+
     final state = ref.watch(transferenciasAdminProvider);
     final notifier = ref.read(transferenciasAdminProvider.notifier);
 
@@ -74,30 +46,30 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
-                Row(
+                const Row(
                   children: <Widget>[
-                    const FaIcon(
+                    FaIcon(
                       FontAwesomeIcons.truck,
                       color: Colors.white,
                       size: 24,
                     ),
-                    const SizedBox(width: 16),
+                    SizedBox(width: 16),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        const Text(
-                          'INVENTARIO',
+                        Text(
+                          'MOVIMIENTOS',
                           style: TextStyle(
-                            fontSize: 24,
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
                         ),
                         Text(
-                          'transferencias de inventario',
+                          'movimientos de inventario',
                           style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 12,
+                            color: Colors.white70,
                           ),
                         ),
                       ],
@@ -232,9 +204,9 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
                             vertical: 16, horizontal: 20),
                         child: const Row(
                           children: <Widget>[
-                            // Fechas (25%)
+                            // Fechas (30%)
                             Expanded(
-                              flex: 25,
+                              flex: 30,
                               child: Row(
                                 children: [
                                   FaIcon(
@@ -253,9 +225,9 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
                                 ],
                               ),
                             ),
-                            // Sucursales (30%)
+                            // Sucursales (35%)
                             Expanded(
-                              flex: 30,
+                              flex: 35,
                               child: Text(
                                 'Sucursales',
                                 style: TextStyle(
@@ -264,9 +236,9 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
                                 ),
                               ),
                             ),
-                            // Estado y Progreso (40%)
+                            // Estado y Progreso (20%)
                             Expanded(
-                              flex: 40,
+                              flex: 20,
                               child: Center(
                                 child: Text(
                                   'Estado y Progreso',
@@ -277,15 +249,15 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
                                 ),
                               ),
                             ),
-                            // Acciones (5%)
-                            SizedBox(
-                              width: 32,
+                            // Acciones (15%)
+                            Expanded(
+                              flex: 15,
                               child: Center(
                                 child: Text(
                                   'Acciones',
+                                  textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -397,7 +369,6 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
     }
   }
 
-  // Actualizar el widget de la fila de transferencia
   Widget _buildTransferenciaRow(TransferenciaInventario transferencia) {
     return Container(
       decoration: BoxDecoration(
@@ -407,12 +378,12 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
           ),
         ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
         children: <Widget>[
-          // Fechas (25%)
+          // Fechas (30%)
           Expanded(
-            flex: 25,
+            flex: 30,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -478,9 +449,9 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
             ),
           ),
 
-          // Sucursales (30%)
+          // Sucursales (35%)
           Expanded(
-            flex: 30,
+            flex: 35,
             child: Row(
               children: [
                 Expanded(
@@ -541,32 +512,33 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
             ),
           ),
 
-          // Timeline (40%)
+          // Timeline (20%)
           Expanded(
-            flex: 40,
+            flex: 20,
             child: Center(
               child: _buildCompactTimeline(transferencia),
             ),
           ),
 
-          // Acciones (5%)
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 32,
-            child: IconButton(
-              onPressed: () => _mostrarDetalleMovimiento(transferencia),
-              icon: const FaIcon(
-                FontAwesomeIcons.magnifyingGlass,
-                color: AppTheme.primaryColor,
-                size: 14,
+          // Acciones (15%)
+          Expanded(
+            flex: 15,
+            child: Center(
+              child: IconButton(
+                onPressed: () => _mostrarDetalleMovimiento(transferencia),
+                icon: const FaIcon(
+                  FontAwesomeIcons.magnifyingGlass,
+                  color: AppTheme.primaryColor,
+                  size: 14,
+                ),
+                tooltip: 'Ver detalles',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 32,
+                  minHeight: 32,
+                ),
+                splashRadius: 20,
               ),
-              tooltip: 'Ver detalles',
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(
-                minWidth: 32,
-                minHeight: 32,
-              ),
-              splashRadius: 20,
             ),
           ),
         ],
@@ -684,7 +656,7 @@ class _MovimientosAdminScreenState extends ConsumerState<MovimientosAdminScreen>
                                 color: step['color'] as Color,
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: AppTheme.darkSurface,
+                                  
                                 ),
                               ),
                               child: const FaIcon(

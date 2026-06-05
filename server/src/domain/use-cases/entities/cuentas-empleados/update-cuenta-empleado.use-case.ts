@@ -6,7 +6,7 @@ import { cuentasEmpleadosTable, rolesTable } from '@/db/schema'
 import type { UpdateCuentaEmpleadoDto } from '@/domain/dtos/entities/cuentas-empleados/update-cuenta-empleado.dto'
 import type { NumericIdDto } from '@/domain/dtos/query-params/numeric-id.dto'
 import type { Encryptor, TokenAuthenticator } from '@/types/interfaces'
-import { eq, ilike } from 'drizzle-orm'
+import { and, eq, ilike, ne } from 'drizzle-orm'
 
 export class UpdateCuentaEmpleado {
   private readonly tokenAuthenticator: TokenAuthenticator
@@ -34,7 +34,10 @@ export class UpdateCuentaEmpleado {
         .select({ id: cuentasEmpleadosTable.id })
         .from(cuentasEmpleadosTable)
         .where(
-          ilike(cuentasEmpleadosTable.usuario, updateCuentaEmpleadoDto.usuario)
+          and(
+            ilike(cuentasEmpleadosTable.usuario, updateCuentaEmpleadoDto.usuario),
+            ne(cuentasEmpleadosTable.id, numericIdDto.id)
+          )
         )
 
       if (usersWithSameName.length > 0) {
@@ -59,14 +62,14 @@ export class UpdateCuentaEmpleado {
     }
 
     const hashedPassword =
-      updateCuentaEmpleadoDto.clave !== undefined
-        ? await this.encryptor.hash(updateCuentaEmpleadoDto.clave)
-        : undefined
+      updateCuentaEmpleadoDto.clave === undefined
+        ? undefined
+        : await this.encryptor.hash(updateCuentaEmpleadoDto.clave)
 
     const secret =
-      updateCuentaEmpleadoDto.clave !== undefined
-        ? this.tokenAuthenticator.randomSecret()
-        : undefined
+      updateCuentaEmpleadoDto.clave === undefined
+        ? undefined
+        : this.tokenAuthenticator.randomSecret()
 
     const now = new Date()
 

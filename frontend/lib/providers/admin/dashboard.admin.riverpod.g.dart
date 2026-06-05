@@ -6,7 +6,7 @@ part of 'dashboard.admin.riverpod.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$dashboardAdminHash() => r'd9aa359eb57517fda238f7ddfe221b6c331f60ae';
+String _$dashboardAdminHash() => r'19c88a565d2546b88b450f1e61ed6d1b1e2d8ee1';
 
 /// See also [DashboardAdmin].
 @ProviderFor(DashboardAdmin)

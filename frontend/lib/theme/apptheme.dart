@@ -11,9 +11,9 @@ abstract class AppTheme {
 
   // Colores principales
   static const Color primaryColor = Color(0xFFE31E24);
-  static const Color backgroundColor = Color(0xFF121212);
+  static const Color backgroundColor = Color(0xFF000000);
   static const Color cardColor = Color(0xFF1E1E1E);
-  static const Color scaffoldBackgroundColor = Color(0xFF121212);
+  static const Color scaffoldBackgroundColor = Color(0xFF000000);
   static const Color appBarColor = Color(0xFF1E1E1E);
   
   // Getters Alias semánticos para retrocompatibilidad
@@ -45,6 +45,8 @@ abstract class AppTheme {
         colorScheme: ColorScheme.fromSeed(
           seedColor: primaryColor,
           brightness: Brightness.dark,
+        ).copyWith(
+          surface: cardColor,
         ),
         fontFamily: kFontFamily,
         useMaterial3: true,

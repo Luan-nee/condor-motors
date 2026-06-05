@@ -1,6 +1,7 @@
 import 'dart:async';
+
+import 'package:dio/dio.dart' as dio;
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Widget que muestra el estado de la conexión al servidor
@@ -24,15 +25,23 @@ class _ConnectionStatusWidgetState extends State<ConnectionStatusWidget> {
   int _retryCount = 0;
   final int _maxRetries = 5;
 
+  // Cliente Dio reutilizable para evitar instanciaciones repetitivas y GC/Socket Overhead
+  late final dio.Dio _dioClient;
+
   @override
   void initState() {
     super.initState();
+    _dioClient = dio.Dio(dio.BaseOptions(
+      connectTimeout: const Duration(seconds: 5),
+      receiveTimeout: const Duration(seconds: 5),
+    ));
     _checkConnection();
   }
 
   @override
   void dispose() {
     _retryTimer?.cancel();
+    _dioClient.close();
     super.dispose();
   }
 
@@ -44,14 +53,17 @@ class _ConnectionStatusWidgetState extends State<ConnectionStatusWidget> {
       final String serverUrl =
           prefs.getString('server_url') ?? 'http://localhost:3000';
 
-      // Hacer un ping simple al servidor
-      final http.Response response = await http.get(
-        Uri.parse(serverUrl),
-        headers: <String, String>{'Accept': 'application/json'},
-      ).timeout(const Duration(seconds: 5));
+      // Hacer un ping simple al servidor usando el cliente Dio reutilizado
+      final dio.Response response = await _dioClient.get(
+        serverUrl,
+        options: dio.Options(
+          headers: <String, String>{'Accept': 'application/json'},
+          validateStatus: (status) => status != null, // Aceptar cualquier status code como respuesta del servidor
+        ),
+      );
 
-      // Considerar conectado si obtenemos cualquier respuesta
-      final bool isConnected = response.statusCode > 0;
+      // Considerar conectado si obtenemos cualquier respuesta con status code válido
+      final bool isConnected = response.statusCode != null && response.statusCode! > 0;
 
       if (!_isConnected && isConnected && mounted) {
         setState(() {

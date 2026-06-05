@@ -5,62 +5,22 @@ import 'package:condorsmotors/api/protected/productos.api.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
-import 'package:flutter/foundation.dart';
 
-/// Repositorio para gestionar productos
+/// Repositorio para gestionar productos.
 ///
-/// Esta clase encapsula la lógica de negocio relacionada con productos,
-/// actuando como una capa intermedia entre la UI y la API
-class ProductoRepository implements BaseRepository {
-  /// Instancia singleton del repositorio
+/// Encapsula la lógica de negocio y consumo de APIs de productos,
+/// delegando la autenticación mediante el mixin [AuthDelegator].
+class ProductoRepository with AuthDelegator implements BaseRepository {
   static final ProductoRepository _instance = ProductoRepository._internal();
-
-  /// Getter para la instancia singleton
   static ProductoRepository get instance => _instance;
 
-  /// API de productos
   late final ProductosApi _productosApi;
 
-  /// Constructor privado para el patrón singleton
   ProductoRepository._internal() {
-    try {
-      // Utilizamos la API global inicializada en index.api.dart
-      _productosApi = api_index.api.productos;
-    } catch (e) {
-      debugPrint('Error al obtener ProductosApi: $e');
-      // Si hay un error al acceder a la API global, lanzamos una excepción
-      throw Exception('No se pudo inicializar ProductoRepository: $e');
-    }
+    _productosApi = api_index.api.productos;
   }
 
-  /// Obtiene datos del usuario desde la API centralizada
-  ///
-  /// Ayuda a los providers a acceder a la información del usuario autenticado
-  @override
-  Future<Map<String, dynamic>?> getUserData() =>
-      api_index.AuthManager.getUserData();
-
-  /// Obtiene el ID de la sucursal del usuario actual
-  ///
-  /// Útil para operaciones que requieren el ID de sucursal automáticamente
-  @override
-  Future<String?> getCurrentSucursalId() =>
-      api_index.AuthManager.getCurrentSucursalId();
-
-  /// Obtiene los productos de una sucursal con filtros y paginación
-  ///
-  /// [sucursalId] ID de la sucursal
-  /// [page] Número de página actual
-  /// [pageSize] Tamaño de página
-  /// [search] Texto para buscar productos
-  /// [sortBy] Campo por el cual ordenar
-  /// [order] Tipo de ordenamiento (asc/desc)
-  /// [filter] Filtro adicional
-  /// [filterValue] Valor del filtro
-  /// [filterType] Tipo de filtro
-  /// [stockBajo] Filtrar por stock bajo
-  /// [liquidacion] Filtrar productos en liquidación
-  /// [stock] Filtrar productos por cantidad de stock, formato: {value: número, filterType: 'eq'|'gte'|'lte'|'ne'}
+  /// Obtiene los productos de una sucursal con filtros y paginación.
   Future<PaginatedResponse<Producto>> getProductos({
     required String sucursalId,
     int page = 1,
@@ -76,9 +36,8 @@ class ProductoRepository implements BaseRepository {
     Map<String, dynamic>? stock,
     bool useCache = true,
     bool forceRefresh = false,
-  }) async {
-    try {
-      return await _productosApi.getProductos(
+  }) =>
+      _productosApi.getProductos(
         sucursalId: sucursalId,
         page: page,
         pageSize: pageSize,
@@ -94,310 +53,174 @@ class ProductoRepository implements BaseRepository {
         useCache: useCache,
         forceRefresh: forceRefresh,
       );
-    } catch (e) {
-      debugPrint('Error en ProductoRepository.getProductos: $e');
-      rethrow;
-    }
-  }
 
-  /// Obtiene productos con stock bajo
-  ///
-  /// [sucursalId] ID de la sucursal
-  /// [page] Número de página
-  /// [pageSize] Tamaño de página
+  /// Obtiene productos con stock bajo.
   Future<PaginatedResponse<Producto>> getProductosConStockBajo({
     required String sucursalId,
     int page = 1,
     int pageSize = 20,
     String? sortBy,
     bool useCache = true,
-  }) async {
-    try {
-      return await _productosApi.getProductosConStockBajo(
+  }) =>
+      _productosApi.getProductosConStockBajo(
         sucursalId: sucursalId,
         page: page,
         pageSize: pageSize,
         sortBy: sortBy,
         useCache: useCache,
       );
-    } catch (e) {
-      debugPrint('Error en ProductoRepository.getProductosConStockBajo: $e');
-      rethrow;
-    }
-  }
 
-  /// Obtiene productos agotados (stock = 0)
-  ///
-  /// [sucursalId] ID de la sucursal
-  /// [page] Número de página
-  /// [pageSize] Tamaño de página
+  /// Obtiene productos agotados (stock = 0).
   Future<PaginatedResponse<Producto>> getProductosAgotados({
     required String sucursalId,
     int page = 1,
     int pageSize = 20,
     String? sortBy,
     bool useCache = true,
-  }) async {
-    try {
-      return await _productosApi.getProductosAgotados(
+  }) =>
+      _productosApi.getProductosAgotados(
         sucursalId: sucursalId,
         page: page,
         pageSize: pageSize,
         sortBy: sortBy,
         useCache: useCache,
       );
-    } catch (e) {
-      debugPrint('Error en ProductoRepository.getProductosAgotados: $e');
-      rethrow;
-    }
-  }
 
-  /// Busca productos por nombre
-  ///
-  /// [sucursalId] ID de la sucursal
-  /// [nombre] Término de búsqueda
-  /// [page] Número de página
-  /// [pageSize] Tamaño de página
+  /// Busca productos por coincidencia de nombre.
   Future<PaginatedResponse<Producto>> buscarProductosPorNombre({
     required String sucursalId,
     required String nombre,
     int page = 1,
     int pageSize = 20,
     bool useCache = true,
-  }) async {
-    try {
-      return await _productosApi.buscarProductosPorNombre(
+  }) =>
+      _productosApi.buscarProductosPorNombre(
         sucursalId: sucursalId,
         nombre: nombre,
         page: page,
         pageSize: pageSize,
         useCache: useCache,
       );
-    } catch (e) {
-      debugPrint('Error en ProductoRepository.buscarProductosPorNombre: $e');
-      rethrow;
-    }
-  }
 
-  /// Obtiene un producto específico
-  ///
-  /// [sucursalId] ID de la sucursal
-  /// [productoId] ID del producto
+  /// Obtiene un producto específico por ID.
   Future<Producto?> getProducto({
     required String sucursalId,
     required int productoId,
     bool useCache = true,
-  }) async {
-    try {
-      return await _productosApi.getProducto(
+  }) =>
+      _productosApi.getProducto(
         sucursalId: sucursalId,
         productoId: productoId,
         useCache: useCache,
       );
-    } catch (e) {
-      debugPrint('Error en ProductoRepository.getProducto: $e');
-      return null;
-    }
-  }
 
-  /// Crea un nuevo producto
-  ///
-  /// [sucursalId] ID de la sucursal
-  /// [productoData] Datos del producto
-  /// [fotoFile] Archivo de foto del producto
+  /// Crea un nuevo producto con imagen opcional.
   Future<Producto?> createProducto({
     required String sucursalId,
     required Map<String, dynamic> productoData,
     File? fotoFile,
-  }) async {
-    try {
-      return await _productosApi.createProducto(
+  }) =>
+      _productosApi.createProducto(
         sucursalId: sucursalId,
         productoData: productoData,
         fotoFile: fotoFile,
       );
-    } catch (e) {
-      debugPrint('Error en ProductoRepository.createProducto: $e');
-      return null;
-    }
-  }
 
-  /// Actualiza un producto existente
-  ///
-  /// [sucursalId] ID de la sucursal
-  /// [productoId] ID del producto
-  /// [productoData] Datos actualizados
-  /// [fotoFile] Archivo de foto del producto
+  /// Actualiza un producto existente.
   Future<Producto?> updateProducto({
     required String sucursalId,
     required int productoId,
     required Map<String, dynamic> productoData,
     File? fotoFile,
-  }) async {
-    try {
-      return await _productosApi.updateProducto(
+  }) =>
+      _productosApi.updateProducto(
         sucursalId: sucursalId,
         productoId: productoId,
         productoData: productoData,
         fotoFile: fotoFile,
       );
-    } catch (e) {
-      debugPrint('Error en ProductoRepository.updateProducto: $e');
-      return null;
-    }
-  }
 
-  /// Elimina un producto
-  ///
-  /// [sucursalId] ID de la sucursal
-  /// [productoId] ID del producto
+  /// Elimina un producto de una sucursal.
   Future<bool> deleteProducto({
     required String sucursalId,
     required int productoId,
-  }) async {
-    try {
-      return await _productosApi.deleteProducto(
+  }) =>
+      _productosApi.deleteProducto(
         sucursalId: sucursalId,
         productoId: productoId,
       );
-    } catch (e) {
-      debugPrint('Error en ProductoRepository.deleteProducto: $e');
-      return false;
-    }
-  }
 
-  /// Actualiza el stock de un producto
-  ///
-  /// [sucursalId] ID de la sucursal
-  /// [productoId] ID del producto
-  /// [nuevoStock] Nueva cantidad de stock
+  /// Actualiza el stock directo de un producto.
   Future<Producto?> updateStock({
     required String sucursalId,
     required int productoId,
     required int nuevoStock,
-  }) async {
-    try {
-      return await _productosApi.updateStock(
+  }) =>
+      _productosApi.updateStock(
         sucursalId: sucursalId,
         productoId: productoId,
         nuevoStock: nuevoStock,
       );
-    } catch (e) {
-      debugPrint('Error en ProductoRepository.updateStock: $e');
-      return null;
-    }
-  }
 
-  /// Agrega stock al producto
-  ///
-  /// [sucursalId] ID de la sucursal
-  /// [productoId] ID del producto
-  /// [cantidad] Cantidad a agregar
-  /// [motivo] Motivo del ingreso
+  /// Incrementa el stock de un producto.
   Future<bool> agregarStock({
     required String sucursalId,
     required int productoId,
     required int cantidad,
     String? motivo,
-  }) async {
-    try {
-      return await _productosApi.agregarStock(
+  }) =>
+      _productosApi.agregarStock(
         sucursalId: sucursalId,
         productoId: productoId,
         cantidad: cantidad,
         motivo: motivo,
       );
-    } catch (e) {
-      debugPrint('Error en ProductoRepository.agregarStock: $e');
-      return false;
-    }
-  }
 
-  /// Disminuye stock del producto
-  ///
-  /// [sucursalId] ID de la sucursal
-  /// [productoId] ID del producto
-  /// [cantidad] Cantidad a restar
-  /// [motivo] Motivo de la salida
+  /// Disminuye el stock de un producto.
   Future<bool> disminuirStock({
     required String sucursalId,
     required int productoId,
     required int cantidad,
     String? motivo,
-  }) async {
-    try {
-      return await _productosApi.disminuirStock(
+  }) =>
+      _productosApi.disminuirStock(
         sucursalId: sucursalId,
         productoId: productoId,
         cantidad: cantidad,
         motivo: motivo,
       );
-    } catch (e) {
-      debugPrint('Error en ProductoRepository.disminuirStock: $e');
-      return false;
-    }
-  }
 
-  /// Obtiene productos en liquidación
-  ///
-  /// [sucursalId] ID de la sucursal
-  /// [page] Número de página
-  /// [pageSize] Tamaño de página
+  /// Obtiene productos marcados en liquidación.
   Future<PaginatedResponse<Producto>> getProductosEnLiquidacion({
     required String sucursalId,
     int page = 1,
     int pageSize = 20,
     String? sortBy,
     bool useCache = true,
-  }) async {
-    try {
-      return await _productosApi.getProductosEnLiquidacion(
+  }) =>
+      _productosApi.getProductosEnLiquidacion(
         sucursalId: sucursalId,
         page: page,
         pageSize: pageSize,
         sortBy: sortBy,
         useCache: useCache,
       );
-    } catch (e) {
-      debugPrint('Error en ProductoRepository.getProductosEnLiquidacion: $e');
-      rethrow;
-    }
-  }
 
-  /// Pone o quita un producto de liquidación
-  ///
-  /// [sucursalId] ID de la sucursal
-  /// [productoId] ID del producto
-  /// [enLiquidacion] Si debe estar en liquidación
-  /// [precioLiquidacion] Precio de liquidación
+  /// Configura el estado de liquidación de un producto.
   Future<Producto?> setLiquidacion({
     required String sucursalId,
     required int productoId,
     required bool enLiquidacion,
     double? precioLiquidacion,
-  }) async {
-    try {
-      return await _productosApi.setLiquidacion(
+  }) =>
+      _productosApi.setLiquidacion(
         sucursalId: sucursalId,
         productoId: productoId,
         enLiquidacion: enLiquidacion,
         precioLiquidacion: precioLiquidacion,
       );
-    } catch (e) {
-      debugPrint('Error en ProductoRepository.setLiquidacion: $e');
-      return null;
-    }
-  }
 
-  /// Busca productos por filtros combinados
-  ///
-  /// [sucursalId] ID de la sucursal
-  /// [categoria] Categoría de productos
-  /// [marca] Marca de productos
-  /// [precioMinimo] Precio mínimo
-  /// [precioMaximo] Precio máximo
-  /// [stockPositivo] Solo productos con stock > 0
-  /// [conPromocion] Solo productos con promoción
+  /// Busca productos usando filtros combinados avanzados.
   Future<PaginatedResponse<Producto>> getProductosPorFiltros({
     required String sucursalId,
     String? categoria,
@@ -409,9 +232,8 @@ class ProductoRepository implements BaseRepository {
     int page = 1,
     int pageSize = 20,
     bool useCache = true,
-  }) async {
-    try {
-      return await _productosApi.getProductosPorFiltros(
+  }) =>
+      _productosApi.getProductosPorFiltros(
         sucursalId: sucursalId,
         categoria: categoria,
         marca: marca,
@@ -423,96 +245,48 @@ class ProductoRepository implements BaseRepository {
         pageSize: pageSize,
         useCache: useCache,
       );
-    } catch (e) {
-      debugPrint('Error en ProductoRepository.getProductosPorFiltros: $e');
-      rethrow;
-    }
-  }
 
-  /// Obtiene productos con promociones
-  ///
-  /// [sucursalId] ID de la sucursal
-  /// [tipoPromocion] Tipo de promoción ('cualquiera', 'liquidacion', 'gratis', 'porcentaje')
-  /// [page] Número de página
-  /// [pageSize] Tamaño de página
+  /// Obtiene productos que posean promociones activas.
   Future<PaginatedResponse<Producto>> getProductosConPromocion({
     required String sucursalId,
     String tipoPromocion = 'cualquiera',
     int page = 1,
     int pageSize = 20,
     bool useCache = true,
-  }) async {
-    try {
-      return await _productosApi.getProductosConPromocion(
+  }) =>
+      _productosApi.getProductosConPromocion(
         sucursalId: sucursalId,
         tipoPromocion: tipoPromocion,
         page: page,
         pageSize: pageSize,
         useCache: useCache,
       );
-    } catch (e) {
-      debugPrint('Error en ProductoRepository.getProductosConPromocion: $e');
-      rethrow;
-    }
-  }
 
-  /// Obtiene productos más vendidos
-  ///
-  /// [sucursalId] ID de la sucursal
-  /// [dias] Días a considerar
-  /// [page] Número de página
-  /// [pageSize] Tamaño de página
+  /// Obtiene productos más vendidos.
   Future<PaginatedResponse<Producto>> getProductosMasVendidos({
     required String sucursalId,
     int dias = 30,
     int page = 1,
     int pageSize = 20,
     bool useCache = false,
-  }) async {
-    try {
-      return await _productosApi.getProductosMasVendidos(
+  }) =>
+      _productosApi.getProductosMasVendidos(
         sucursalId: sucursalId,
         dias: dias,
         page: page,
         pageSize: pageSize,
         useCache: useCache,
       );
-    } catch (e) {
-      debugPrint('Error en ProductoRepository.getProductosMasVendidos: $e');
-      rethrow;
-    }
-  }
 
-  /// Invalida la caché de productos
-  void invalidateCache([String? sucursalId]) {
-    _productosApi.invalidateCache(sucursalId);
-  }
+  /// Invalida la caché local de productos.
+  void invalidateCache([String? sucursalId]) =>
+      _productosApi.invalidateCache(sucursalId);
 
-  /// Descarga un reporte Excel con todos los productos y su stock en todas las sucursales
-  ///
-  /// El reporte incluye una hoja principal con todos los productos y su stock por sucursal,
-  /// y hojas adicionales con el detalle de cada sucursal.
-  ///
-  /// @returns bytes del archivo Excel para guardar o mostrar en la interfaz
-  Future<List<int>?> getReporteExcel() async {
-    try {
-      return await _productosApi.getReporteExcel();
-    } catch (e) {
-      debugPrint('Error en ProductoRepository.getReporteExcel: $e');
-      return null;
-    }
-  }
+  /// Descarga un reporte Excel de stock consolidado de productos.
+  Future<List<int>?> getReporteExcel() =>
+      _productosApi.getReporteExcel();
 
-  /// Obtiene productos filtrados por cantidad de stock
-  ///
-  /// [sucursalId] ID de la sucursal
-  /// [stockValue] Valor de stock para comparar
-  /// [filterType] Tipo de comparación: 'eq' (igual), 'gte' (mayor o igual), 'lte' (menor o igual), 'ne' (diferente)
-  /// [page] Número de página
-  /// [pageSize] Tamaño de página
-  /// [sortBy] Campo por el cual ordenar
-  /// [order] Dirección del ordenamiento (asc/desc)
-  /// [useCache] Usar caché
+  /// Obtiene productos comparando cantidades de stock bajo un filtro relacional.
   Future<PaginatedResponse<Producto>> getProductosPorStock({
     required String sucursalId,
     required int stockValue,
@@ -522,41 +296,27 @@ class ProductoRepository implements BaseRepository {
     String? sortBy,
     String? order,
     bool useCache = true,
-  }) async {
-    try {
-      // Validar que filterType sea uno de los valores permitidos
-      if (!['eq', 'gte', 'lte', 'ne'].contains(filterType)) {
-        throw ArgumentError(
-            'filterType debe ser uno de los siguientes valores: eq, gte, lte, ne');
-      }
-
-      return await getProductos(
-        sucursalId: sucursalId,
-        page: page,
-        pageSize: pageSize,
-        sortBy: sortBy ?? 'nombre',
-        order: order ?? 'asc',
-        stock: {
-          'value': stockValue,
-          'filterType': filterType,
-        },
-        useCache: useCache,
-      );
-    } catch (e) {
-      debugPrint('Error en ProductoRepository.getProductosPorStock: $e');
-      rethrow;
+  }) {
+    if (!['eq', 'gte', 'lte', 'ne'].contains(filterType)) {
+      throw ArgumentError(
+          'filterType debe ser uno de los siguientes valores: eq, gte, lte, ne');
     }
+
+    return getProductos(
+      sucursalId: sucursalId,
+      page: page,
+      pageSize: pageSize,
+      sortBy: sortBy ?? 'nombre',
+      order: order ?? 'asc',
+      stock: {
+        'value': stockValue,
+        'filterType': filterType,
+      },
+      useCache: useCache,
+    );
   }
 
-  /// Obtiene productos con stock exactamente igual a un valor
-  ///
-  /// [sucursalId] ID de la sucursal
-  /// [stockValue] Valor exacto de stock a buscar
-  /// [page] Número de página
-  /// [pageSize] Tamaño de página
-  /// [sortBy] Campo por el cual ordenar
-  /// [order] Dirección del ordenamiento (asc/desc)
-  /// [useCache] Usar caché
+  /// Obtiene productos con stock exactamente igual a un valor.
   Future<PaginatedResponse<Producto>> getProductosConStockIgualA({
     required String sucursalId,
     required int stockValue,
@@ -565,9 +325,8 @@ class ProductoRepository implements BaseRepository {
     String? sortBy,
     String? order,
     bool useCache = true,
-  }) async {
-    try {
-      return await getProductosPorStock(
+  }) =>
+      getProductosPorStock(
         sucursalId: sucursalId,
         stockValue: stockValue,
         page: page,
@@ -576,21 +335,8 @@ class ProductoRepository implements BaseRepository {
         order: order,
         useCache: useCache,
       );
-    } catch (e) {
-      debugPrint('Error en ProductoRepository.getProductosConStockIgualA: $e');
-      rethrow;
-    }
-  }
 
-  /// Obtiene productos con stock mayor o igual a un valor
-  ///
-  /// [sucursalId] ID de la sucursal
-  /// [stockValue] Valor mínimo de stock
-  /// [page] Número de página
-  /// [pageSize] Tamaño de página
-  /// [sortBy] Campo por el cual ordenar
-  /// [order] Dirección del ordenamiento (asc/desc)
-  /// [useCache] Usar caché
+  /// Obtiene productos con stock mayor o igual a un valor.
   Future<PaginatedResponse<Producto>> getProductosConStockMayorIgualA({
     required String sucursalId,
     required int stockValue,
@@ -599,34 +345,19 @@ class ProductoRepository implements BaseRepository {
     String? sortBy,
     String? order,
     bool useCache = true,
-  }) async {
-    try {
-      return await getProductosPorStock(
+  }) =>
+      getProductosPorStock(
         sucursalId: sucursalId,
         stockValue: stockValue,
-        filterType: 'gte', // Mayor o igual a
+        filterType: 'gte',
         page: page,
         pageSize: pageSize,
         sortBy: sortBy,
         order: order,
         useCache: useCache,
       );
-    } catch (e) {
-      debugPrint(
-          'Error en ProductoRepository.getProductosConStockMayorIgualA: $e');
-      rethrow;
-    }
-  }
 
-  /// Obtiene productos con stock menor o igual a un valor
-  ///
-  /// [sucursalId] ID de la sucursal
-  /// [stockValue] Valor máximo de stock
-  /// [page] Número de página
-  /// [pageSize] Tamaño de página
-  /// [sortBy] Campo por el cual ordenar
-  /// [order] Dirección del ordenamiento (asc/desc)
-  /// [useCache] Usar caché
+  /// Obtiene productos con stock menor o igual a un valor.
   Future<PaginatedResponse<Producto>> getProductosConStockMenorIgualA({
     required String sucursalId,
     required int stockValue,
@@ -635,34 +366,19 @@ class ProductoRepository implements BaseRepository {
     String? sortBy,
     String? order,
     bool useCache = true,
-  }) async {
-    try {
-      return await getProductosPorStock(
+  }) =>
+      getProductosPorStock(
         sucursalId: sucursalId,
         stockValue: stockValue,
-        filterType: 'lte', // Menor o igual a
+        filterType: 'lte',
         page: page,
         pageSize: pageSize,
         sortBy: sortBy,
         order: order,
         useCache: useCache,
       );
-    } catch (e) {
-      debugPrint(
-          'Error en ProductoRepository.getProductosConStockMenorIgualA: $e');
-      rethrow;
-    }
-  }
 
-  /// Obtiene productos con stock diferente a un valor
-  ///
-  /// [sucursalId] ID de la sucursal
-  /// [stockValue] Valor de stock a excluir
-  /// [page] Número de página
-  /// [pageSize] Tamaño de página
-  /// [sortBy] Campo por el cual ordenar
-  /// [order] Dirección del ordenamiento (asc/desc)
-  /// [useCache] Usar caché
+  /// Obtiene productos con stock diferente a un valor.
   Future<PaginatedResponse<Producto>> getProductosConStockDiferenteA({
     required String sucursalId,
     required int stockValue,
@@ -671,48 +387,32 @@ class ProductoRepository implements BaseRepository {
     String? sortBy,
     String? order,
     bool useCache = true,
-  }) async {
-    try {
-      return await getProductosPorStock(
+  }) =>
+      getProductosPorStock(
         sucursalId: sucursalId,
         stockValue: stockValue,
-        filterType: 'ne', // No igual a
+        filterType: 'ne',
         page: page,
         pageSize: pageSize,
         sortBy: sortBy,
         order: order,
         useCache: useCache,
       );
-    } catch (e) {
-      debugPrint(
-          'Error en ProductoRepository.getProductosConStockDiferenteA: $e');
-      rethrow;
-    }
-  }
 
-  /// Añade un producto existente a una sucursal (POST)
+  /// Asocia un producto existente a otra sucursal.
   Future<Producto?> addProducto({
     required String sucursalId,
     required int productoId,
     required Map<String, dynamic> productoData,
-  }) async {
-    try {
-      return await _productosApi.addProducto(
+  }) =>
+      _productosApi.addProducto(
         sucursalId: sucursalId,
         productoId: productoId,
         productoData: productoData,
       );
-    } catch (e) {
-      debugPrint('Error en ProductoRepository.addProducto: $e');
-      return null;
-    }
-  }
 
-  /// Obtiene la URL de la imagen de un producto de forma centralizada
-  /// Usa la lógica del getter getFotoUrlCompleta del modelo Producto. Si no hay imagen, retorna null.
+  /// Obtiene la URL de la imagen del producto.
   static String? getProductoImageUrl(Producto producto) {
-    // Obtener baseUrl sin /api usando index.api.dart
-    // Importa correctamente: import 'package:condorsmotors/api/index.api.dart' show api;
     final String baseUrl = api_index.api.getBaseUrlSinApi();
     return producto.getFotoUrlCompleta(baseUrl);
   }

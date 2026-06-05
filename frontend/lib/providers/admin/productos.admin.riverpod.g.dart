@@ -6,7 +6,7 @@ part of 'productos.admin.riverpod.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$productosAdminHash() => r'0ff3c6fd139c695e01e4c6a838f345db3a2b4d4e';
+String _$productosAdminHash() => r'dfa69cd4a58f1d013bd607187aeb06ad985b60f3';
 
 /// See also [ProductosAdmin].
 @ProviderFor(ProductosAdmin)

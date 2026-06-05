@@ -6,7 +6,7 @@ part of 'print.riverpod.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$printConfigHash() => r'6c5506df9b75b4264ce1a17722d200869eb36c3e';
+String _$printConfigHash() => r'd58a10c1e6faa3d8e1be839b988e45b8ef53a738';
 
 /// See also [PrintConfig].
 @ProviderFor(PrintConfig)

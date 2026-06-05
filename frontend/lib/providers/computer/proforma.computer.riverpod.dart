@@ -60,8 +60,7 @@ class ProformaComputerState {
   }) {
     return ProformaComputerState(
       currentPage: currentPage ?? this.currentPage,
-      errorMessage: errorMessage ??
-          this.errorMessage, // To clear, we need to pass a specific value, but we can manage it. We'll add error clearing directly.
+      errorMessage: errorMessage ?? this.errorMessage,
       hayNuevasProformas: hayNuevasProformas ?? this.hayNuevasProformas,
       intervaloActualizacion:
           intervaloActualizacion ?? this.intervaloActualizacion,
@@ -79,7 +78,7 @@ class ProformaComputerState {
   }
 }
 
-@Riverpod(keepAlive: true)
+@riverpod
 class ProformaComputer extends _$ProformaComputer {
   final ProformaRepository _proformaRepository = ProformaRepository.instance;
   final SucursalRepository _sucursalRepository = SucursalRepository.instance;
@@ -177,7 +176,6 @@ class ProformaComputer extends _$ProformaComputer {
         return;
       }
 
-      // Usamos la preferencia guardada del usuario como base para la petición
       final int requestPageSize = state.userPreferredPageSize;
 
       final response = await _proformaRepository.getProformas(
@@ -202,7 +200,6 @@ class ProformaComputer extends _$ProformaComputer {
           final bool hasNext = currentPage < totalPages;
           final bool hasPrev = currentPage > 1;
 
-          // Ajuste inteligente
           actualPageSize = pageSize;
           if (total > 0 && total < actualPageSize) {
             actualPageSize = total;
@@ -214,7 +211,7 @@ class ProformaComputer extends _$ProformaComputer {
             currentPage: currentPage > 0 ? currentPage : 1,
             hasNext: hasNext,
             hasPrev: hasPrev,
-            pageSize: actualPageSize, // Incluir el ajuste
+            pageSize: actualPageSize,
           );
         }
 
@@ -230,7 +227,7 @@ class ProformaComputer extends _$ProformaComputer {
           proformas: proformas,
           proformasIds: proformasIds,
           paginacion: paginacionObj,
-          pageSize: actualPageSize, // Mantener el pageSize actual para la UI
+          pageSize: actualPageSize,
           isLoading: false,
           hayNuevasProformas: false,
           selectedProforma: newSelected,
@@ -407,39 +404,21 @@ class ProformaComputer extends _$ProformaComputer {
 
   void _limpiarCaches(String sucursalId) {
     try {
-      _proformaRepository
-        ..invalidateCache(sucursalId)
-        ..invalidateCache();
-      Logger.debug('Caché de proformas invalidado para sucursal $sucursalId');
-
-      _ventaRepository
-        ..invalidateCache(sucursalId)
-        ..invalidateCache();
-      Logger.debug('Caché de ventas invalidado para sucursal $sucursalId');
-
+      _proformaRepository..invalidateCache(sucursalId)..invalidateCache();
+      _ventaRepository..invalidateCache(sucursalId)..invalidateCache();
       _sucursalRepository.invalidateCache();
-      Logger.debug('Caché de sucursales invalidado');
+      Logger.debug('Cachés invalidados para sucursal $sucursalId');
     } catch (e) {
       Logger.error('Error al limpiar cachés: $e');
     }
   }
 
-  Future<void> _recargarDatosCompletos(
-      String sucursalIdStr, int? sucursalId) async {
+  Future<void> _recargarDatosCompletos(String sucursalIdStr, int? sucursalId) async {
     try {
-      await _sucursalRepository.getSucursalData(sucursalIdStr,
-          forceRefresh: true);
-      Logger.debug('Datos de sucursal recargados: $sucursalIdStr');
-
+      await _sucursalRepository.getSucursalData(sucursalIdStr, forceRefresh: true);
       await loadProformas(sucursalId: sucursalId);
-      Logger.debug('Lista de proformas recargada para sucursal $sucursalIdStr');
-
-      await _ventaRepository.getVentas(
-        sucursalId: sucursalIdStr,
-        useCache: false,
-        forceRefresh: true,
-      );
-      Logger.debug('Lista de ventas recargada para sucursal $sucursalIdStr');
+      await _ventaRepository.getVentas(sucursalId: sucursalIdStr, useCache: false, forceRefresh: true);
+      Logger.debug('Datos completos recargados para sucursal $sucursalIdStr');
     } catch (e) {
       Logger.error('Error al recargar datos completos: $e');
       await loadProformas(sucursalId: sucursalId);
@@ -494,28 +473,16 @@ class ProformaComputer extends _$ProformaComputer {
 
   void _iniciarStreamProformas(int? sucursalId) {
     _cerrarStream();
-
     _proformasStreamController = StreamController<List<Proforma>>.broadcast();
     state = state.copyWith(proformasStream: _proformasStreamController?.stream);
-
-    _actualizacionTimer = Timer.periodic(
-      Duration(seconds: state.intervaloActualizacion),
-      (_) async {
-        if (_proformasStreamController?.isClosed ?? true) {
-          return;
-        }
-        final proformas = await _fetchProformasRealTime(sucursalId);
-        _proformasStreamController?.add(proformas);
-      },
-    );
-
-    _proformasSubscription =
-        state.proformasStream?.listen((proformasActualizadas) {
-      _procesarProformasActualizadas(proformasActualizadas, sucursalId);
+    _actualizacionTimer = Timer.periodic(Duration(seconds: state.intervaloActualizacion), (_) async {
+      if (_proformasStreamController?.isClosed ?? true) {
+        return;
+      }
+      _proformasStreamController?.add(await _fetchProformasRealTime(sucursalId));
     });
-
-    Logger.info(
-        'Stream de proformas iniciado (cada ${state.intervaloActualizacion} segundos)');
+    _proformasSubscription = state.proformasStream?.listen((p) => _procesarProformasActualizadas(p, sucursalId));
+    Logger.info('Stream de proformas iniciado (${state.intervaloActualizacion}s)');
   }
 
   void _cerrarStream() {
@@ -525,18 +492,15 @@ class ProformaComputer extends _$ProformaComputer {
     _proformasSubscription = null;
     _proformasStreamController?.close();
     _proformasStreamController = null;
-    state = state.copyWith();
     Logger.info('Stream de proformas cerrado completamente');
   }
 
   void pausarActualizacionesEnTiempoReal() {
     _cerrarStream();
-    Logger.info('Actualizaciones en tiempo real pausadas completamente');
   }
 
   void reanudarActualizacionesEnTiempoReal(int? sucursalId) {
     _iniciarStreamProformas(sucursalId);
-    Logger.info('Actualizaciones en tiempo real reanudadas');
     loadProformas(sucursalId: sucursalId);
   }
 
@@ -564,27 +528,18 @@ class ProformaComputer extends _$ProformaComputer {
     }
   }
 
-  void _procesarProformasActualizadas(
-      List<Proforma> proformasActualizadas, int? sucursalId) {
-    if (proformasActualizadas.isEmpty) {
+  void _procesarProformasActualizadas(List<Proforma> actualizadas, int? sucursalId) {
+    if (actualizadas.isEmpty) {
       return;
     }
-
-    final Set<int> nuevosIds = proformasActualizadas.map((p) => p.id).toSet();
-    final Set<int> proformasNuevas = nuevosIds.difference(state.proformasIds);
-
+    final nuevosIds = actualizadas.map((p) => p.id).toSet();
+    final proformasNuevas = nuevosIds.difference(state.proformasIds);
     if (proformasNuevas.isNotEmpty) {
-      Logger.info(
-          'Se detectaron ${proformasNuevas.length} nuevas proformas en tiempo real!');
-
+      Logger.info('Se detectaron ${proformasNuevas.length} nuevas proformas en tiempo real!');
       for (final id in proformasNuevas) {
-        final nuevaProforma =
-            proformasActualizadas.firstWhere((p) => p.id == id);
-        _notificarNuevaProforma(nuevaProforma);
+        _notificarNuevaProforma(actualizadas.firstWhere((p) => p.id == id));
       }
-
       state = state.copyWith(hayNuevasProformas: true);
-
       loadProformas(sucursalId: sucursalId, silencioso: true);
     }
   }
@@ -592,22 +547,12 @@ class ProformaComputer extends _$ProformaComputer {
   Future<void> _notificarNuevaProforma(Proforma proforma) async {
     try {
       if (proformaNotification.isEnabled) {
-        await proformaNotification.notifyNewProformaPending(
-          proforma,
-          proforma.getNombreCliente(),
-        );
-        Logger.info('Notificación enviada para nueva proforma #${proforma.id}');
+        await proformaNotification.notifyNewProformaPending(proforma, proforma.getNombreCliente());
       }
     } catch (e) {
       Logger.error('Error al enviar notificación: $e');
     }
   }
 
-  Future<String?> _getSucursalId(int? sucursalIdParam) async {
-    if (sucursalIdParam != null) {
-      return sucursalIdParam.toString();
-    } else {
-      return _proformaRepository.getCurrentSucursalId();
-    }
-  }
+  Future<String?> _getSucursalId(int? id) async => id?.toString() ?? _proformaRepository.getCurrentSucursalId();
 }

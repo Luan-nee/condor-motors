@@ -1,8 +1,8 @@
 import 'package:condorsmotors/api/index.api.dart' as api_index;
 import 'package:condorsmotors/api/protected/clientes.api.dart';
 import 'package:condorsmotors/models/cliente.model.dart';
-import 'package:flutter/foundation.dart';
 
+/// Repositorio para gestionar la información de los clientes.
 class ClienteRepository {
   final ClientesApi _api;
 
@@ -11,66 +11,33 @@ class ClienteRepository {
   static final ClienteRepository instance =
       ClienteRepository(api_index.api.clientes);
 
-  /// Busca datos de un cliente por su número de documento
-  Future<Map<String, dynamic>?> buscarClientePorDoc(
-      String numeroDocumento) async {
-    try {
-      debugPrint('Buscando cliente con documento: $numeroDocumento');
-      final datos = await _api.buscarClienteExternoPorDoc(numeroDocumento);
-
-      if (datos != null) {
-        debugPrint('Datos encontrados para documento $numeroDocumento');
-        return {
-          'tipoDocumentoId':
-              datos['tipoDocumentoId'] ?? 2, // Por defecto DNI si no viene
-          'numeroDocumento': datos['numeroDocumento'],
-          'denominacion': datos['denominacion'],
-          'direccion': datos['direccion'] ?? '',
-        };
-      }
-
+  /// Busca datos de un cliente por su número de documento.
+  Future<Map<String, dynamic>?> buscarClientePorDoc(String numeroDocumento) async {
+    final datos = await _api.buscarClienteExternoPorDoc(numeroDocumento);
+    if (datos == null) {
       return null;
-    } catch (e) {
-      debugPrint('Error al buscar cliente por documento: $e');
-      rethrow;
     }
+    return {
+      'tipoDocumentoId': datos['tipoDocumentoId'] ?? 2, // Por defecto DNI
+      'numeroDocumento': datos['numeroDocumento'],
+      'denominacion': datos['denominacion'],
+      'direccion': datos['direccion'] ?? '',
+    };
   }
 
-  /// Crea un nuevo cliente
-  Future<Cliente> crearCliente(Map<String, dynamic> clienteData) async {
-    try {
-      debugPrint('Creando nuevo cliente: ${clienteData['denominacion']}');
-      return await _api.createCliente(clienteData);
-    } catch (e) {
-      debugPrint('Error al crear cliente: $e');
-      rethrow;
-    }
-  }
+  /// Crea un nuevo cliente.
+  Future<Cliente> crearCliente(Map<String, dynamic> clienteData) =>
+      _api.createCliente(clienteData);
 
-  /// Obtiene un cliente por su ID
-  Future<Cliente> obtenerCliente(String clienteId) async {
-    try {
-      debugPrint('Obteniendo cliente con ID: $clienteId');
-      return await _api.getCliente(clienteId);
-    } catch (e) {
-      debugPrint('Error al obtener cliente: $e');
-      rethrow;
-    }
-  }
+  /// Obtiene un cliente por su ID.
+  Future<Cliente> obtenerCliente(String clienteId) =>
+      _api.getCliente(clienteId);
 
-  /// Obtiene un cliente por su número de documento
-  Future<Cliente?> obtenerClientePorDoc(String numeroDocumento) async {
-    try {
-      debugPrint('Obteniendo cliente con documento: $numeroDocumento');
-      return await _api.getClienteByDoc(numeroDocumento);
-    } catch (e) {
-      debugPrint('Error al obtener cliente por documento: $e');
-      rethrow;
-    }
-  }
+  /// Obtiene un cliente por su número de documento.
+  Future<Cliente?> obtenerClientePorDoc(String numeroDocumento) =>
+      _api.getClienteByDoc(numeroDocumento);
 
-  /// Obtiene la lista de clientes
-  Future<List<Cliente>> getClientes({int? pageSize, String? sortBy}) {
-    return _api.getClientes(pageSize: pageSize, sortBy: sortBy);
-  }
+  /// Obtiene la lista de clientes.
+  Future<List<Cliente>> getClientes({int? pageSize, String? sortBy}) =>
+      _api.getClientes(pageSize: pageSize, sortBy: sortBy);
 }

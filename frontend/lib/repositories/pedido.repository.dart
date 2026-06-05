@@ -1,97 +1,34 @@
 import 'package:condorsmotors/api/index.api.dart' as api_index;
 import 'package:condorsmotors/models/pedido.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
-import 'package:flutter/foundation.dart';
 
-/// Repositorio para gestionar pedidos exclusivos
+/// Repositorio para gestionar pedidos exclusivos.
 ///
-/// Actúa como intermediario entre la UI y la API
-class PedidoRepository implements BaseRepository {
-  /// Instancia singleton del repositorio
+/// Encapsula la lógica de negocio y consumo de APIs de pedidos exclusivos,
+/// delegando la autenticación mediante el mixin [AuthDelegator].
+class PedidoRepository with AuthDelegator implements BaseRepository {
   static final PedidoRepository _instance = PedidoRepository._internal();
-
-  /// Getter para la instancia singleton
   static PedidoRepository get instance => _instance;
 
-  /// Constructor privado para el patrón singleton
   PedidoRepository._internal();
 
-  /// Obtiene datos del usuario desde la API centralizada
-  @override
-  Future<Map<String, dynamic>?> getUserData() =>
-      api_index.AuthManager.getUserData();
+  /// Obtiene todos los pedidos exclusivos filtrados opcionalmente por estado.
+  Future<List<PedidoExclusivo>> getPedidosExclusivos({String? filtroEstado}) =>
+      api_index.api.pedidos.exclusivos.getPedidosExclusivos();
 
-  /// Obtiene el ID de la sucursal del usuario actual
-  ///
-  /// Útil para operaciones que requieren el ID de sucursal automáticamente
-  @override
-  Future<String?> getCurrentSucursalId() =>
-      api_index.AuthManager.getCurrentSucursalId();
+  /// Obtiene un pedido exclusivo por su ID.
+  Future<PedidoExclusivo> getPedidoExclusivo(int id) =>
+      api_index.api.pedidos.exclusivos.getPedidoExclusivo(id);
 
-  /// Obtiene todos los pedidos exclusivos
-  ///
-  /// [filtroEstado] Opcional, filtra por estado de pedido
-  Future<List<PedidoExclusivo>> getPedidosExclusivos(
-      {String? filtroEstado}) async {
-    try {
-      final pedidos =
-          await api_index.api.pedidos.exclusivos.getPedidosExclusivos();
-      return pedidos;
-    } catch (e) {
-      debugPrint('Error en PedidoRepository.getPedidosExclusivos: $e');
-      rethrow;
-    }
-  }
+  /// Crea un nuevo pedido exclusivo.
+  Future<PedidoExclusivo> createPedidoExclusivo(PedidoExclusivo pedido) =>
+      api_index.api.pedidos.exclusivos.createPedidoExclusivo(pedido);
 
-  /// Obtiene un pedido exclusivo por su ID
-  ///
-  /// [id] ID del pedido a obtener
-  Future<PedidoExclusivo> getPedidoExclusivo(int id) async {
-    try {
-      return await api_index.api.pedidos.exclusivos.getPedidoExclusivo(id);
-    } catch (e) {
-      debugPrint('Error en PedidoRepository.getPedidoExclusivo: $e');
-      rethrow;
-    }
-  }
+  /// Actualiza un pedido exclusivo existente.
+  Future<PedidoExclusivo> updatePedidoExclusivo(int id, PedidoExclusivo pedido) =>
+      api_index.api.pedidos.exclusivos.updatePedidoExclusivo(id, pedido);
 
-  /// Crea un nuevo pedido exclusivo
-  ///
-  /// [pedido] Datos del pedido a crear
-  Future<PedidoExclusivo> createPedidoExclusivo(PedidoExclusivo pedido) async {
-    try {
-      return await api_index.api.pedidos.exclusivos
-          .createPedidoExclusivo(pedido);
-    } catch (e) {
-      debugPrint('Error en PedidoRepository.createPedidoExclusivo: $e');
-      rethrow;
-    }
-  }
-
-  /// Actualiza un pedido exclusivo existente
-  ///
-  /// [id] ID del pedido a actualizar
-  /// [pedido] Nuevos datos del pedido
-  Future<PedidoExclusivo> updatePedidoExclusivo(
-      int id, PedidoExclusivo pedido) async {
-    try {
-      return await api_index.api.pedidos.exclusivos
-          .updatePedidoExclusivo(id, pedido);
-    } catch (e) {
-      debugPrint('Error en PedidoRepository.updatePedidoExclusivo: $e');
-      rethrow;
-    }
-  }
-
-  /// Elimina un pedido exclusivo
-  ///
-  /// [id] ID del pedido a eliminar
-  Future<bool> deletePedidoExclusivo(int id) async {
-    try {
-      return await api_index.api.pedidos.exclusivos.deletePedidoExclusivo(id);
-    } catch (e) {
-      debugPrint('Error en PedidoRepository.deletePedidoExclusivo: $e');
-      rethrow;
-    }
-  }
+  /// Elimina un pedido exclusivo.
+  Future<bool> deletePedidoExclusivo(int id) =>
+      api_index.api.pedidos.exclusivos.deletePedidoExclusivo(id);
 }

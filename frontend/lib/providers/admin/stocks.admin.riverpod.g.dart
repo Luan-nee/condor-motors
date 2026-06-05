@@ -6,7 +6,7 @@ part of 'stocks.admin.riverpod.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$stocksAdminHash() => r'8fd2137501406a2e186c2c6634b24c2420d80884';
+String _$stocksAdminHash() => r'c9f726a0b0a1fe508d288c9a27cc68abd433378e';
 
 /// See also [StocksAdmin].
 @ProviderFor(StocksAdmin)

@@ -8,7 +8,6 @@ import 'package:condorsmotors/screens/admin/widgets/producto/producto_detalle_di
 import 'package:condorsmotors/screens/admin/widgets/producto/productos_form.dart';
 import 'package:condorsmotors/screens/admin/widgets/producto/productos_table.dart';
 import 'package:condorsmotors/screens/admin/widgets/productos_search_bar.dart';
-import 'package:condorsmotors/screens/admin/widgets/slide_sucursal.dart';
 import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:condorsmotors/widgets/paginador.dart';
 import 'package:condorsmotors/widgets/toast_manager.dart';
@@ -158,149 +157,17 @@ class _ProductosAdminScreenState extends ConsumerState<ProductosAdminScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Escuchamos errores de forma aislada para mostrar Toasts sin reconstruir todo
-    ref.listen(productosAdminProvider.select((s) => s.errorMessage), (
-      previous,
-      next,
-    ) {
-      if (next != null && next.isNotEmpty) {
-        context.showErrorToast(next);
-      }
-    });
-
-    final selectedSucursal = ref.watch(
-      productosAdminProvider.select((s) => s.selectedSucursal),
-    );
-    final isLoadingSucursales = ref.watch(
-      productosAdminProvider.select((s) => s.isLoadingSucursales),
-    );
-    final totalPages = ref.watch(
-      productosAdminProvider.select((s) => s.paginacion.totalPages),
-    );
-    final isLoading = ref.watch(
-      productosAdminProvider.select((s) => s.isLoading),
-    );
-    final productos = ref.watch(
-      productosAdminProvider.select((s) => s.productosFiltrados),
-    );
-    final errorMessage = ref.watch(
-      productosAdminProvider.select((s) => s.errorMessage),
-    );
-    final sortBy = ref.watch(productosAdminProvider.select((s) => s.sortBy));
-    final sortOrder = ref.watch(productosAdminProvider.select((s) => s.order));
-
-    final notifier = ref.read(productosAdminProvider.notifier);
-
-    // Mantenemos una key estable para evitar destruir el estado interno de la tabla durante la navegación
-    final String baseKey =
-        'productos_${selectedSucursal?.id}_page_${ref.read(productosAdminProvider).currentPage}';
-
-    return Scaffold(
-      body: Row(
+    return const Scaffold(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
+          _ProductosAdminHeader(),
           Expanded(
-            flex: 75,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                const _ProductosAdminHeader(),
-                Expanded(
-                  child: Builder(
-                    builder: (context) {
-                      if (selectedSucursal == null && !isLoadingSucursales) {
-                        return _buildEmptyState(isLoadingSucursales);
-                      }
-
-                      if (errorMessage != null &&
-                          productos.isEmpty &&
-                          !isLoading) {
-                        return _buildErrorState(errorMessage, notifier);
-                      }
-
-                      return Column(
-                        children: <Widget>[
-                          Expanded(
-                            child: RepaintBoundary(
-                              child: ProductosTable(
-                                key: ValueKey<String>(baseKey),
-                                productos: productos,
-                                sucursales: ref
-                                    .read(productosAdminProvider)
-                                    .sucursales,
-                                onEdit: _showProductDialog,
-                                onViewDetails: _showProductoDetalleDialog,
-                                onSort: notifier.ordenarPor,
-                                sortBy: sortBy,
-                                sortOrder: sortOrder,
-                                isLoading: isLoading,
-                                onEnable: (producto) async {
-                                  final currentContext = context;
-                                  final scaffoldMessenger =
-                                      ScaffoldMessenger.of(context);
-                                  await ProductoAgregarDialog.show(
-                                    currentContext,
-                                    producto: producto,
-                                    sucursalNombre: selectedSucursal?.nombre,
-                                    onSave:
-                                        (
-                                          Map<String, dynamic> productoData,
-                                        ) async {
-                                          await notifier.habilitarProducto(
-                                            producto.id,
-                                            productoData,
-                                          );
-                                          scaffoldMessenger.showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                'Producto habilitado exitosamente',
-                                              ),
-                                              backgroundColor: Colors.green,
-                                            ),
-                                          );
-                                        },
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                          if (totalPages > 0) const _ProductosAdminPagination(),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-              ],
+            child: RepaintBoundary(
+              child: _ProductosAdminTable(),
             ),
           ),
-          const _ProductosAdminSidebar(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(bool isLoadingSucursales) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (isLoadingSucursales)
-            const CircularProgressIndicator(color: AppTheme.primaryColor)
-          else
-            const FaIcon(
-              FontAwesomeIcons.warehouse,
-              color: Colors.white54,
-              size: 48,
-            ),
-          const SizedBox(height: 16),
-          Text(
-            isLoadingSucursales
-                ? 'Cargando sucursales...'
-                : 'Seleccione una sucursal para ver los productos',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.7),
-              fontSize: 16,
-            ),
-          ),
+          _ProductosAdminPagination(),
         ],
       ),
     );
@@ -356,7 +223,6 @@ class _ProductosAdminHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Solo se reconstruye si el buscador o las acciones cambian
     return ProductosAdminSearchBar(
       onExport: () => context
           .findAncestorStateOfType<_ProductosAdminScreenState>()
@@ -364,6 +230,84 @@ class _ProductosAdminHeader extends ConsumerWidget {
       onNew: () => context
           .findAncestorStateOfType<_ProductosAdminScreenState>()
           ?._showProductDialog(null),
+    );
+  }
+}
+
+class _ProductosAdminTable extends ConsumerWidget {
+  const _ProductosAdminTable();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(productosAdminProvider.select((s) => s.errorMessage), (
+      previous,
+      next,
+    ) {
+      if (next != null && next.isNotEmpty) {
+        context.showErrorToast(next);
+      }
+    });
+
+    final selectedSucursal = ref.watch(
+      productosAdminProvider.select((s) => s.selectedSucursal),
+    );
+    final isLoading = ref.watch(
+      productosAdminProvider.select((s) => s.isLoading),
+    );
+    final productos = ref.watch(
+      productosAdminProvider.select((s) => s.productosFiltrados),
+    );
+    final errorMessage = ref.watch(
+      productosAdminProvider.select((s) => s.errorMessage),
+    );
+    final sortBy = ref.watch(productosAdminProvider.select((s) => s.sortBy));
+    final sortOrder = ref.watch(productosAdminProvider.select((s) => s.order));
+
+    final notifier = ref.read(productosAdminProvider.notifier);
+    final parentState =
+        context.findAncestorStateOfType<_ProductosAdminScreenState>();
+
+    if (errorMessage != null && productos.isEmpty && !isLoading) {
+      return parentState?._buildErrorState(errorMessage, notifier) ??
+          const SizedBox.shrink();
+    }
+
+    final String baseKey =
+        'productos_${(isLoading || selectedSucursal == null) ? "loading" : selectedSucursal.id}_page_${ref.read(productosAdminProvider).currentPage}';
+
+    return ProductosTable(
+      key: ValueKey<String>(baseKey),
+      productos: productos,
+      sucursales: ref.read(productosAdminProvider).sucursales,
+      onEdit: (p) => parentState?._showProductDialog(p),
+      onViewDetails: (p) => parentState?._showProductoDetalleDialog(p),
+      onSort: notifier.ordenarPor,
+      sortBy: sortBy,
+      sortOrder: sortOrder,
+      isLoading: isLoading || selectedSucursal == null,
+      onEnable: (producto) async {
+        final currentContext = context;
+        final scaffoldMessenger = ScaffoldMessenger.of(context);
+        await ProductoAgregarDialog.show(
+          currentContext,
+          producto: producto,
+          sucursalNombre: selectedSucursal?.nombre ?? '',
+          onSave: (Map<String, dynamic> productoData) async {
+            await notifier.habilitarProducto(
+              producto.id,
+              productoData,
+            );
+            scaffoldMessenger.showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Producto habilitado exitosamente',
+                ),
+                backgroundColor: Colors.green,
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -378,48 +322,24 @@ class _ProductosAdminPagination extends ConsumerWidget {
     );
     final notifier = ref.read(productosAdminProvider.notifier);
 
+    if (paginacion.totalPages == 0) {
+      return const SizedBox.shrink();
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
-      child: Paginador(
-        paginacion: paginacion,
-        onPageChanged: notifier.cambiarPagina,
-        onPageSizeChanged: notifier.cambiarTamanioPagina,
-      ),
-    );
-  }
-}
-
-class _ProductosAdminSidebar extends ConsumerWidget {
-  const _ProductosAdminSidebar();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sucursales = ref.watch(
-      productosAdminProvider.select((s) => s.sucursales),
-    );
-    final selectedSucursal = ref.watch(
-      productosAdminProvider.select((s) => s.selectedSucursal),
-    );
-    final isLoadingSucursales = ref.watch(
-      productosAdminProvider.select((s) => s.isLoadingSucursales),
-    );
-    final notifier = ref.read(productosAdminProvider.notifier);
-
-    return Container(
-      width: 350,
-      decoration: BoxDecoration(
-        color: AppTheme.darkSurface,
-        border: Border(
-          left: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+      child: Center(
+        child: Paginador(
+          paginacion: paginacion,
+          onPageChanged: notifier.cambiarPagina,
+          onPageSizeChanged: notifier.cambiarTamanioPagina,
+          backgroundColor: AppTheme.surfaceColor,
+          textColor: Colors.white,
+          accentColor: AppTheme.primaryColor,
         ),
       ),
-      child: SlideSucursal(
-        sucursales: sucursales,
-        sucursalSeleccionada: selectedSucursal,
-        onSucursalSelected: notifier.seleccionarSucursal,
-        onRecargarSucursales: notifier.cargarSucursales,
-        isLoading: isLoadingSucursales,
-      ),
     );
   }
 }
+
+

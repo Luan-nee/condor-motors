@@ -28,7 +28,6 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
 
   // Estado de la lista
   bool _isListScrollable = false;
-  bool _isInitialized = false;
 
   @override
   void initState() {
@@ -47,18 +46,6 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
 
     // Escuchar cambios en el scroll para mostrar botón "ir arriba"
     _scrollController.addListener(_onScroll);
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_isInitialized) {
-      // Inicializar de manera asíncrona
-      Future<void>.microtask(() async {
-        await ref.read(sucursalAdminProvider.notifier).inicializar();
-      });
-      _isInitialized = true;
-    }
   }
 
   void _onScroll() {
@@ -121,9 +108,13 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
         return Dialog(
           insetPadding: const EdgeInsets.all(16),
           backgroundColor: Colors.transparent,
-          child: SizedBox(
-            width: MediaQuery.of(context).size.width * 0.9,
-            height: MediaQuery.of(context).size.height * 0.8,
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: 950,
+              maxHeight: MediaQuery.of(context).size.height < 580
+                  ? MediaQuery.of(context).size.height * 0.95
+                  : 540,
+            ),
             child: SucursalForm(
               sucursal: sucursal,
               onSave: _guardarSucursal,
@@ -467,8 +458,8 @@ class _SucursalAdminScreenState extends ConsumerState<SucursalAdminScreen>
         return Dialog(
           backgroundColor: Colors.transparent,
           insetPadding: const EdgeInsets.all(16),
-          child: SizedBox(
-            width: MediaQuery.of(context).size.width * 0.9,
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 440), // Ancho máximo controlado y responsivo
             child: SucursalDetalles(
               sucursal: sucursal,
               onEdit: () {

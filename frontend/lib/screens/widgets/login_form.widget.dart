@@ -257,28 +257,35 @@ class _LoginFormState extends State<LoginForm> {
                     onFieldSubmitted: (_) => _submit(),
                   ),
 
-                  // Advertencia de Bloq Mayús activo
-                  if (_capsLockOn)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Row(
-                        children: <Widget>[
-                          const Icon(
-                            Icons.warning_amber_rounded,
-                            color: AppTheme.primaryColor,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Bloq Mayús está activado',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.7),
-                              fontSize: 12,
+                  // Advertencia de Bloq Mayús activo con espacio reservado y animación Fade
+                  SizedBox(
+                    height: 28,
+                    child: AnimatedOpacity(
+                      opacity: _capsLockOn ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeInOut,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Row(
+                          children: <Widget>[
+                            const Icon(
+                              Icons.warning_amber_rounded,
+                              color: AppTheme.primaryColor,
+                              size: 16,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Text(
+                              'Bloq Mayús está activado',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.7),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
+                  ),
 
                   // Opciones de inicio de sesión (Recordar y Permanecer conectado)
                   Column(

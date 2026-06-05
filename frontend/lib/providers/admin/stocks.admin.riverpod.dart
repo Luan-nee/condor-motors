@@ -54,6 +54,7 @@ class StocksAdminState {
     int? userPreferredPageSize,
     bool clearSelectedSucursal = false,
     bool clearFiltroEstadoStock = false,
+    bool clearError = false,
   }) {
     return StocksAdminState(
       isLoadingSucursales: isLoadingSucursales ?? this.isLoadingSucursales,
@@ -61,7 +62,7 @@ class StocksAdminState {
       sucursales: sucursales ?? this.sucursales,
       selectedSucursal: clearSelectedSucursal ? null : (selectedSucursal ?? this.selectedSucursal),
       paginatedProductos: paginatedProductos ?? this.paginatedProductos,
-      errorMessage: errorMessage ?? this.errorMessage,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       searchQuery: searchQuery ?? this.searchQuery,
       currentPage: currentPage ?? this.currentPage,
       pageSize: pageSize ?? this.pageSize,
@@ -80,8 +81,39 @@ class StocksAdmin extends _$StocksAdmin {
   @override
   StocksAdminState build() {
     _stockRepository = StockRepository.instance;
-    Future.microtask(cargarSucursales);
+    Future.microtask(inicializar);
     return StocksAdminState();
+  }
+
+  Future<void> inicializar() async {
+    state = state.copyWith(isLoadingSucursales: true);
+    try {
+      final sucursales = await _stockRepository.getSucursales();
+
+      Sucursal? principal;
+      if (sucursales.isNotEmpty && state.selectedSucursal == null) {
+        principal = sucursales.firstWhere(
+          (s) => s.nombre.toLowerCase().contains('principal'),
+          orElse: () => sucursales.first,
+        );
+      }
+
+      state = state.copyWith(
+        sucursales: sucursales,
+        selectedSucursal: principal ?? state.selectedSucursal,
+        isLoadingSucursales: false,
+        isLoadingProductos: principal != null,
+      );
+
+      if (principal != null) {
+        await cargarProductos();
+      }
+    } catch (e) {
+      state = state.copyWith(
+        errorMessage: 'Error al cargar sucursales: $e',
+        isLoadingSucursales: false,
+      );
+    }
   }
 
   Future<void> cargarSucursales() async {
@@ -92,13 +124,6 @@ class StocksAdmin extends _$StocksAdmin {
         sucursales: sucursales,
         isLoadingSucursales: false,
       );
-      if (sucursales.isNotEmpty && state.selectedSucursal == null) {
-        final principal = sucursales.firstWhere(
-          (s) => s.nombre.toLowerCase().contains('principal'),
-          orElse: () => sucursales.first,
-        );
-        seleccionarSucursal(principal);
-      }
     } catch (e) {
       state = state.copyWith(
         errorMessage: 'Error al cargar sucursales: $e',
@@ -229,6 +254,6 @@ class StocksAdmin extends _$StocksAdmin {
   }
 
   void limpiarError() {
-    state = state.copyWith();
+    state = state.copyWith(clearError: true);
   }
 }

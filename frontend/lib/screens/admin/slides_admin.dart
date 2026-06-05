@@ -1,5 +1,7 @@
-// Providers Admin individuales
-
+import 'package:condorsmotors/models/sucursal.model.dart';
+import 'package:condorsmotors/providers/admin/productos.admin.riverpod.dart';
+import 'package:condorsmotors/providers/admin/stocks.admin.riverpod.dart';
+import 'package:condorsmotors/providers/admin/ventas.admin.riverpod.dart';
 import 'package:condorsmotors/providers/auth.riverpod.dart';
 import 'package:condorsmotors/screens/admin/categorias_admin.dart';
 import 'package:condorsmotors/screens/admin/dashboard_admin.dart';
@@ -12,6 +14,7 @@ import 'package:condorsmotors/screens/admin/stocks_admin.dart';
 import 'package:condorsmotors/screens/admin/sucursal_admin.dart';
 import 'package:condorsmotors/screens/admin/transferencias_admin.dart';
 import 'package:condorsmotors/screens/admin/ventas_admin.dart';
+import 'package:condorsmotors/screens/admin/widgets/slide_sucursal.dart';
 import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -317,20 +320,20 @@ class _SlidesAdminScreenState extends ConsumerState<SlidesAdminScreen> {
                       isSelected: _selectedIndex == 2 && _selectedSubIndex == 4,
                     ),
                     _buildSubMenuItem(
+                      'Movimientos',
+                      onTap: () => setState(() {
+                        _selectedIndex = 2;
+                        _selectedSubIndex = 2;
+                      }),
+                      isSelected: _selectedIndex == 2 && _selectedSubIndex == 2,
+                    ),
+                    _buildSubMenuItem(
                       'Categorías',
                       onTap: () => setState(() {
                         _selectedIndex = 2;
                         _selectedSubIndex = 0;
                       }),
                       isSelected: _selectedIndex == 2 && _selectedSubIndex == 0,
-                    ),
-                    _buildSubMenuItem(
-                      'Movimiento de inventario',
-                      onTap: () => setState(() {
-                        _selectedIndex = 2;
-                        _selectedSubIndex = 2;
-                      }),
-                      isSelected: _selectedIndex == 2 && _selectedSubIndex == 2,
                     ),
                     _buildSubMenuItem(
                       'Marcas',
@@ -415,7 +418,100 @@ class _SlidesAdminScreenState extends ConsumerState<SlidesAdminScreen> {
 
           // Contenido principal (carga perezosa)
           Expanded(child: _buildMainContent()),
+          
+          if ((_selectedIndex == 2 && (_selectedSubIndex == 1 || _selectedSubIndex == 4)) || _selectedIndex == 1)
+            _SharedAdminSidebar(selectedIndex: _selectedIndex, subIndex: _selectedSubIndex),
         ],
+      ),
+    );
+  }
+}
+
+class _SharedAdminSidebar extends ConsumerWidget {
+  final int selectedIndex;
+  final int subIndex;
+  
+  const _SharedAdminSidebar({
+    required this.selectedIndex,
+    required this.subIndex,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (selectedIndex == 1) {
+      // Ventas y facturación -> Escucha ventasAdminProvider
+      final sucursales = ref.watch(ventasAdminProvider.select((s) => s.sucursales));
+      final selected = ref.watch(ventasAdminProvider.select((s) => s.selectedSucursal));
+      final isLoading = ref.watch(ventasAdminProvider.select((s) => s.isLoadingSucursales));
+      final notifier = ref.read(ventasAdminProvider.notifier);
+
+      return _buildSidebarContainer(
+        sucursales: sucursales,
+        selected: selected,
+        onSelected: notifier.seleccionarSucursal,
+        onRecargar: notifier.cargarSucursales,
+        isLoading: isLoading,
+      );
+    } else if (selectedIndex == 2) {
+      if (subIndex == 1) {
+        // Control de stock -> Escucha stocksAdminProvider
+        final sucursales = ref.watch(stocksAdminProvider.select((s) => s.sucursales));
+        final selected = ref.watch(stocksAdminProvider.select((s) => s.selectedSucursal));
+        final isLoading = ref.watch(stocksAdminProvider.select((s) => s.isLoadingSucursales));
+        final notifier = ref.read(stocksAdminProvider.notifier);
+
+        return _buildSidebarContainer(
+          sucursales: sucursales,
+          selected: selected,
+          onSelected: notifier.seleccionarSucursal,
+          onRecargar: notifier.cargarSucursales,
+          isLoading: isLoading,
+        );
+      } else {
+        // Productos -> Escucha productosAdminProvider
+        final sucursales = ref.watch(productosAdminProvider.select((s) => s.sucursales));
+        final selected = ref.watch(productosAdminProvider.select((s) => s.selectedSucursal));
+        final isLoading = ref.watch(productosAdminProvider.select((s) => s.isLoadingSucursales));
+        final notifier = ref.read(productosAdminProvider.notifier);
+
+        return _buildSidebarContainer(
+          sucursales: sucursales,
+          selected: selected,
+          onSelected: notifier.seleccionarSucursal,
+          onRecargar: notifier.cargarSucursales,
+          isLoading: isLoading,
+        );
+      }
+    }
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildSidebarContainer({
+    required List<Sucursal> sucursales,
+    required Sucursal? selected,
+    required Function(Sucursal) onSelected,
+    required Function() onRecargar,
+    required bool isLoading,
+  }) {
+    return Container(
+      width: 350,
+      decoration: BoxDecoration(
+        color: AppTheme.darkSurface,
+        border: Border(left: BorderSide(color: Colors.white.withAlpha(25))),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(51),
+            blurRadius: 8,
+            offset: const Offset(-2, 0),
+          ),
+        ],
+      ),
+      child: SlideSucursal(
+        sucursales: sucursales,
+        sucursalSeleccionada: selected,
+        onSucursalSelected: onSelected,
+        onRecargarSucursales: onRecargar,
+        isLoading: isLoading,
       ),
     );
   }

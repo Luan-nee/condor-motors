@@ -1,7 +1,16 @@
-import 'dart:async'; // Analyzer trigger
+import 'dart:async';
 
 import 'package:condorsmotors/api/index.api.dart' as api_index;
 import 'package:condorsmotors/models/auth.model.dart';
+import 'package:condorsmotors/providers/admin/productos.admin.riverpod.dart';
+import 'package:condorsmotors/providers/admin/settings.admin.riverpod.dart';
+import 'package:condorsmotors/providers/admin/stocks.admin.riverpod.dart';
+import 'package:condorsmotors/providers/admin/ventas.admin.riverpod.dart';
+import 'package:condorsmotors/providers/colabs/ventas.colab.riverpod.dart';
+import 'package:condorsmotors/providers/computer/dash.computer.riverpod.dart';
+import 'package:condorsmotors/providers/computer/proforma.computer.riverpod.dart';
+import 'package:condorsmotors/providers/computer/ventas.computer.riverpod.dart';
+import 'package:condorsmotors/providers/print.riverpod.dart';
 import 'package:condorsmotors/utils/role_utils.dart' as role_utils;
 import 'package:condorsmotors/utils/secure_storage_utils.dart';
 import 'package:flutter/material.dart';
@@ -12,19 +21,15 @@ part 'auth.riverpod.g.dart';
 
 @Riverpod(keepAlive: true)
 class Auth extends _$Auth {
-  // Flags para centralizar la verificación de sesión
   bool _isVerifying = false;
   bool _hasVerified = false;
   bool _lastVerifyResult = false;
   Completer<bool>? _verifyCompleter;
 
-  // Flag para inicialización centralizada
   bool _isInitializing = true;
   bool get isInitializing => _isInitializing;
 
-  // Flags y estado para auto-login
   bool get isAutoLoggingIn => state.isLoading;
-
   bool get isAuthenticated => state.isAuthenticated;
   bool get isLoading => state.isLoading;
   String? get error => state.error;
@@ -34,8 +39,6 @@ class Auth extends _$Auth {
   @override
   AuthState build() {
     debugPrint('[Auth Riverpod] Constructor ejecutado');
-    // Como no podemos hacer llamadas asíncronas directamente en build() si retornamos de forma síncrona,
-    // disparamos _init() sin await y devolvemos el estado inicial.
     Future.microtask(_init);
     return AuthState.initial();
   }
@@ -43,10 +46,7 @@ class Auth extends _$Auth {
   Future<void> _init() async {
     _isInitializing = true;
     try {
-      final results = await Future.wait([
-        api_index.AuthManager.getUserData(),
-      ]);
-      final userData = results[0];
+      final userData = await api_index.AuthManager.getUserData();
       if (userData != null) {
         state = AuthState.authenticated(
           AuthUser.fromJson(userData),
@@ -96,6 +96,18 @@ class Auth extends _$Auth {
       state = AuthState.initial();
       debugPrint('Sesión cerrada exitosamente');
 
+      // Invalidar proveedores con keepAlive para evitar fugas de estado entre sesiones
+      ref
+        ..invalidate(printConfigProvider)
+        ..invalidate(proformaComputerProvider)
+        ..invalidate(ventasComputerProvider)
+        ..invalidate(dashComputerProvider)
+        ..invalidate(productosAdminProvider)
+        ..invalidate(settingsAdminProvider)
+        ..invalidate(stocksAdminProvider)
+        ..invalidate(ventasAdminProvider)
+        ..invalidate(ventasColabProvider);
+
       resetSessionVerification();
       await _init();
 
@@ -103,6 +115,19 @@ class Auth extends _$Auth {
       await prefs.setBool('stay_logged_in', false);
     } catch (e) {
       debugPrint('Error durante proceso de logout: $e');
+      
+      // Asegurar invalidación incluso ante fallos de red
+      ref
+        ..invalidate(printConfigProvider)
+        ..invalidate(proformaComputerProvider)
+        ..invalidate(ventasComputerProvider)
+        ..invalidate(dashComputerProvider)
+        ..invalidate(productosAdminProvider)
+        ..invalidate(settingsAdminProvider)
+        ..invalidate(stocksAdminProvider)
+        ..invalidate(ventasAdminProvider)
+        ..invalidate(ventasColabProvider);
+
       state = AuthState.initial();
       resetSessionVerification();
       await _init();
@@ -252,11 +277,6 @@ class Auth extends _$Auth {
       }
       final usuario = AuthUser.fromJson(userData);
       state = AuthState.authenticated(usuario, usuario.toMap()['token'] ?? '');
-      try {
-        await api_index.AuthManager.saveUserData(usuario.toMap());
-      } catch (e) {
-        debugPrint('[Auth Riverpod] Error al guardar datos: $e');
-      }
       return true;
     } catch (e) {
       state = AuthState.error(e.toString());

@@ -3,201 +3,90 @@ import 'package:condorsmotors/api/protected/categorias.api.dart';
 import 'package:condorsmotors/models/categoria.model.dart';
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
-import 'package:flutter/foundation.dart';
 
-/// Repositorio para gestionar categorías
+/// Repositorio para gestionar categorías.
 ///
-/// Esta clase encapsula la lógica de negocio relacionada con categorías,
-/// actuando como una capa intermedia entre la UI y la API
-class CategoriaRepository implements BaseRepository {
-  /// Instancia singleton del repositorio
+/// Encapsula la lógica de negocio y consumo de APIs de categorías,
+/// delegando la autenticación mediante el mixin [AuthDelegator].
+class CategoriaRepository with AuthDelegator implements BaseRepository {
   static final CategoriaRepository _instance = CategoriaRepository._internal();
-
-  /// Getter para la instancia singleton
   static CategoriaRepository get instance => _instance;
 
-  /// API de categorías
   late final CategoriasApi _categoriasApi;
 
-  /// Constructor privado para el patrón singleton
   CategoriaRepository._internal() {
-    try {
-      // Utilizamos la API global inicializada en index.api.dart
-      _categoriasApi = api_index.api.categorias;
-    } catch (e) {
-      debugPrint('Error al obtener CategoriasApi: $e');
-      // Si hay un error al acceder a la API global, lanzamos una excepción
-      throw Exception('No se pudo inicializar CategoriaRepository: $e');
-    }
+    _categoriasApi = api_index.api.categorias;
   }
 
-  /// Obtiene datos del usuario desde la API centralizada
-  ///
-  /// Ayuda a los providers a acceder a la información del usuario autenticado
-  @override
-  Future<Map<String, dynamic>?> getUserData() =>
-      api_index.AuthManager.getUserData();
+  /// Obtiene todas las categorías como objetos.
+  Future<List<Categoria>> getCategorias({bool useCache = true}) =>
+      _categoriasApi.getCategoriasObjetos(useCache: useCache);
 
-  /// Obtiene el ID de la sucursal del usuario actual
-  ///
-  /// Útil para operaciones que requieren el ID de sucursal automáticamente
-  @override
-  Future<String?> getCurrentSucursalId() =>
-      api_index.AuthManager.getCurrentSucursalId();
-
-  /// Obtiene todas las categorías como objetos
-  ///
-  /// [useCache] Indica si se debe usar el caché
-  Future<List<Categoria>> getCategorias({bool useCache = true}) async {
-    try {
-      return await _categoriasApi.getCategoriasObjetos(useCache: useCache);
-    } catch (e) {
-      debugPrint('Error en CategoriaRepository.getCategorias: $e');
-      rethrow;
-    }
-  }
-
-  /// Obtiene categorías paginadas
-  ///
-  /// [page] Número de página
-  /// [pageSize] Tamaño de página
-  /// [useCache] Indica si se debe usar el caché
+  /// Obtiene categorías paginadas.
   Future<PaginatedResponse<Categoria>> getCategoriasPaginadas({
     int? page,
     int? pageSize,
     bool useCache = true,
-  }) async {
-    try {
-      return await _categoriasApi.getCategoriasObjetosPaginados(
+  }) =>
+      _categoriasApi.getCategoriasObjetosPaginados(
         page: page,
         pageSize: pageSize,
         useCache: useCache,
       );
-    } catch (e) {
-      debugPrint('Error en CategoriaRepository.getCategoriasPaginadas: $e');
-      rethrow;
-    }
-  }
 
-  /// Obtiene una categoría específica por su ID
-  ///
-  /// [id] ID de la categoría
-  /// [useCache] Indica si se debe usar el caché
-  Future<Categoria> getCategoria(String id, {bool useCache = true}) async {
-    try {
-      return await _categoriasApi.getCategoriaObjeto(id, useCache: useCache);
-    } catch (e) {
-      debugPrint('Error en CategoriaRepository.getCategoria: $e');
-      rethrow;
-    }
-  }
+  /// Obtiene una categoría específica por su ID.
+  Future<Categoria> getCategoria(String id, {bool useCache = true}) =>
+      _categoriasApi.getCategoriaObjeto(id, useCache: useCache);
 
-  /// Crea una nueva categoría
-  ///
-  /// [nombre] Nombre de la categoría
-  /// [descripcion] Descripción opcional
+  /// Crea una nueva categoría con parámetros individuales.
   Future<Categoria> createCategoria({
     required String nombre,
     String? descripcion,
   }) async {
-    try {
-      final Map<String, dynamic> data = await _categoriasApi.createCategoria(
-        nombre: nombre,
-        descripcion: descripcion,
-      );
-      return Categoria.fromJson(data);
-    } catch (e) {
-      debugPrint('Error en CategoriaRepository.createCategoria: $e');
-      rethrow;
-    }
+    final Map<String, dynamic> data = await _categoriasApi.createCategoria(
+      nombre: nombre,
+      descripcion: descripcion,
+    );
+    return Categoria.fromJson(data);
   }
 
-  /// Crea una nueva categoría a partir de un objeto Categoria
-  ///
-  /// [categoria] Objeto Categoria a crear
-  Future<Categoria> createCategoriaFromObject(Categoria categoria) async {
-    try {
-      return await _categoriasApi.createCategoriaObjeto(categoria);
-    } catch (e) {
-      debugPrint('Error en CategoriaRepository.createCategoriaFromObject: $e');
-      rethrow;
-    }
-  }
+  /// Crea una nueva categoría a partir de un objeto Categoria.
+  Future<Categoria> createCategoriaFromObject(Categoria categoria) =>
+      _categoriasApi.createCategoriaObjeto(categoria);
 
-  /// Actualiza una categoría existente
-  ///
-  /// [id] ID de la categoría
-  /// [nombre] Nuevo nombre de la categoría (opcional)
-  /// [descripcion] Nueva descripción de la categoría (opcional)
+  /// Actualiza una categoría existente con parámetros individuales.
   Future<Categoria> updateCategoria({
     required String id,
     String? nombre,
     String? descripcion,
   }) async {
-    try {
-      final Map<String, dynamic> data = await _categoriasApi.updateCategoria(
-        id: id,
-        nombre: nombre,
-        descripcion: descripcion,
-      );
-      return Categoria.fromJson(data);
-    } catch (e) {
-      debugPrint('Error en CategoriaRepository.updateCategoria: $e');
-      rethrow;
-    }
+    final Map<String, dynamic> data = await _categoriasApi.updateCategoria(
+      id: id,
+      nombre: nombre,
+      descripcion: descripcion,
+    );
+    return Categoria.fromJson(data);
   }
 
-  /// Actualiza una categoría a partir de un objeto Categoria
-  ///
-  /// [categoria] Objeto Categoria con los datos actualizados
-  Future<Categoria> updateCategoriaFromObject(Categoria categoria) async {
-    try {
-      return await _categoriasApi.updateCategoriaObjeto(categoria);
-    } catch (e) {
-      debugPrint('Error en CategoriaRepository.updateCategoriaFromObject: $e');
-      rethrow;
-    }
-  }
+  /// Actualiza una categoría a partir de un objeto Categoria.
+  Future<Categoria> updateCategoriaFromObject(Categoria categoria) =>
+      _categoriasApi.updateCategoriaObjeto(categoria);
 
-  /// Elimina una categoría
-  ///
-  /// [id] ID de la categoría a eliminar
-  Future<bool> deleteCategoria(String id) async {
-    try {
-      return await _categoriasApi.deleteCategoria(id);
-    } catch (e) {
-      debugPrint('Error en CategoriaRepository.deleteCategoria: $e');
-      return false;
-    }
-  }
+  /// Elimina una categoría por su ID.
+  Future<bool> deleteCategoria(String id) =>
+      _categoriasApi.deleteCategoria(id);
 
-  /// Busca categorías por nombre
-  ///
-  /// [nombre] Término de búsqueda
-  /// [useCache] Indica si se debe usar el caché
+  /// Busca categorías filtrando por nombre.
   Future<List<Categoria>> buscarCategoriasPorNombre(
     String nombre, {
     bool useCache = true,
-  }) async {
-    try {
-      return await _categoriasApi.buscarCategoriasPorNombre(
+  }) =>
+      _categoriasApi.buscarCategoriasPorNombre(
         nombre,
         useCache: useCache,
       );
-    } catch (e) {
-      debugPrint('Error en CategoriaRepository.buscarCategoriasPorNombre: $e');
-      rethrow;
-    }
-  }
 
-  /// Invalida la caché de categorías
-  ///
-  /// [categoriaId] ID de una categoría específica (opcional)
-  void invalidateCache([String? categoriaId]) {
-    try {
+  /// Invalida la caché de categorías.
+  void invalidateCache([String? categoriaId]) =>
       _categoriasApi.invalidateCache(categoriaId);
-    } catch (e) {
-      debugPrint('Error en CategoriaRepository.invalidateCache: $e');
-    }
-  }
 }

@@ -150,30 +150,38 @@ export const fotosProductoTable = pgTable('fotos_producto', {
  * Empleados y clientes
  */
 
-export const empleadosTable = pgTable('empleados', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  nombre: text('nombre').notNull(),
-  apellidos: text('apellidos').notNull(),
-  activo: boolean('activo').notNull().default(true),
-  dni: text('dni'),
-  pathFoto: text('path_foto'),
-  celular: text('celular'),
-  horaInicioJornada: time('hora_inicio_jornada'),
-  horaFinJornada: time('hora_fin_jornada'),
-  fechaContratacion: date('fecha_contratacion', {
-    mode: 'string'
-  }),
-  sueldo: numeric('sueldo', {
-    precision: 12,
-    scale: 2
-  }),
-  sucursalId: integer('sucursal_id')
-    .notNull()
-    .references(() => sucursalesTable.id, {
-      onDelete: 'cascade'
+export const empleadosTable = pgTable(
+  'empleados',
+  {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    nombre: text('nombre').notNull(),
+    apellidos: text('apellidos').notNull(),
+    activo: boolean('activo').notNull().default(true),
+    dni: text('dni'),
+    pathFoto: text('path_foto'),
+    celular: text('celular'),
+    horaInicioJornada: time('hora_inicio_jornada'),
+    horaFinJornada: time('hora_fin_jornada'),
+    fechaContratacion: date('fecha_contratacion', {
+      mode: 'string'
     }),
-  ...timestampsColumns
-})
+    sueldo: numeric('sueldo', {
+      precision: 12,
+      scale: 2
+    }),
+    sucursalId: integer('sucursal_id')
+      .notNull()
+      .references(() => sucursalesTable.id, {
+        onDelete: 'cascade'
+      }),
+    ...timestampsColumns
+  },
+  (table) => [
+    index('empleados_sucursal_id_idx').on(table.sucursalId),
+    index('empleados_dni_idx').on(table.dni),
+    index('empleados_fecha_creacion_idx').on(table.fechaCreacion)
+  ]
+)
 
 export const tiposDocumentoClienteTable = pgTable('tipos_documento_cliente', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
@@ -182,37 +190,53 @@ export const tiposDocumentoClienteTable = pgTable('tipos_documento_cliente', {
   codigo: text('codigo').notNull().unique()
 })
 
-export const clientesTable = pgTable('clientes', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  tipoDocumentoId: integer('tipo_documento_id')
-    .notNull()
-    .references(() => tiposDocumentoClienteTable.id),
-  numeroDocumento: text('numero_documento'),
-  denominacion: text('denominacion').notNull(),
-  codigoPais: text('codigo_pais').notNull().default('PE'),
-  direccion: text('direccion'),
-  correo: text('correo'),
-  telefono: text('telefono'),
-  ...timestampsColumns
-})
+export const clientesTable = pgTable(
+  'clientes',
+  {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    tipoDocumentoId: integer('tipo_documento_id')
+      .notNull()
+      .references(() => tiposDocumentoClienteTable.id),
+    numeroDocumento: text('numero_documento'),
+    denominacion: text('denominacion').notNull(),
+    codigoPais: text('codigo_pais').notNull().default('PE'),
+    direccion: text('direccion'),
+    correo: text('correo'),
+    telefono: text('telefono'),
+    ...timestampsColumns
+  },
+  (table) => [
+    index('clientes_tipo_documento_id_idx').on(table.tipoDocumentoId),
+    index('clientes_numero_documento_idx').on(table.numeroDocumento),
+    index('clientes_denominacion_idx').on(table.denominacion),
+    index('clientes_fecha_creacion_idx').on(table.fechaCreacion)
+  ]
+)
 
 /*
  * Inventarios
  */
 
-export const entradasInventariosTable = pgTable('entradas_inventarios', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  cantidad: integer('cantidad').notNull().default(1),
-  productoId: integer('producto_id')
-    .notNull()
-    .references(() => productosTable.id),
-  sucursalId: integer('sucursal_id')
-    .notNull()
-    .references(() => sucursalesTable.id, {
-      onDelete: 'cascade'
-    }),
-  ...timestampsColumns
-})
+export const entradasInventariosTable = pgTable(
+  'entradas_inventarios',
+  {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    cantidad: integer('cantidad').notNull().default(1),
+    productoId: integer('producto_id')
+      .notNull()
+      .references(() => productosTable.id),
+    sucursalId: integer('sucursal_id')
+      .notNull()
+      .references(() => sucursalesTable.id, {
+        onDelete: 'cascade'
+      }),
+    ...timestampsColumns
+  },
+  (table) => [
+    index('entradas_inventarios_producto_id_idx').on(table.productoId),
+    index('entradas_inventarios_sucursal_id_idx').on(table.sucursalId)
+  ]
+)
 
 export const estadosTransferenciasInventarios = pgTable(
   'estados_transferencias_inventarios',
@@ -251,7 +275,13 @@ export const transferenciasInventariosTable = pgTable(
     }),
     modificable: boolean('modificable').notNull().default(true),
     ...timestampsColumns
-  }
+  },
+  (table) => [
+    index('transferencias_inventarios_estado_transferencia_id_idx').on(table.estadoTransferenciaId),
+    index('transferencias_inventarios_sucursal_origen_id_idx').on(table.sucursalOrigenId),
+    index('transferencias_inventarios_sucursal_destino_id_idx').on(table.sucursalDestinoId),
+    index('transferencias_inventarios_fecha_creacion_idx').on(table.fechaCreacion)
+  ]
 )
 
 export const itemsTransferenciaInventarioTable = pgTable(
@@ -267,7 +297,11 @@ export const itemsTransferenciaInventarioTable = pgTable(
       .references(() => transferenciasInventariosTable.id, {
         onDelete: 'cascade'
       })
-  }
+  },
+  (table) => [
+    index('items_transferencia_inventario_producto_id_idx').on(table.productoId),
+    index('items_transferencia_inventario_transferencia_id_idx').on(table.transferenciaInventarioId)
+  ]
 )
 
 /*
@@ -286,20 +320,27 @@ export const rolesTable = pgTable('roles', {
   nombre: text('nombre').notNull().unique()
 })
 
-export const cuentasEmpleadosTable = pgTable('cuentas_empleados', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  usuario: text('usuario').notNull().unique(),
-  clave: text('clave').notNull(),
-  secret: text('secret').notNull(),
-  eliminable: boolean('eliminable').notNull().default(true),
-  rolId: integer('rol_id')
-    .notNull()
-    .references(() => rolesTable.id),
-  empleadoId: integer('empleado_id')
-    .notNull()
-    .references(() => empleadosTable.id),
-  ...timestampsColumns
-})
+export const cuentasEmpleadosTable = pgTable(
+  'cuentas_empleados',
+  {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    usuario: text('usuario').notNull().unique(),
+    clave: text('clave').notNull(),
+    secret: text('secret').notNull(),
+    eliminable: boolean('eliminable').notNull().default(true),
+    rolId: integer('rol_id')
+      .notNull()
+      .references(() => rolesTable.id),
+    empleadoId: integer('empleado_id')
+      .notNull()
+      .references(() => empleadosTable.id),
+    ...timestampsColumns
+  },
+  (table) => [
+    index('cuentas_empleados_rol_id_idx').on(table.rolId),
+    index('cuentas_empleados_empleado_id_idx').on(table.empleadoId)
+  ]
+)
 
 export const rolesPermisosTable = pgTable(
   'roles_permisos',
@@ -378,7 +419,15 @@ export const ventasTable = pgTable(
     motivoAnulado: text('motivo_anulado'),
     ...timestampsColumns
   },
-  (t) => [unique().on(t.serieDocumento, t.numeroDocumento)]
+  (t) => [
+    unique().on(t.serieDocumento, t.numeroDocumento),
+    index('ventas_cliente_id_idx').on(t.clienteId),
+    index('ventas_empleado_id_idx').on(t.empleadoId),
+    index('ventas_sucursal_id_idx').on(t.sucursalId),
+    index('ventas_fecha_emision_idx').on(t.fechaEmision),
+    index('ventas_tipo_documento_id_idx').on(t.tipoDocumentoId),
+    index('ventas_fecha_creacion_idx').on(t.fechaCreacion)
+  ]
 )
 
 export const tiposTaxTable = pgTable('tipos_tax', {
@@ -389,34 +438,42 @@ export const tiposTaxTable = pgTable('tipos_tax', {
   codigo: text('codigo').notNull()
 })
 
-export const detallesVentaTable = pgTable('detalles_venta', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  tipoUnidad: text('tipo_unidad').notNull().default('NIU'),
-  codigo: text('codigo'),
-  nombre: text('nombre').notNull(),
-  cantidad: integer('cantidad').notNull().default(1),
-  precioSinIgv: numeric('precio_sin_igv', {
-    precision: 12,
-    scale: 2
-  }).notNull(),
-  precioConIgv: numeric('precio_con_igv', {
-    precision: 12,
-    scale: 2
-  }).notNull(),
-  tipoTaxId: integer('tipo_tax_id')
-    .notNull()
-    .references(() => tiposTaxTable.id),
-  totalBaseTax: numeric('total_base_tax', {
-    precision: 12,
-    scale: 2
-  }).notNull(),
-  totalTax: numeric('total_tax', { precision: 12, scale: 2 }).notNull(),
-  total: numeric('total', { precision: 12, scale: 2 }).notNull(),
-  productoId: integer('producto_id'),
-  ventaId: integer('venta_id')
-    .notNull()
-    .references(() => ventasTable.id, { onDelete: 'cascade' })
-})
+export const detallesVentaTable = pgTable(
+  'detalles_venta',
+  {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    tipoUnidad: text('tipo_unidad').notNull().default('NIU'),
+    codigo: text('codigo'),
+    nombre: text('nombre').notNull(),
+    cantidad: integer('cantidad').notNull().default(1),
+    precioSinIgv: numeric('precio_sin_igv', {
+      precision: 12,
+      scale: 2
+    }).notNull(),
+    precioConIgv: numeric('precio_con_igv', {
+      precision: 12,
+      scale: 2
+    }).notNull(),
+    tipoTaxId: integer('tipo_tax_id')
+      .notNull()
+      .references(() => tiposTaxTable.id),
+    totalBaseTax: numeric('total_base_tax', {
+      precision: 12,
+      scale: 2
+    }).notNull(),
+    totalTax: numeric('total_tax', { precision: 12, scale: 2 }).notNull(),
+    total: numeric('total', { precision: 12, scale: 2 }).notNull(),
+    productoId: integer('producto_id'),
+    ventaId: integer('venta_id')
+      .notNull()
+      .references(() => ventasTable.id, { onDelete: 'cascade' })
+  },
+  (table) => [
+    index('detalles_venta_venta_id_idx').on(table.ventaId),
+    index('detalles_venta_producto_id_idx').on(table.productoId),
+    index('detalles_venta_tipo_tax_id_idx').on(table.tipoTaxId)
+  ]
+)
 
 export const totalesVentaTable = pgTable('totales_venta', {
   ventaId: integer('venta_id')
@@ -448,62 +505,79 @@ export const totalesVentaTable = pgTable('totales_venta', {
  * Extra ventas
  */
 
-export const proformasVentaTable = pgTable('proformas_venta', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  nombre: text('nombre'),
-  total: numeric('total', { precision: 12, scale: 2 }).notNull(),
-  detalles: jsonb('detalles').notNull().$type<
-    Array<{
-      productoId: number
-      nombre: string
-      precioUnitario: number
-      precioOriginal: number
-      cantidadGratis: number | null
-      descuento: number | null
-      cantidadPagada: number
-      cantidadTotal: number
-      subtotal: number
-    }>
-  >(),
-  clienteId: integer('cliente_id').references(() => clientesTable.id),
-  empleadoId: integer('empleado_id')
-    .notNull()
-    .references(() => empleadosTable.id),
-  sucursalId: integer('sucursal_id')
-    .notNull()
-    .references(() => sucursalesTable.id, {
+export const proformasVentaTable = pgTable(
+  'proformas_venta',
+  {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    nombre: text('nombre'),
+    total: numeric('total', { precision: 12, scale: 2 }).notNull(),
+    detalles: jsonb('detalles').notNull().$type<
+      Array<{
+        productoId: number
+        nombre: string
+        precioUnitario: number
+        precioOriginal: number
+        cantidadGratis: number | null
+        descuento: number | null
+        cantidadPagada: number
+        cantidadTotal: number
+        subtotal: number
+      }>
+    >(),
+    clienteId: integer('cliente_id').references(() => clientesTable.id),
+    empleadoId: integer('empleado_id')
+      .notNull()
+      .references(() => empleadosTable.id),
+    sucursalId: integer('sucursal_id')
+      .notNull()
+      .references(() => sucursalesTable.id, {
+        onDelete: 'cascade'
+      }),
+    ...timestampsColumns
+  },
+  (t) => [
+    index('proformas_venta_cliente_id_idx').on(t.clienteId),
+    index('proformas_venta_empleado_id_idx').on(t.empleadoId),
+    index('proformas_venta_sucursal_id_idx').on(t.sucursalId),
+    index('proformas_venta_fecha_creacion_idx').on(t.fechaCreacion)
+  ]
+)
+
+export const reservasProductosTable = pgTable(
+  'reservas_productos',
+  {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    descripcion: text('descripcion'),
+    detallesReserva: jsonb('detalles_reserva').notNull().$type<
+      Array<{
+        nombreProducto: string
+        precioCompra: number
+        precioVenta: number
+        cantidad: number
+        total: number
+      }>
+    >(),
+    montoAdelantado: numeric('monto_adelantado', {
+      precision: 12,
+      scale: 2
+    }).notNull(),
+    fechaRecojo: date('fecha_recojo', {
+      mode: 'string'
+    }),
+    clienteId: integer('cliente_id')
+      .notNull()
+      .references(() => clientesTable.id),
+    sucursalId: integer('sucursal_id').references(() => sucursalesTable.id, {
       onDelete: 'cascade'
     }),
-  ...timestampsColumns
-})
-
-export const reservasProductosTable = pgTable('reservas_productos', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  descripcion: text('descripcion'),
-  detallesReserva: jsonb('detalles_reserva').notNull().$type<
-    Array<{
-      nombreProducto: string
-      precioCompra: number
-      precioVenta: number
-      cantidad: number
-      total: number
-    }>
-  >(),
-  montoAdelantado: numeric('monto_adelantado', {
-    precision: 12,
-    scale: 2
-  }).notNull(),
-  fechaRecojo: date('fecha_recojo', {
-    mode: 'string'
-  }),
-  clienteId: integer('cliente_id')
-    .notNull()
-    .references(() => clientesTable.id),
-  sucursalId: integer('sucursal_id').references(() => sucursalesTable.id, {
-    onDelete: 'cascade'
-  }),
-  ...timestampsColumns
-})
+    ...timestampsColumns
+  },
+  (t) => [
+    index('reservas_productos_cliente_id_idx').on(t.clienteId),
+    index('reservas_productos_sucursal_id_idx').on(t.sucursalId),
+    index('reservas_productos_fecha_creacion_idx').on(t.fechaCreacion)
+  ]
+)
 
 // export const devolucionesTable = pgTable('devoluciones', {
 //   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
@@ -525,59 +599,80 @@ export const estadosDocFacturacionTable = pgTable('estados_doc_facturacion', {
   codigo: text('codigo').notNull()
 })
 
-export const docsFacturacionTable = pgTable('docs_facturacion', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  factproFilename: text('factpro_filename'),
-  factproDocumentId: text('factpro_document_id'),
-  hash: text('hash'),
-  qr: text('qr'),
-  linkXml: text('link_xml'),
-  linkPdf: text('link_pdf'),
-  linkCdr: text('link_cdr'),
-  identificadorAnulado: text('identificador_anulado'),
-  factproDocumentIdAnulado: text('factpro_document_id_anulado'),
-  linkXmlAnulado: text('link_xml_anulado'),
-  linkPdfAnulado: text('link_pdf_anulado'),
-  linkCdrAnulado: text('link_cdr_anulado'),
-  ticketAnulado: text('ticket_anulado'),
-  estadoRawId: text('estado_raw_id'),
-  descripcionEstado: text('descripcion_estado'),
-  informacionSunat: jsonb('informacion_sunat'),
-  estadoId: integer('estado_id').references(
-    () => estadosDocFacturacionTable.id
-  ),
-  ventaId: integer('venta_id')
-    .notNull()
-    .references(() => ventasTable.id)
-})
+export const docsFacturacionTable = pgTable(
+  'docs_facturacion',
+  {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    factproFilename: text('factpro_filename'),
+    factproDocumentId: text('factpro_document_id'),
+    hash: text('hash'),
+    qr: text('qr'),
+    linkXml: text('link_xml'),
+    linkPdf: text('link_pdf'),
+    linkCdr: text('link_cdr'),
+    identificadorAnulado: text('identificador_anulado'),
+    factproDocumentIdAnulado: text('factpro_document_id_anulado'),
+    linkXmlAnulado: text('link_xml_anulado'),
+    linkPdfAnulado: text('link_pdf_anulado'),
+    linkCdrAnulado: text('link_cdr_anulado'),
+    ticketAnulado: text('ticket_anulado'),
+    estadoRawId: text('estado_raw_id'),
+    descripcionEstado: text('descripcion_estado'),
+    informacionSunat: jsonb('informacion_sunat'),
+    estadoId: integer('estado_id').references(
+      () => estadosDocFacturacionTable.id
+    ),
+    ventaId: integer('venta_id')
+      .notNull()
+      .references(() => ventasTable.id)
+  },
+  (t) => [
+    index('docs_facturacion_estado_id_idx').on(t.estadoId),
+    index('docs_facturacion_venta_id_idx').on(t.ventaId)
+  ]
+)
 
 /*
  * Extras
  * */
 
-export const notificacionesTable = pgTable('notificaciones', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  titulo: text('titulo').notNull(),
-  descripcion: text('descripcion'),
-  leida: boolean('leida').notNull().default(false),
-  sucursalId: integer('sucursal_id')
-    .notNull()
-    .references(() => sucursalesTable.id, {
-      onDelete: 'cascade'
-    }),
-  ...timestampsColumns
-})
+export const notificacionesTable = pgTable(
+  'notificaciones',
+  {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    titulo: text('titulo').notNull(),
+    descripcion: text('descripcion'),
+    leida: boolean('leida').notNull().default(false),
+    sucursalId: integer('sucursal_id')
+      .notNull()
+      .references(() => sucursalesTable.id, {
+        onDelete: 'cascade'
+      }),
+    ...timestampsColumns
+  },
+  (t) => [
+    index('notificaciones_sucursal_id_idx').on(t.sucursalId),
+    index('notificaciones_fecha_creacion_idx').on(t.fechaCreacion)
+  ]
+)
 
-export const archivosAppTable = pgTable('archivos_app', {
-  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  nombre: text('nombre').notNull(),
-  filename: text('filename').notNull().unique(),
-  tipo: text('tipo', { enum: ['apk', 'desktop-app', 'certificate'] }).notNull(),
-  size: text('size').notNull(),
-  metadata: jsonb('metadata').notNull(),
-  version: text('version').notNull(),
-  userId: integer().references(() => cuentasEmpleadosTable.id, {
-    onDelete: 'set null'
-  }),
-  ...timestampsColumns
-})
+export const archivosAppTable = pgTable(
+  'archivos_app',
+  {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    nombre: text('nombre').notNull(),
+    filename: text('filename').notNull().unique(),
+    tipo: text('tipo', { enum: ['apk', 'desktop-app', 'certificate'] }).notNull(),
+    size: text('size').notNull(),
+    metadata: jsonb('metadata').notNull(),
+    version: text('version').notNull(),
+    userId: integer().references(() => cuentasEmpleadosTable.id, {
+      onDelete: 'set null'
+    }),
+    ...timestampsColumns
+  },
+  (t) => [
+    index('archivos_app_user_id_idx').on(t.userId),
+    index('archivos_app_fecha_creacion_idx').on(t.fechaCreacion)
+  ]
+)

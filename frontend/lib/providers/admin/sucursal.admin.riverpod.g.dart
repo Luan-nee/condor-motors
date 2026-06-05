@@ -6,7 +6,7 @@ part of 'sucursal.admin.riverpod.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$sucursalAdminHash() => r'6ae45a194e7cec0bc17c8016f42bd65c5f6eec4f';
+String _$sucursalAdminHash() => r'6769f1a69c8fccea1bc2ded7e454b096987f4197';
 
 /// See also [SucursalAdmin].
 @ProviderFor(SucursalAdmin)

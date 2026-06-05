@@ -21,6 +21,9 @@ class SelectorColabScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Escuchador pasivo para mantener vivo el proveedor autoDispose mientras esta pantalla esté montada y permitir que el polling asíncrono en segundo plano funcione correctamente.
+    ref.listen(transferenciasColabProvider, (previous, next) {});
+
     // Inicia el polling apenas se construye el selector
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(transferenciasColabProvider.notifier).startPolling();

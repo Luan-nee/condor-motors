@@ -251,6 +251,8 @@ class _VentasColabScreenState extends ConsumerState<VentasColabScreen>
         return Consumer(builder: (context, ref, _) {
           final dialogState = ref.watch(ventasColabProvider);
           return Dialog(
+            clipBehavior: Clip.antiAlias,
+            backgroundColor: AppTheme.darkSurface,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppTheme.largeRadius),
             ),
@@ -261,41 +263,22 @@ class _VentasColabScreenState extends ConsumerState<VentasColabScreen>
             child: Container(
               width: MediaQuery.of(context).size.width * 0.95,
               height: MediaQuery.of(context).size.height * 0.95,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 8,
+              padding: const EdgeInsets.only(
+                left: 12,
+                right: 12,
+                top: 4,
+                bottom: 8,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      const Text(
-                        'Buscar Producto',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, size: 20),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(
-                          minWidth: 32,
-                          minHeight: 32,
-                        ),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
                   Expanded(
                     child: BusquedaProductoWidget(
                       productos: dialogState.productos,
                       categorias: dialogState.categorias,
                       isLoading: dialogState.isLoadingProductos,
                       sucursalId: dialogState.sucursalId,
+                      onClose: () => Navigator.pop(context),
                       onProductoSeleccionado: (Producto producto) {
                         _mostrarDetallesPromocion(producto);
                       },
@@ -1058,30 +1041,18 @@ class _VentasColabScreenState extends ConsumerState<VentasColabScreen>
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
+                            horizontal: 16, vertical: 6),
                         decoration: BoxDecoration(
-                          color: const Color.fromARGB(255, 255, 0, 0),
-                          borderRadius: BorderRadius.circular(4),
+                          color: AppTheme.primaryColor,
+                          borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: <Widget>[
-                            const Text(
-                              'TOTAL',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12,
-                              ),
-                            ),
-                            Text(
-                              'S/ ${notifier.totalVenta.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 20,
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          'S/ ${notifier.totalVenta.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
                         ),
                       ),
                     ],
@@ -1101,7 +1072,7 @@ class _VentasColabScreenState extends ConsumerState<VentasColabScreen>
                               borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                             ),
                           ),
-                          icon: const FaIcon(FontAwesomeIcons.trash, size: 16),
+                          icon: const FaIcon(FontAwesomeIcons.broom, size: 16),
                           label: const Text('Limpiar'),
                           onPressed: state.productosVenta.isEmpty
                               ? null

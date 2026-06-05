@@ -5,175 +5,63 @@ import 'package:condorsmotors/api/main.api.dart';
 import 'package:condorsmotors/models/empleado.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
 
-/// Repositorio para gestionar empleados
+/// Repositorio para gestionar empleados y sus cuentas de usuario.
 ///
-/// Esta clase encapsula la lógica de negocio relacionada con empleados y sus cuentas,
-/// actuando como una capa intermedia entre la UI y la API
-class EmpleadoRepository implements BaseRepository {
-  /// Instancia singleton del repositorio
+/// Encapsula la lógica de negocio y consumo de APIs de empleados y cuentas,
+/// delegando la autenticación mediante el mixin [AuthDelegator].
+class EmpleadoRepository with AuthDelegator implements BaseRepository {
   static final EmpleadoRepository _instance = EmpleadoRepository._internal();
-
-  /// Getter para la instancia singleton
   static EmpleadoRepository get instance => _instance;
 
-  /// API de empleados
   late final dynamic _empleadosApi;
-
-  /// API de cuentas de empleados
   late final dynamic _cuentasEmpleadosApi;
-
-  /// API de sucursales
   late final dynamic _sucursalesApi;
 
-  /// Constructor privado para el patrón singleton
   EmpleadoRepository._internal() {
-    try {
-      // Utilizamos la API global inicializada en index.api.dart
-      _empleadosApi = api_index.api.empleados;
-      _cuentasEmpleadosApi =
-          api_index.api.empleados; // Usar empleados API para cuentas
-      _sucursalesApi = api_index.api.sucursales;
-    } catch (e) {
-      debugPrint('Error al obtener API de empleados: $e');
-      // Si hay un error al acceder a la API global, lanzamos una excepción
-      throw Exception('No se pudo inicializar EmpleadoRepository: $e');
-    }
+    _empleadosApi = api_index.api.empleados;
+    _cuentasEmpleadosApi = api_index.api.empleados;
+    _sucursalesApi = api_index.api.sucursales;
   }
 
-  /// Obtiene datos del usuario desde la API centralizada
-  ///
-  /// Ayuda a los providers a acceder a la información del usuario autenticado
-  @override
-  Future<Map<String, dynamic>?> getUserData() =>
-      api_index.AuthManager.getUserData();
+  /// Obtiene la lista completa de empleados.
+  Future<EmpleadosPaginados> getEmpleados({bool useCache = true}) =>
+      _empleadosApi.getEmpleados(useCache: useCache);
 
-  /// Obtiene el ID de la sucursal del usuario actual
-  ///
-  /// Útil para operaciones que requieren el ID de sucursal automáticamente
-  @override
-  Future<String?> getCurrentSucursalId() =>
-      api_index.AuthManager.getCurrentSucursalId();
+  /// Obtiene los empleados asociados a una sucursal.
+  Future<EmpleadosPaginados> getEmpleadosPorSucursal(String sucursalId) =>
+      _empleadosApi.getEmpleadosPorSucursal(sucursalId);
 
-  /// Obtiene la lista de empleados
-  ///
-  /// [useCache] Indica si se debe usar la caché
-  Future<EmpleadosPaginados> getEmpleados({bool useCache = true}) async {
-    try {
-      return await _empleadosApi.getEmpleados(useCache: useCache);
-    } catch (e) {
-      debugPrint('Error en EmpleadoRepository.getEmpleados: $e');
-      rethrow;
-    }
-  }
+  /// Obtiene un empleado específico por su ID.
+  Future<Empleado> getEmpleado(String id) =>
+      _empleadosApi.getEmpleado(id);
 
-  /// Obtiene los empleados de una sucursal específica
-  ///
-  /// [sucursalId] ID de la sucursal
-  Future<EmpleadosPaginados> getEmpleadosPorSucursal(String sucursalId) async {
-    try {
-      return await _empleadosApi.getEmpleadosPorSucursal(sucursalId);
-    } catch (e) {
-      debugPrint('Error en EmpleadoRepository.getEmpleadosPorSucursal: $e');
-      rethrow;
-    }
-  }
+  /// Crea un nuevo empleado.
+  Future<Empleado> createEmpleado(
+    Map<String, dynamic> empleadoData, {
+    File? fotoFile,
+  }) =>
+      _empleadosApi.createEmpleado(empleadoData, fotoFile: fotoFile);
 
-  /// Obtiene un empleado específico por su ID
-  ///
-  /// [id] ID del empleado
-  Future<Empleado> getEmpleado(String id) async {
-    try {
-      return await _empleadosApi.getEmpleado(id);
-    } catch (e) {
-      debugPrint('Error en EmpleadoRepository.getEmpleado: $e');
-      rethrow;
-    }
-  }
+  /// Actualiza los datos de un empleado existente.
+  Future<Empleado> updateEmpleado(
+    String id,
+    Map<String, dynamic> empleadoData, {
+    File? fotoFile,
+  }) =>
+      _empleadosApi.updateEmpleado(id, empleadoData, fotoFile: fotoFile);
 
-  /// Crea un nuevo empleado
-  ///
-  /// [empleadoData] Datos del empleado a crear
-  Future<Empleado> createEmpleado(Map<String, dynamic> empleadoData,
-      {File? fotoFile}) async {
-    try {
-      if (fotoFile != null) {
-        final String fileName =
-            fotoFile.path.split(Platform.pathSeparator).last;
-        final String fileExtension =
-            fileName.contains('.') ? fileName.split('.').last : '';
-        final int fileSize = await fotoFile.length();
-        debugPrint('[empleado_repository] Imagen a enviar:');
-        debugPrint('  Path: \\${fotoFile.path}');
-        debugPrint('  Nombre: $fileName');
-        debugPrint('  Extensión: $fileExtension');
-        debugPrint('  Tamaño: $fileSize bytes');
-      }
-      return await _empleadosApi.createEmpleado(empleadoData,
-          fotoFile: fotoFile);
-    } catch (e) {
-      debugPrint('Error en EmpleadoRepository.createEmpleado: $e');
-      rethrow;
-    }
-  }
-
-  /// Actualiza un empleado existente
-  ///
-  /// [id] ID del empleado a actualizar
-  /// [empleadoData] Datos actualizados del empleado
-  Future<Empleado> updateEmpleado(String id, Map<String, dynamic> empleadoData,
-      {File? fotoFile}) async {
-    try {
-      if (fotoFile != null) {
-        final String fileName =
-            fotoFile.path.split(Platform.pathSeparator).last;
-        final String fileExtension =
-            fileName.contains('.') ? fileName.split('.').last : '';
-        final int fileSize = await fotoFile.length();
-        debugPrint('[empleado_repository] Imagen a enviar:');
-        debugPrint('  Path: \\${fotoFile.path}');
-        debugPrint('  Nombre: $fileName');
-        debugPrint('  Extensión: $fileExtension');
-        debugPrint('  Tamaño: $fileSize bytes');
-      }
-      return await _empleadosApi.updateEmpleado(id, empleadoData,
-          fotoFile: fotoFile);
-    } catch (e) {
-      debugPrint('Error en EmpleadoRepository.updateEmpleado: $e');
-      rethrow;
-    }
-  }
-
-  /// Elimina un empleado
-  ///
-  /// [id] ID del empleado a eliminar
+  /// Elimina un empleado por su ID.
   Future<bool> deleteEmpleado(String id) async {
-    try {
-      await _empleadosApi.deleteEmpleado(id);
-      return true;
-    } catch (e) {
-      debugPrint('Error en EmpleadoRepository.deleteEmpleado: $e');
-      return false;
-    }
+    await _empleadosApi.deleteEmpleado(id);
+    return true;
   }
 
-  /// Obtiene la lista de sucursales
-  ///
-  /// Retorna lista de sucursales para asociar empleados
-  Future<List<Sucursal>> getSucursales() async {
-    try {
-      return await _sucursalesApi.getSucursales();
-    } catch (e) {
-      debugPrint('Error en EmpleadoRepository.getSucursales: $e');
-      rethrow;
-    }
-  }
+  /// Obtiene la lista de todas las sucursales.
+  Future<List<Sucursal>> getSucursales() =>
+      _sucursalesApi.getSucursales();
 
-  /// Obtiene un mapa de nombres de sucursales por ID
-  ///
-  /// Facilita la visualización de nombres de sucursales
+  /// Obtiene un mapa indexado de nombres de sucursales por su ID.
   Future<Map<String, String>> getNombresSucursales() async {
     try {
       final List<Sucursal> sucursalesData = await getSucursales();
@@ -182,85 +70,40 @@ class EmpleadoRepository implements BaseRepository {
       for (final Sucursal sucursal in sucursalesData) {
         final String id = sucursal.id.toString();
         String nombre = sucursal.nombre;
-        final bool esCentral = sucursal.sucursalCentral;
-
-        // Agregar indicador de Central al nombre si corresponde
-        if (esCentral) {
+        if (sucursal.sucursalCentral) {
           nombre = '$nombre (Central)';
         }
-
         if (id.isNotEmpty) {
           sucursales[id] = nombre;
         }
       }
-
       return sucursales;
-    } catch (e) {
-      debugPrint('Error en EmpleadoRepository.getNombresSucursales: $e');
-      return <String, String>{}; // Devolver mapa vacío en caso de error
+    } catch (_) {
+      return <String, String>{};
     }
   }
 
-  // MÉTODOS PARA CUENTAS DE EMPLEADOS
+  /// Obtiene los roles de cuenta disponibles.
+  Future<List<Map<String, dynamic>>> getRolesCuentas() =>
+      _cuentasEmpleadosApi.getRolesCuentas();
 
-  /// Obtiene la lista de roles de cuentas
-  ///
-  /// Retorna la lista de roles disponibles para asignar a cuentas de empleados
-  Future<List<Map<String, dynamic>>> getRolesCuentas() async {
-    try {
-      return await _cuentasEmpleadosApi.getRolesCuentas();
-    } catch (e) {
-      debugPrint('Error en EmpleadoRepository.getRolesCuentas: $e');
-      rethrow;
-    }
-  }
+  /// Obtiene una cuenta de empleado por su ID.
+  Future<Map<String, dynamic>?> getCuentaEmpleadoById(int id) =>
+      _cuentasEmpleadosApi.getCuentaEmpleado(id.toString());
 
-  /// Obtiene una cuenta de empleado por su ID
-  ///
-  /// [id] ID de la cuenta de empleado
-  Future<Map<String, dynamic>?> getCuentaEmpleadoById(int id) async {
-    try {
-      return await _cuentasEmpleadosApi.getCuentaEmpleadoById(id);
-    } catch (e) {
-      debugPrint('Error en EmpleadoRepository.getCuentaEmpleadoById: $e');
-      rethrow;
-    }
-  }
-
-  /// Obtiene una cuenta asociada a un empleado
-  ///
-  /// [empleadoId] ID del empleado
+  /// Obtiene la cuenta asociada a un empleado por su ID.
   Future<Map<String, dynamic>?> getCuentaByEmpleadoId(String empleadoId) async {
     try {
-      // Problema conocido: el endpoint debe incluir "/api" al inicio
-      // Para esta operación, usamos la API existente esperando que esté ajustada
-      try {
-        return await _cuentasEmpleadosApi.getCuentaByEmpleadoId(empleadoId);
-      } catch (e) {
-        // Si falla, esto podría deberse al prefijo incorrecto en la API
-        debugPrint('Error al obtener cuenta de empleado (API original): $e');
-
-        // Si el error es por prefijo, y en tu ambiente el endpoint correcto es /api/cuentasempleados,
-        // deberás modificar en la API y no aquí - el repositorio debe mantenerse agnóstico a URLs directas
-        rethrow;
-      }
+      return await _cuentasEmpleadosApi.getCuentaByEmpleadoId(empleadoId);
     } catch (e) {
       if (_esErrorNotFound(e.toString())) {
-        debugPrint('El empleado $empleadoId no tiene cuenta asociada');
         throw Exception('El empleado no tiene cuenta asociada');
       }
-
-      debugPrint('ERROR al obtener cuenta por empleado: $e');
       rethrow;
     }
   }
 
-  /// Crea una cuenta para un empleado
-  ///
-  /// [empleadoId] ID del empleado
-  /// [usuario] Nombre de usuario
-  /// [clave] Contraseña
-  /// [rolCuentaEmpleadoId] ID del rol para la cuenta
+  /// Registra una nueva cuenta de acceso para un empleado.
   Future<Map<String, dynamic>> registerEmpleadoAccount({
     required String empleadoId,
     required String usuario,
@@ -268,8 +111,6 @@ class EmpleadoRepository implements BaseRepository {
     required int rolCuentaEmpleadoId,
   }) async {
     try {
-      // Problema conocido: el endpoint debe incluir "/api" al inicio
-      // En lugar de modificar el repositorio, se debería corregir en api/index.api.dart
       return await _cuentasEmpleadosApi.registerEmpleadoAccount(
         empleadoId: empleadoId,
         usuario: usuario,
@@ -277,8 +118,6 @@ class EmpleadoRepository implements BaseRepository {
         rolCuentaEmpleadoId: rolCuentaEmpleadoId,
       );
     } catch (e) {
-      debugPrint('Error en EmpleadoRepository.registerEmpleadoAccount: $e');
-      // Mensaje específico para problemas de configuración de URL
       if (e.toString().contains('Invalid or missing authorization token')) {
         throw Exception('Error de configuración: Verifica que el endpoint para '
             'cuentas de empleados sea correcto (debe incluir /api/)');
@@ -287,12 +126,7 @@ class EmpleadoRepository implements BaseRepository {
     }
   }
 
-  /// Actualiza una cuenta de empleado
-  ///
-  /// [id] ID de la cuenta
-  /// [usuario] Nuevo nombre de usuario (opcional)
-  /// [clave] Nueva contraseña (opcional)
-  /// [rolCuentaEmpleadoId] Nuevo ID de rol (opcional)
+  /// Actualiza los datos de acceso de una cuenta de empleado.
   Future<Map<String, dynamic>> updateCuentaEmpleado({
     required int id,
     String? usuario,
@@ -300,17 +134,13 @@ class EmpleadoRepository implements BaseRepository {
     int? rolCuentaEmpleadoId,
   }) async {
     try {
-      // Problema conocido: el endpoint debe incluir "/api" al inicio
-      // En lugar de modificar el repositorio, se debería corregir en api/index.api.dart
       return await _cuentasEmpleadosApi.updateCuentaEmpleado(
-        id: id,
+        cuentaId: id.toString(),
         usuario: usuario,
         clave: clave,
         rolCuentaEmpleadoId: rolCuentaEmpleadoId,
       );
     } catch (e) {
-      debugPrint('Error en EmpleadoRepository.updateCuentaEmpleado: $e');
-      // Mensaje específico para problemas de configuración de URL
       if (e.toString().contains('Invalid or missing authorization token')) {
         throw Exception('Error de configuración: Verifica que el endpoint para '
             'cuentas de empleados sea correcto (debe incluir /api/)');
@@ -319,25 +149,14 @@ class EmpleadoRepository implements BaseRepository {
     }
   }
 
-  /// Elimina una cuenta de empleado
-  ///
-  /// [id] ID de la cuenta a eliminar
-  Future<bool> deleteCuentaEmpleado(int id) async {
-    try {
-      return await _cuentasEmpleadosApi.deleteCuentaEmpleado(id);
-    } catch (e) {
-      debugPrint('Error en EmpleadoRepository.deleteCuentaEmpleado: $e');
-      rethrow;
-    }
-  }
+  /// Elimina una cuenta de empleado por su ID.
+  Future<bool> deleteCuentaEmpleado(int id) =>
+      _cuentasEmpleadosApi.deleteCuentaEmpleado(id);
 
-  /// Obtiene información completa sobre la cuenta de un empleado
-  ///
-  /// [empleado] Empleado del que se quiere obtener información de cuenta
+  /// Obtiene la información completa consolidada de la cuenta de un empleado.
   Future<Map<String, dynamic>> obtenerInfoCuentaEmpleado(
       Empleado empleado) async {
     try {
-      // Preparar valores por defecto
       final Map<String, dynamic> resultado = <String, dynamic>{
         'cuentaNoEncontrada': false,
         'errorCargaInfo': null as String?,
@@ -347,7 +166,6 @@ class EmpleadoRepository implements BaseRepository {
         'rolActualId': null as int?,
       };
 
-      // Intentar obtener la cuenta - primero por ID de cuenta si está disponible
       if (empleado.cuentaEmpleadoId != null) {
         try {
           final int? cuentaIdInt = int.tryParse(empleado.cuentaEmpleadoId!);
@@ -355,32 +173,24 @@ class EmpleadoRepository implements BaseRepository {
             final Map<String, dynamic>? cuentaInfo =
                 await getCuentaEmpleadoById(cuentaIdInt);
             if (cuentaInfo != null) {
-              // Cuenta encontrada por ID
               resultado['usuarioActual'] = cuentaInfo['usuario']?.toString();
               resultado['cuentaId'] = empleado.cuentaEmpleadoId;
 
-              // Obtener información del rol si está disponible
               final rolId = cuentaInfo['rolCuentaEmpleadoId'];
               if (rolId != null) {
                 resultado['rolActualId'] = rolId;
                 resultado['rolCuentaActual'] = await obtenerNombreRol(rolId);
               }
-
               return resultado;
             }
           }
         } catch (e) {
-          final String errorStr = e.toString();
-          // Si es error de "no encontrado", solo continuamos al siguiente método
-          // Si es error de autenticación, lo propagamos
-          if (_esErrorAutenticacion(errorStr)) {
+          if (_esErrorAutenticacion(e.toString())) {
             rethrow;
           }
-          // Para otros errores, continuamos con el siguiente método
         }
       }
 
-      // Si llegamos aquí, intentamos encontrar la cuenta por ID de empleado
       try {
         final Map<String, dynamic>? cuentaInfo =
             await getCuentaByEmpleadoId(empleado.id);
@@ -389,32 +199,25 @@ class EmpleadoRepository implements BaseRepository {
           resultado['usuarioActual'] = cuentaInfo['usuario']?.toString();
           resultado['cuentaId'] = cuentaInfo['id']?.toString();
 
-          // Obtener información del rol si está disponible
           final rolId = cuentaInfo['rolCuentaEmpleadoId'];
           if (rolId != null) {
             resultado['rolActualId'] = rolId;
             resultado['rolCuentaActual'] = await obtenerNombreRol(rolId);
           }
-
           return resultado;
         } else {
-          // API devolvió null - no hay cuenta
           resultado['cuentaNoEncontrada'] = true;
           return resultado;
         }
       } catch (e) {
         final String errorStr = e.toString();
-
         if (_esErrorNotFound(errorStr)) {
           resultado['cuentaNoEncontrada'] = true;
           return resultado;
         }
-
         if (_esErrorAutenticacion(errorStr)) {
           rethrow;
         }
-
-        // Cualquier otro error
         resultado['errorCargaInfo'] =
             'Error: ${errorStr.replaceAll('Exception: ', '')}';
         return resultado;
@@ -428,8 +231,6 @@ class EmpleadoRepository implements BaseRepository {
           'rolCuentaActual': null,
         };
       }
-
-      debugPrint('Error en EmpleadoRepository.obtenerInfoCuentaEmpleado: $e');
       return {
         'cuentaNoEncontrada': _esErrorNotFound(e.toString()),
         'errorCargaInfo': 'Error: $e',
@@ -439,9 +240,7 @@ class EmpleadoRepository implements BaseRepository {
     }
   }
 
-  /// Obtiene el nombre de un rol a partir de su ID
-  ///
-  /// [rolId] ID del rol
+  /// Obtiene el nombre de un rol de cuenta por su ID.
   Future<String?> obtenerNombreRol(int rolId) async {
     try {
       final List<Map<String, dynamic>> roles = await getRolesCuentas();
@@ -449,59 +248,44 @@ class EmpleadoRepository implements BaseRepository {
         (Map<String, dynamic> r) => r['id'] == rolId,
         orElse: () => <String, dynamic>{},
       );
-
       return rol['nombre'] ?? rol['codigo'] ?? 'Rol #$rolId';
-    } catch (e) {
-      debugPrint('Error en EmpleadoRepository.obtenerNombreRol: $e');
+    } catch (_) {
       return null;
     }
   }
 
-  /// Crea un nuevo rol de cuenta de empleado
-  ///
-  /// [nombre] Nombre del rol
-  /// [codigo] Código único del rol
+  /// Crea un nuevo rol de cuenta validando que sea único.
   Future<Map<String, dynamic>?> crearRolCuenta({
     required String nombre,
     required String codigo,
   }) async {
-    try {
-      // Validar que el código sea único
-      final roles = await getRolesCuentas();
-      if (roles.any((rol) =>
-          rol['codigo'].toString().toLowerCase() == codigo.toLowerCase())) {
-        throw ApiException(
-          statusCode: 400,
-          message: 'Ya existe un rol con el código "$codigo"',
-          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
-        );
-      }
-
-      // Validar que el nombre sea único
-      if (roles.any((rol) =>
-          rol['nombreRol']?.toString().toLowerCase() == nombre.toLowerCase() ||
-          rol['nombre']?.toString().toLowerCase() == nombre.toLowerCase())) {
-        throw ApiException(
-          statusCode: 400,
-          message: 'Ya existe un rol con el nombre "$nombre"',
-          errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
-        );
-      }
-
-      // Llamar al endpoint de creación de rol
-      return await _cuentasEmpleadosApi.createRolCuenta(
-        nombre: nombre,
-        codigo: codigo,
+    final roles = await getRolesCuentas();
+    if (roles.any((rol) =>
+        rol['codigo'].toString().toLowerCase() == codigo.toLowerCase())) {
+      throw ApiException(
+        statusCode: 400,
+        message: 'Ya existe un rol con el código "$codigo"',
+        errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
       );
-    } catch (e) {
-      debugPrint('Error en EmpleadoRepository.crearRolCuenta: $e');
-      rethrow;
     }
+
+    if (roles.any((rol) =>
+        rol['nombreRol']?.toString().toLowerCase() == nombre.toLowerCase() ||
+        rol['nombre']?.toString().toLowerCase() == nombre.toLowerCase())) {
+      throw ApiException(
+        statusCode: 400,
+        message: 'Ya existe un rol con el nombre "$nombre"',
+        errorCode: ApiConstants.errorCodes[400] ?? ApiConstants.unknownError,
+      );
+    }
+
+    return _cuentasEmpleadosApi.createRolCuenta(
+      nombre: nombre,
+      codigo: codigo,
+    );
   }
 
-  /// Valida los datos de una cuenta de empleado
-  ///
-  /// Lanza ApiException si los datos son inválidos
+  /// Valida la estructura lógica de los datos de cuenta.
   void validarDatosCuenta({
     String? usuario,
     String? clave,
@@ -534,9 +318,7 @@ class EmpleadoRepository implements BaseRepository {
     }
   }
 
-  /// Valida el ID de cuenta de un empleado
-  ///
-  /// Lanza ApiException si el ID es inválido
+  /// Valida si el identificador de cuenta de empleado es correcto.
   void validarIdCuenta(String? cuentaEmpleadoId) {
     if (cuentaEmpleadoId == null) {
       throw ApiException(
@@ -556,9 +338,6 @@ class EmpleadoRepository implements BaseRepository {
     }
   }
 
-  // MÉTODOS AUXILIARES
-
-  /// Determina si un error es debido a recurso no encontrado
   bool _esErrorNotFound(String errorMessage) {
     final String msgLower = errorMessage.toLowerCase();
     final List<String> errorNotFoundResponses = <String>[
@@ -568,11 +347,9 @@ class EmpleadoRepository implements BaseRepository {
       'no existe',
       'empleado no tiene cuenta'
     ];
-
     return errorNotFoundResponses.any(msgLower.contains);
   }
 
-  /// Determina si un error es debido a problemas de autenticación
   bool _esErrorAutenticacion(String errorMessage) {
     final String msgLower = errorMessage.toLowerCase();
     final List<String> errorAuthResponses = <String>[
@@ -581,7 +358,6 @@ class EmpleadoRepository implements BaseRepository {
       'sesión expirada',
       'token inválido'
     ];
-
     return errorAuthResponses.any(msgLower.contains);
   }
 }

@@ -231,7 +231,7 @@ class _EmpleadoCuentaDialogState extends State<EmpleadoCuentaDialog> {
       } else {
         setState(() {
           _isLoading = false;
-          _errorMessage =
+          _errorMessage ??=
               'No se pudo ${_esNuevaCuenta ? "crear" : "actualizar"} la cuenta';
         });
       }

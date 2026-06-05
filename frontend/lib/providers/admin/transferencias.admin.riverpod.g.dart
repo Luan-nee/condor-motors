@@ -7,7 +7,7 @@ part of 'transferencias.admin.riverpod.dart';
 // **************************************************************************
 
 String _$transferenciasAdminHash() =>
-    r'5114b9c44e3a137ff44353f3fbcfc9bbc159f1a3';
+    r'54c41fcf2116a53d355ed6b9d1bfc82e9d62d645';
 
 /// See also [TransferenciasAdmin].
 @ProviderFor(TransferenciasAdmin)

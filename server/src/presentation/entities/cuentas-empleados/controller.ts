@@ -159,4 +159,30 @@ export class CuentasEmpleadosController {
         handleError(error, res)
       })
   }
+
+  getByEmpleadoId = (req: Request, res: Response) => {
+    if (req.authPayload === undefined) {
+      CustomResponse.unauthorized({ res })
+      return
+    }
+
+    const [error, numericIdDto] = NumericIdDto.create(req.params)
+    if (error !== undefined || numericIdDto === undefined) {
+      CustomResponse.badRequest({ res, error })
+      return
+    }
+
+    const { authPayload } = req
+
+    const getCuentaEmpleado = new GetCuentaEmpleado(authPayload)
+
+    getCuentaEmpleado
+      .execute(numericIdDto, 'empleado')
+      .then((cuentaEmpleado) => {
+        CustomResponse.success({ res, data: cuentaEmpleado })
+      })
+      .catch((error: unknown) => {
+        handleError(error, res)
+      })
+  }
 }

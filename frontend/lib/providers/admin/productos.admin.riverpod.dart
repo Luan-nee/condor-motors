@@ -119,15 +119,42 @@ class ProductosAdmin extends _$ProductosAdmin {
   }
 
   Future<void> inicializar() async {
-    await Future.wait([cargarSucursales(), cargarCategorias()]);
+    state = state.copyWith(isLoadingSucursales: true, isLoadingCategorias: true);
+    try {
+      final results = await Future.wait([
+        _sucursalRepository.getSucursales(),
+        _categoriaRepository.getCategorias(),
+      ]);
 
-    // Seleccionar sucursal principal por defecto
-    if (state.sucursales.isNotEmpty) {
-      final principal = state.sucursales.firstWhere(
-        (s) => s.nombre.toLowerCase().contains('principal'),
-        orElse: () => state.sucursales.first,
+      final sucursales = results[0] as List<Sucursal>;
+      final categorias = results[1] as List<Categoria>;
+
+      Sucursal? principal;
+      if (sucursales.isNotEmpty) {
+        principal = sucursales.firstWhere(
+          (s) => s.nombre.toLowerCase().contains('principal'),
+          orElse: () => sucursales.first,
+        );
+      }
+
+      state = state.copyWith(
+        sucursales: sucursales,
+        categorias: categorias,
+        selectedSucursal: principal,
+        isLoadingSucursales: false,
+        isLoadingCategorias: false,
+        isLoading: principal != null,
       );
-      await seleccionarSucursal(principal);
+
+      if (principal != null) {
+        await cargarProductos();
+      }
+    } catch (e) {
+      state = state.copyWith(
+        errorMessage: 'Error en la inicialización: $e',
+        isLoadingSucursales: false,
+        isLoadingCategorias: false,
+      );
     }
   }
 

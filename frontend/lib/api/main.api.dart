@@ -2,142 +2,17 @@ import 'dart:async';
 import 'dart:io'; // Necesario para HttpHeaders
 import 'dart:math';
 
+import 'package:condorsmotors/api/api_errors.dart';
 import 'package:condorsmotors/api/index.api.dart' as api_index;
 import 'package:condorsmotors/utils/logger.dart';
 import 'package:condorsmotors/utils/secure_storage_utils.dart';
 import 'package:dio/dio.dart';
 
-// Constantes de error y estado
-class ApiConstants {
-  static const errorCodes = {
-    400: 'bad_request',
-    401: 'unauthorized',
-    403: 'unauthorized',
-    404: 'not_found',
-    409: 'conflict',
-    422: 'unprocessable_entity',
-    429: 'too_many_requests',
-    500: 'server_error',
-    501: 'not_implemented',
-    502: 'bad_gateway',
-    503: 'service_unavailable',
-  };
-
-  static const errorMessages = {
-    'bad_request': 'Solicitud inválida',
-    'unauthorized': 'No autorizado',
-    'not_found': 'Recurso no encontrado',
-    'conflict': 'Conflicto con el estado actual',
-    'unprocessable_entity': 'Entidad no procesable',
-    'too_many_requests': 'Demasiadas solicitudes',
-    'server_error': 'Error interno del servidor',
-    'not_implemented': 'No implementado',
-    'bad_gateway': 'Error de puerta de enlace',
-    'service_unavailable': 'Servicio no disponible',
-    'network_error': 'Error de red',
-    'connection_failed': 'Error de conexión',
-    'unknown_error': 'Error inesperado',
-  };
-
-  static const String invalidTokenMessage =
-      'Invalid or missing authorization token';
-  static const String unknownError = 'unknown_error';
-}
-
-class ApiException implements Exception {
-  final int statusCode;
-  final String message;
-  final String errorCode;
-  final dynamic data;
-  final String? redirect;
-
-  ApiException({
-    required this.statusCode,
-    required this.message,
-    required this.errorCode,
-    this.data,
-    this.redirect,
-  });
-
-  factory ApiException.fromDioError(DioException error) {
-    final errorStatusCode = error.response?.statusCode ?? 500;
-    final errorData = error.response?.data;
-
-    // Si hay un mensaje del servidor, usarlo directamente
-    if (errorData is Map<String, dynamic> && errorData['error'] != null) {
-      return ApiException(
-        statusCode: errorStatusCode,
-        message: errorData['error'].toString(),
-        errorCode: ApiConstants.errorCodes[errorStatusCode] ??
-            ApiConstants.unknownError,
-        data: errorData,
-        redirect: errorData['redirect']?.toString(),
-      );
-    }
-
-    // Determinar código de error basado en el tipo de error
-    final errorCode = _getErrorCodeFromDioError(error);
-    final message = _extractErrorMessage(errorData) ??
-        ApiConstants.errorMessages[errorCode] ??
-        'Error inesperado';
-
-    Logger.error('${error.type} - $errorCode: $message');
-
-    return ApiException(
-      statusCode: errorStatusCode,
-      message: message,
-      errorCode: errorCode,
-      data: errorData,
-    );
-  }
-
-  static String _getErrorCodeFromDioError(DioException error) {
-    if (error.type == DioExceptionType.badResponse) {
-      return ApiConstants.errorCodes[error.response?.statusCode] ??
-          ApiConstants.unknownError;
-    }
-
-    switch (error.type) {
-      case DioExceptionType.connectionTimeout:
-      case DioExceptionType.sendTimeout:
-      case DioExceptionType.receiveTimeout:
-        return 'network_error';
-      case DioExceptionType.connectionError:
-        return 'connection_failed';
-      default:
-        return ApiConstants.unknownError;
-    }
-  }
-
-  static String? _extractErrorMessage(data) {
-    if (data == null) {
-      return null;
-    }
-    if (data is String) {
-      return data;
-    }
-    if (data is Map<String, dynamic>) {
-      return data['error']?.toString() ??
-          data['message']?.toString() ??
-          data['msg']?.toString();
-    }
-    return null;
-  }
-
-  @override
-  String toString() => message;
-}
-
-// Constantes para almacenamiento de tokens
-class TokenConstants {
-  static const String accessTokenKey = 'access_token';
-  static const String refreshTokenKey = 'refresh_token';
-}
+export 'package:condorsmotors/api/api_errors.dart';
 
 class ApiClient {
   String baseUrl;
   late Dio _dio;
-  final Map<String, dynamic> _cache = {};
 
   static final _defaultHeaders = {
     'Content-Type': 'application/json',
@@ -291,6 +166,11 @@ class ApiClient {
   Interceptor _createAuthInterceptor() {
     return InterceptorsWrapper(
       onRequest: (options, handler) async {
+        final bool requiresAuth = options.extra['requiresAuth'] == true;
+        if (!requiresAuth) {
+          logDebug('Interceptor onRequest: La llamada es pública. No se requiere token.');
+          return handler.next(options);
+        }
         final token = await api_index.RefreshTokenManager.getAccessToken(
             baseUrl: api_index.getCurrentBaseUrl());
         logDebug(
@@ -309,11 +189,13 @@ class ApiClient {
         final status = error.response?.statusCode;
         final path = error.requestOptions.path;
         final queryParams = error.requestOptions.queryParameters;
+        final bool requiresAuth = error.requestOptions.extra['requiresAuth'] == true;
         logDebug(
             'Interceptor onError: type=${error.runtimeType}, status=$status, path=$path');
         logDebug('Interceptor onError: responseBody=${error.response?.data}');
 
         if ((status == 401 || status == 403) &&
+            requiresAuth &&
             !path.contains('/auth/refresh') &&
             !path.contains('/logout') &&
             queryParams['x-no-retry-on-401'] != 'true') {
@@ -449,11 +331,13 @@ class ApiClient {
     Object? body,
     Map<String, String>? queryParams,
     bool requiresAuth = false,
+    CancelToken? cancelToken,
   }) async {
     try {
       final Options options = Options(
         method: method,
         headers: Map<String, String>.from(_defaultHeaders),
+        extra: <String, dynamic>{'requiresAuth': requiresAuth},
       );
 
       logInfo('Enviando solicitud $method a $endpoint');
@@ -469,6 +353,7 @@ class ApiClient {
         data: body,
         queryParameters: queryParams,
         options: options,
+        cancelToken: cancelToken,
       );
 
       // Procesar token de autorización (access_token) si existe en los headers de la respuesta
@@ -576,6 +461,7 @@ class ApiClient {
         responseType:
             ResponseType.bytes, // Importante: indicar que esperamos bytes
         validateStatus: (status) => status != null && status < 500,
+        extra: <String, dynamic>{'requiresAuth': true},
       );
 
       logInfo(
@@ -613,9 +499,6 @@ class ApiClient {
   Future<void> clearState() async {
     try {
       logInfo('Limpiando estado del cliente API...');
-
-      // Limpiar caché
-      _cache.clear();
 
       // Restaurar headers por defecto
       _defaultHeaders

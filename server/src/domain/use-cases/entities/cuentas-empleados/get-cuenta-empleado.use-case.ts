@@ -20,6 +20,7 @@ export class GetCuentaEmpleado {
   private readonly selectFields = {
     id: cuentasEmpleadosTable.id,
     usuario: cuentasEmpleadosTable.usuario,
+    rolCuentaEmpleadoId: cuentasEmpleadosTable.rolId,
     rolEmpleado: rolesTable.nombre,
     empleado: {
       id: empleadosTable.id,
@@ -36,8 +37,13 @@ export class GetCuentaEmpleado {
 
   private async getRelated(
     numericIdDto: NumericIdDto,
+    searchBy: 'cuenta' | 'empleado',
     sucursalId: SucursalIdType
   ) {
+    const filterCondition = searchBy === 'cuenta'
+      ? eq(cuentasEmpleadosTable.id, numericIdDto.id)
+      : eq(cuentasEmpleadosTable.empleadoId, numericIdDto.id)
+
     return await db
       .select(this.selectFields)
       .from(cuentasEmpleadosTable)
@@ -52,13 +58,17 @@ export class GetCuentaEmpleado {
       )
       .where(
         and(
-          eq(cuentasEmpleadosTable.id, numericIdDto.id),
+          filterCondition,
           eq(empleadosTable.sucursalId, sucursalId)
         )
       )
   }
 
-  private async getAny(numericIdDto: NumericIdDto) {
+  private async getAny(numericIdDto: NumericIdDto, searchBy: 'cuenta' | 'empleado') {
+    const filterCondition = searchBy === 'cuenta'
+      ? eq(cuentasEmpleadosTable.id, numericIdDto.id)
+      : eq(cuentasEmpleadosTable.empleadoId, numericIdDto.id)
+
     return await db
       .select(this.selectFields)
       .from(cuentasEmpleadosTable)
@@ -71,27 +81,29 @@ export class GetCuentaEmpleado {
         sucursalesTable,
         eq(empleadosTable.sucursalId, sucursalesTable.id)
       )
-      .where(eq(cuentasEmpleadosTable.id, numericIdDto.id))
+      .where(filterCondition)
   }
 
   private async getCuentaEmpleado(
     numericIdDto: NumericIdDto,
+    searchBy: 'cuenta' | 'empleado',
     hasPermissionAny: boolean,
     sucursalId: SucursalIdType
   ) {
-    const empleados = hasPermissionAny
-      ? await this.getAny(numericIdDto)
-      : await this.getRelated(numericIdDto, sucursalId)
+    const records = hasPermissionAny
+      ? await this.getAny(numericIdDto, searchBy)
+      : await this.getRelated(numericIdDto, searchBy, sucursalId)
 
-    if (empleados.length < 1) {
+    if (records.length < 1) {
+      const resourceName = searchBy === 'cuenta' ? 'cuenta' : 'empleado'
       throw CustomError.notFound(
-        `No se encontró ninguna cuenta con el id ${numericIdDto.id}`
+        `No se encontró ninguna cuenta asociada para el ${resourceName} con id ${numericIdDto.id}`
       )
     }
 
-    const [empleado] = empleados
+    const [record] = records
 
-    return empleado
+    return record
   }
 
   private async validatePermissions() {
@@ -118,11 +130,12 @@ export class GetCuentaEmpleado {
     return { hasPermissionAny, sucursalId: permission.sucursalId }
   }
 
-  async execute(numericIdDto: NumericIdDto) {
+  async execute(numericIdDto: NumericIdDto, searchBy: 'cuenta' | 'empleado' = 'cuenta') {
     const { hasPermissionAny, sucursalId } = await this.validatePermissions()
 
     const cuentaEmpleado = await this.getCuentaEmpleado(
       numericIdDto,
+      searchBy,
       hasPermissionAny,
       sucursalId
     )

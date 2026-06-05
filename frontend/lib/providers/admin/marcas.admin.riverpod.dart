@@ -4,71 +4,42 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'marcas.admin.riverpod.g.dart';
 
-class MarcasAdminState {
-  final bool isLoading;
-  final bool isCreating;
-  final List<Marca> marcas;
-  final String? errorMessage;
-
-  MarcasAdminState({
-    this.isLoading = false,
-    this.isCreating = false,
-    this.marcas = const [],
-    this.errorMessage,
-  });
-
-  MarcasAdminState copyWith({
-    bool? isLoading,
-    bool? isCreating,
-    List<Marca>? marcas,
-    String? errorMessage,
-  }) {
-    return MarcasAdminState(
-      isLoading: isLoading ?? this.isLoading,
-      isCreating: isCreating ?? this.isCreating,
-      marcas: marcas ?? this.marcas,
-      errorMessage: errorMessage ?? this.errorMessage,
-    );
-  }
-}
-
+/// Notifier para la gestión de marcas en el panel de administración.
+///
+/// Patron: [AsyncNotifier] de Riverpod 2.x.
+/// Maneja el estado asíncrono nativamente mediante [AsyncValue].
 @riverpod
 class MarcasAdmin extends _$MarcasAdmin {
   late final MarcaRepository _marcaRepository;
 
   @override
-  MarcasAdminState build() {
+  FutureOr<List<Marca>> build() {
     _marcaRepository = MarcaRepository.instance;
-    Future.microtask(cargarMarcas);
-    return MarcasAdminState();
+    return _marcaRepository.getMarcas();
   }
 
+  /// Carga o recarga las marcas del servidor
+  ///
+  /// [forceRefresh] Indica si se debe ignorar el caché local
   Future<void> cargarMarcas({bool forceRefresh = false}) async {
-    state = state.copyWith(isLoading: true);
-    try {
-      final marcas = await _marcaRepository.getMarcas(forceRefresh: forceRefresh);
-      state = state.copyWith(
-        marcas: marcas,
-        isLoading: false,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        errorMessage: 'Error al cargar marcas: $e',
-        isLoading: false,
-      );
-    }
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(
+        () => _marcaRepository.getMarcas(forceRefresh: forceRefresh));
   }
 
+  /// Crea una nueva marca o actualiza una existente
+  ///
+  /// Lanza la excepción en caso de error para que la UI pueda capturarla en el formulario.
   Future<void> guardarMarca({
     Marca? marca,
     required String nombre,
     String? descripcion,
   }) async {
-    state = state.copyWith(isCreating: true);
-    try {
-      final marcaData = {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final Map<String, dynamic> marcaData = {
         'nombre': nombre,
-        'descripcion': ?descripcion,
+        'descripcion': descripcion,
       };
 
       if (marca == null) {
@@ -76,23 +47,19 @@ class MarcasAdmin extends _$MarcasAdmin {
       } else {
         await _marcaRepository.updateMarca(marca.id.toString(), marcaData);
       }
-      await cargarMarcas(forceRefresh: true);
-    } catch (e) {
-      state = state.copyWith(
-        errorMessage: 'Error al guardar marca: $e',
-        isCreating: false,
-      );
-      rethrow;
-    } finally {
-      state = state.copyWith(isCreating: false);
-    }
+
+      // Retorna la lista fresca del servidor forzando el refresco de caché
+      return _marcaRepository.getMarcas(forceRefresh: true);
+    });
   }
 
+  /// Limpia el estado de error y retorna al último valor de datos disponible
   void limpiarError() {
-    state = MarcasAdminState(
-      isLoading: state.isLoading,
-      isCreating: state.isCreating,
-      marcas: state.marcas,
-    );
+    final currentVal = state.value;
+    if (currentVal != null) {
+      state = AsyncData(currentVal);
+    } else {
+      state = const AsyncData([]);
+    }
   }
 }

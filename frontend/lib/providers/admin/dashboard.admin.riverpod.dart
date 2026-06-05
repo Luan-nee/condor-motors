@@ -126,6 +126,8 @@ class DashboardAdmin extends _$DashboardAdmin {
     _empleadoRepository = EmpleadoRepository.instance;
     _estadisticaRepository = EstadisticaRepository.instance;
 
+    Future.microtask(inicializar);
+
     return DashboardAdminState();
   }
 

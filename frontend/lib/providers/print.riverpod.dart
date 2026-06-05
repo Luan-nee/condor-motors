@@ -1,5 +1,6 @@
-import 'dart:io';
 import 'dart:typed_data';
+import 'package:condorsmotors/main.dart' show scaffoldMessengerKey;
+import 'package:condorsmotors/services/print.service.dart';
 import 'package:flutter/material.dart';
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
@@ -98,8 +99,6 @@ class PrintConfig extends _$PrintConfig {
   static const String keyImpresionDirecta = 'impresion_directa';
   static const String keyImpresoraSeleccionada = 'impresora_seleccionada';
 
-  GlobalKey<ScaffoldMessengerState>? messengerKey;
-
   double get margenIzquierdo => state.margenIzquierdo;
   double get margenDerecho => state.margenDerecho;
   double get margenSuperior => state.margenSuperior;
@@ -124,18 +123,12 @@ class PrintConfig extends _$PrintConfig {
     return const PrintState();
   }
 
-  Future<void> inicializar({GlobalKey<ScaffoldMessengerState>? key}) async {
-    if (key != null) {
-      messengerKey = key;
-    }
-  }
-
   void mostrarMensaje({
     required String mensaje,
     Color backgroundColor = Colors.black,
     Duration duration = const Duration(seconds: 3),
   }) {
-    final messenger = messengerKey?.currentState;
+    final messenger = scaffoldMessengerKey.currentState;
     if (messenger != null) {
       messenger.showSnackBar(
         SnackBar(
@@ -459,23 +452,7 @@ class PrintConfig extends _$PrintConfig {
         mostrarMensaje(mensaje: mensaje, duration: const Duration(seconds: 1));
       }
 
-      final httpClient = HttpClient()
-        ..badCertificateCallback =
-            (X509Certificate cert, String host, int port) => true;
-
-      final request = await httpClient.getUrl(Uri.parse(urlFinal));
-      final response = await request.close();
-
-      if (response.statusCode != 200) {
-        throw Exception('Error al descargar el PDF: ${response.statusCode}');
-      }
-
-      final List<int> bytesBuilder = [];
-      await for (final data in response) {
-        bytesBuilder.addAll(data);
-      }
-      final Uint8List bytes = Uint8List.fromList(bytesBuilder);
-      httpClient.close();
+      final Uint8List bytes = await PrintService.instance.downloadPdf(urlFinal);
 
       final PdfPageFormat pageFormat;
       if (state.imprimirFormatoTicket) {

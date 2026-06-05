@@ -14,6 +14,8 @@ class EmpleadoListItem extends StatefulWidget {
   final Function(Empleado) onViewDetails;
   final Function(Empleado)? onEditCuenta;
 
+  final bool mostrarBordeInferior;
+
   const EmpleadoListItem({
     super.key,
     required this.empleado,
@@ -23,6 +25,7 @@ class EmpleadoListItem extends StatefulWidget {
     required this.onDelete,
     required this.onViewDetails,
     this.onEditCuenta,
+    this.mostrarBordeInferior = true,
   });
 
   @override
@@ -40,7 +43,8 @@ class EmpleadoListItem extends StatefulWidget {
       ..add(ObjectFlagProperty<Function(Empleado p1)>.has(
           'onViewDetails', onViewDetails))
       ..add(ObjectFlagProperty<Function(Empleado p1)?>.has(
-          'onEditCuenta', onEditCuenta));
+          'onEditCuenta', onEditCuenta))
+      ..add(DiagnosticsProperty<bool>('mostrarBordeInferior', mostrarBordeInferior));
   }
 }
 
@@ -76,11 +80,13 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
               ? AppTheme.surfaceColor
               : (esInactivo ? Colors.transparent : Colors.transparent),
           border: Border(
-            bottom: BorderSide(
-              color: esInactivo
-                  ? Colors.grey.withValues(alpha: 0.2)
-                  : Colors.white.withValues(alpha: 0.1),
-            ),
+            bottom: widget.mostrarBordeInferior
+                ? BorderSide(
+                    color: esInactivo
+                        ? Colors.grey.withValues(alpha: 0.2)
+                        : Colors.white.withValues(alpha: 0.1),
+                  )
+                : BorderSide.none,
           ),
         ),
         child: Padding(
@@ -120,9 +126,11 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                                       errorBuilder: (BuildContext context,
                                               Object error,
                                               StackTrace? stackTrace) =>
-                                          const FaIcon(
+                                          FaIcon(
                                         FontAwesomeIcons.user,
-                                        color: AppTheme.primaryColor,
+                                        color: esInactivo
+                                            ? Colors.grey
+                                            : AppTheme.primaryColor,
                                         size: 16,
                                       ),
                                     ),
@@ -136,34 +144,12 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                                   ],
                                 ),
                               )
-                            : Stack(
-                                children: <Widget>[
-                                  const FaIcon(
-                                    FontAwesomeIcons.user,
-                                    color: AppTheme.primaryColor,
-                                    size: 16,
-                                  ),
-                                  if (esInactivo)
-                                    Positioned(
-                                      right: 0,
-                                      bottom: 0,
-                                      child: Container(
-                                        width: 12,
-                                        height: 12,
-                                        decoration: const BoxDecoration(
-                                          color: AppTheme.primaryColor,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Center(
-                                          child: FaIcon(
-                                            FontAwesomeIcons.xmark,
-                                            color: Colors.white,
-                                            size: 8,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                ],
+                            : FaIcon(
+                                FontAwesomeIcons.user,
+                                color: esInactivo
+                                    ? Colors.grey
+                                    : AppTheme.primaryColor,
+                                size: 16,
                               ),
                       ),
                     ),
@@ -187,16 +173,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              if (esInactivo)
-                                Container(
-                                  margin: const EdgeInsets.only(left: 4),
-                                  width: 8,
-                                  height: 8,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.grey,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
+
                             ],
                           ),
                           if (widget.empleado.cuentaEmpleadoUsuario !=
@@ -211,28 +188,7 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ],
-                          if (esInactivo) ...<Widget>[
-                            const SizedBox(height: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(
-                                  color: Colors.grey.withValues(alpha: 0.3),
-                                ),
-                              ),
-                              child: const Text(
-                                'Inactivo',
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
+
                         ],
                       ),
                     ),
@@ -304,16 +260,9 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                               widget.nombresSucursales)
                           ? FontAwesomeIcons.building
                           : FontAwesomeIcons.store,
-                      color: EmpleadosUtils.esSucursalCentral(
-                              widget.empleado.sucursalId,
-                              widget.nombresSucursales)
-                          ? (esInactivo
-                              ? const Color.fromARGB(255, 95, 208, 243)
-                                  .withValues(alpha: 0.5)
-                              : const Color.fromARGB(255, 95, 208, 243))
-                          : (esInactivo
-                              ? Colors.grey[400]!.withValues(alpha: 0.5)
-                              : Colors.grey[400]),
+                      color: esInactivo
+                          ? Colors.grey[400]!.withValues(alpha: 0.5)
+                          : Colors.grey[400],
                       size: 14,
                     ),
                     const SizedBox(width: 8),
@@ -321,21 +270,10 @@ class _EmpleadoListItemState extends State<EmpleadoListItem> {
                       child: Text(
                         _getSucursalName(),
                         style: TextStyle(
-                          color: EmpleadosUtils.esSucursalCentral(
-                                  widget.empleado.sucursalId,
-                                  widget.nombresSucursales)
-                              ? (esInactivo
-                                  ? const Color.fromARGB(255, 95, 208, 243)
-                                      .withValues(alpha: 0.5)
-                                  : const Color.fromARGB(255, 95, 208, 243))
-                              : (esInactivo
-                                  ? Colors.white.withValues(alpha: 0.4)
-                                  : Colors.white),
-                          fontWeight: EmpleadosUtils.esSucursalCentral(
-                                  widget.empleado.sucursalId,
-                                  widget.nombresSucursales)
-                              ? FontWeight.w500
-                              : FontWeight.normal,
+                          color: esInactivo
+                              ? Colors.white.withValues(alpha: 0.4)
+                              : Colors.white,
+                          fontWeight: FontWeight.normal,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),

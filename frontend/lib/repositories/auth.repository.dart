@@ -1,86 +1,47 @@
 import 'package:condorsmotors/api/index.api.dart' as api_index;
 import 'package:condorsmotors/models/auth.model.dart';
-import 'package:flutter/foundation.dart';
 
-/// Repositorio de autenticación simplificado
+/// Repositorio de autenticación.
+///
+/// Encapsula el acceso y gestión del estado de autenticación,
+/// delegando operaciones directamente en AuthManager.
 class AuthRepository {
-  /// Instancia singleton del repositorio
   static final AuthRepository _instance = AuthRepository._internal();
   static AuthRepository get instance => _instance;
 
   AuthRepository._internal();
 
-  /// Inicia sesión con usuario y contraseña
-  Future<AuthUser> login(String username, String password,
-      {bool saveAutoLogin = false}) async {
-    try {
-      // Usar AuthManager directamente
-      final userData = await api_index.AuthManager.login(username, password,
-          saveAutoLogin: saveAutoLogin);
-
-      if (userData == null) {
-        throw Exception('Credenciales inválidas');
-      }
-
-      return AuthUser.fromJson(userData);
-    } catch (e) {
-      debugPrint('Error en AuthRepository.login: $e');
-      rethrow;
+  /// Inicia sesión con credenciales de usuario.
+  Future<AuthUser> login(
+    String username,
+    String password, {
+    bool saveAutoLogin = false,
+  }) async {
+    final userData = await api_index.AuthManager.login(
+      username,
+      password,
+      saveAutoLogin: saveAutoLogin,
+    );
+    if (userData == null) {
+      throw Exception('Credenciales inválidas');
     }
+    return AuthUser.fromJson(userData);
   }
 
-  /// Cierra la sesión
-  Future<void> logout() async {
-    try {
-      // Usar AuthManager directamente
-      await api_index.AuthManager.logout();
-    } catch (e) {
-      debugPrint('Error en AuthRepository.logout: $e');
-      rethrow;
-    }
-  }
+  /// Cierra la sesión activa del usuario.
+  Future<void> logout() => api_index.AuthManager.logout();
 
-  /// Verifica si el token es válido
-  Future<bool> verificarToken() async {
-    try {
-      // Usar AuthManager directamente
-      return await api_index.AuthManager.verificarToken();
-    } catch (e) {
-      debugPrint('Error en AuthRepository.verificarToken: $e');
-      return false;
-    }
-  }
+  /// Verifica la validez del token de acceso actual.
+  Future<bool> verificarToken() => api_index.AuthManager.verificarToken();
 
-  /// Obtiene datos del usuario
-  Future<Map<String, dynamic>?> getUserData() async {
-    try {
-      // Usar AuthManager directamente
-      return await api_index.AuthManager.getUserData();
-    } catch (e) {
-      debugPrint('Error en AuthRepository.getUserData: $e');
-      return null;
-    }
-  }
+  /// Obtiene los datos del usuario autenticado.
+  Future<Map<String, dynamic>?> getUserData() =>
+      api_index.AuthManager.getUserData();
 
-  /// Guarda datos del usuario
-  Future<void> saveUserData(AuthUser usuario) async {
-    try {
-      // Usar AuthManager directamente
-      await api_index.AuthManager.saveUserData(usuario.toMap());
-    } catch (e) {
-      debugPrint('Error en AuthRepository.saveUserData: $e');
-      rethrow;
-    }
-  }
+  /// Almacena localmente los datos de un usuario autenticado.
+  Future<void> saveUserData(AuthUser usuario) =>
+      api_index.AuthManager.saveUserData(usuario.toMap());
 
-  /// Limpia todos los tokens
-  Future<void> clearTokens() async {
-    try {
-      // Usar AuthManager directamente
-      await api_index.AuthManager.clearTokens();
-    } catch (e) {
-      debugPrint('Error en AuthRepository.clearTokens: $e');
-      rethrow;
-    }
-  }
+  /// Limpia todos los tokens y credenciales locales almacenadas.
+  Future<void> clearTokens() => api_index.AuthManager.clearTokens();
 }

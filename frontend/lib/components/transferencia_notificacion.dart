@@ -7,7 +7,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 /// Servicio de notificaciones para transferencias de inventario.
 ///
 /// Patron: Facade sobre [FlutterLocalNotificationsPlugin].
-/// En Windows, las notificaciones toast se delegan a [win_toast] via
+/// En Windows, las notificaciones toast se delegan al paquete win_toast via
 /// la inicializacion del plugin con [WindowsInitializationSettings].
 ///
 /// Complejidad: O(1) por llamada — operaciones de I/O asincronas sin iteracion.

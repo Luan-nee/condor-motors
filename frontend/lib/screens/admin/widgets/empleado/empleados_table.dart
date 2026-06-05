@@ -15,6 +15,7 @@ class EmpleadosTable extends StatefulWidget {
   final Function(Empleado) onEmpleadoDetails;
   final Function(Empleado)? onEditCuenta;
   final VoidCallback onRefresh;
+  final bool isLoading;
 
   const EmpleadosTable({
     super.key,
@@ -27,6 +28,7 @@ class EmpleadosTable extends StatefulWidget {
     required this.onEmpleadoDetails,
     this.onEditCuenta,
     required this.onRefresh,
+    this.isLoading = false,
   });
 
   @override
@@ -47,12 +49,14 @@ class EmpleadosTable extends StatefulWidget {
           'onEmpleadoDetails', onEmpleadoDetails))
       ..add(ObjectFlagProperty<Function(Empleado p1)?>.has(
           'onEditCuenta', onEditCuenta))
-      ..add(ObjectFlagProperty<VoidCallback>.has('onRefresh', onRefresh));
+      ..add(ObjectFlagProperty<VoidCallback>.has('onRefresh', onRefresh))
+      ..add(DiagnosticsProperty<bool>('isLoading', isLoading));
   }
 }
 
 class _EmpleadosTableState extends State<EmpleadosTable> {
   // Estado para controlar si la sección de inactivos está expandida
+  bool _isInactivosExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -68,14 +72,19 @@ class _EmpleadosTableState extends State<EmpleadosTable> {
     final bool hayEmpleadosInactivos = empleadosInactivos.isNotEmpty;
 
     return DecoratedBox(
+      position: DecorationPosition.foreground,
       decoration: BoxDecoration(
-        color: AppTheme.darkSurface,
         borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.1),
         ),
       ),
-      child: widget.empleados.isEmpty
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppTheme.darkSurface,
+          borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
+        ),
+        child: (widget.empleados.isEmpty && !widget.isLoading)
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -96,133 +105,177 @@ class _EmpleadosTableState extends State<EmpleadosTable> {
                 ],
               ),
             )
-          : SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  // Encabezado de la tabla
-                  Container(
-                    decoration: const BoxDecoration(
-                      color: AppTheme.surfaceColor,
-                      borderRadius:
-                          BorderRadius.vertical(top: Radius.circular(12)),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 16, horizontal: 20),
-                    child: const Row(
-                      children: <Widget>[
-                        // Nombre (30% del ancho)
-                        Expanded(
-                          flex: 30,
-                          child: Text(
-                            'Nombre',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        // Celular (15% del ancho)
-                        Expanded(
-                          flex: 15,
-                          child: Text(
-                            'Celular',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        // Rol (20% del ancho)
-                        Expanded(
-                          flex: 20,
-                          child: Text(
-                            'Rol',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        // Sucursal (30% del ancho)
-                        Expanded(
-                          flex: 30,
-                          child: Text(
-                            'Sucursal',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        // Acciones (5% del ancho - Ajustado para coincidir con ListItem)
-                        Expanded(
-                          flex: 15,
-                          child: Center(
-                            child: Text(
-                              'Acciones',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                // Encabezado de la tabla (siempre visible)
+                Container(
+                  decoration: const BoxDecoration(
+                    color: AppTheme.surfaceColor,
+                    borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(12)),
                   ),
-                  // Filas de colaboradores activos
-                  ...empleadosActivos.map((empleado) => EmpleadoListItem(
-                        empleado: empleado,
-                        nombresSucursales: widget.nombresSucursales,
-                        obtenerRolDeEmpleado: widget.obtenerRolDeEmpleado,
-                        onEdit: widget.onEmpleadoEdited,
-                        onDelete: widget.onEmpleadoDeleted,
-                        onViewDetails: widget.onEmpleadoDetails,
-                        onEditCuenta: widget.onEditCuenta,
-                      )),
-                  // Sección desplegable de colaboradores inactivos
-                  if (hayEmpleadosInactivos) ...[
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: AppTheme.surfaceColor,
-                        border: Border(
-                          top: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.1),
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 16, horizontal: 20),
+                  child: const Row(
+                    children: <Widget>[
+                      // Nombre (25% del ancho)
+                      Expanded(
+                        flex: 25,
+                        child: Text(
+                          'Nombre',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                      child: ExpansionTile(
-                        title: Text(
-                          'Colaboradores Inactivos (${empleadosInactivos.length})',
-                          style: const TextStyle(
-                            color: Colors.white54,
-                            fontSize: 14,
+                      // Celular (15% del ancho)
+                      Expanded(
+                        flex: 15,
+                        child: Text(
+                          'Celular',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                        iconColor: Colors.white54,
-                        collapsedIconColor: Colors.white54,
-                        backgroundColor: Colors.transparent,
-                        collapsedBackgroundColor: Colors.transparent,
-                        children: empleadosInactivos
-                            .map((empleado) => EmpleadoListItem(
-                                  empleado: empleado,
-                                  nombresSucursales: widget.nombresSucursales,
-                                  obtenerRolDeEmpleado:
-                                      widget.obtenerRolDeEmpleado,
-                                  onEdit: widget.onEmpleadoEdited,
-                                  onDelete: widget.onEmpleadoDeleted,
-                                  onViewDetails: widget.onEmpleadoDetails,
-                                  onEditCuenta: widget.onEditCuenta,
-                                ))
-                            .toList(),
                       ),
-                    ),
-                  ],
-                ],
-              ),
+                      // Rol (20% del ancho)
+                      Expanded(
+                        flex: 20,
+                        child: Text(
+                          'Rol',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      // Sucursal (25% del ancho)
+                      Expanded(
+                        flex: 25,
+                        child: Text(
+                          'Sucursal',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      // Acciones (15% del ancho - Ajustado para coincidir con ListItem)
+                      Expanded(
+                        flex: 15,
+                        child: Center(
+                          child: Text(
+                            'Acciones',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(
+                  height: 2,
+                  child: (widget.isLoading && widget.empleados.isNotEmpty)
+                      ? const LinearProgressIndicator(
+                          backgroundColor: Colors.white12,
+                          color: AppTheme.primaryColor,
+                          minHeight: 2,
+                        )
+                      : const SizedBox.shrink(),
+                ),
+                // Cuerpo de la tabla (scrollable y reactivo a la carga)
+                Expanded(
+                  child: (widget.isLoading && widget.empleados.isEmpty)
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: AppTheme.primaryColor,
+                          ),
+                        )
+                      : SingleChildScrollView(
+                          child: AnimatedOpacity(
+                            opacity: widget.isLoading ? 0.5 : 1.0,
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeInOut,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: <Widget>[
+                                ...empleadosActivos.map((empleado) => EmpleadoListItem(
+                                      empleado: empleado,
+                                      nombresSucursales: widget.nombresSucursales,
+                                      obtenerRolDeEmpleado: widget.obtenerRolDeEmpleado,
+                                      onEdit: widget.onEmpleadoEdited,
+                                      onDelete: widget.onEmpleadoDeleted,
+                                      onViewDetails: widget.onEmpleadoDetails,
+                                      onEditCuenta: widget.onEditCuenta,
+                                      mostrarBordeInferior:
+                                          empleado != empleadosActivos.last ||
+                                              (hayEmpleadosInactivos &&
+                                                  !_isInactivosExpanded),
+                                    )),
+                                // Sección desplegable de colaboradores inactivos
+                                if (hayEmpleadosInactivos) ...[
+                                  DecoratedBox(
+                                    decoration: const BoxDecoration(
+                                      color: AppTheme.surfaceColor,
+                                    ),
+                                    child: ExpansionTile(
+                                      shape: const Border(),
+                                      collapsedShape: const Border(),
+                                      onExpansionChanged: (bool expanded) {
+                                        setState(() {
+                                          _isInactivosExpanded = expanded;
+                                        });
+                                      },
+                                      tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                                      dense: true,
+                                      visualDensity: VisualDensity.compact,
+                                      title: Text(
+                                        'Colaboradores Inactivos (${empleadosInactivos.length})',
+                                        style: const TextStyle(
+                                          color: Colors.white54,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      iconColor: Colors.white54,
+                                      collapsedIconColor: Colors.white54,
+                                      backgroundColor: Colors.transparent,
+                                      collapsedBackgroundColor: Colors.transparent,
+                                      children: empleadosInactivos
+                                          .map((empleado) => ColoredBox(
+                                                color: AppTheme.darkSurface,
+                                                child: EmpleadoListItem(
+                                                  empleado: empleado,
+                                                  nombresSucursales: widget.nombresSucursales,
+                                                  obtenerRolDeEmpleado:
+                                                      widget.obtenerRolDeEmpleado,
+                                                  onEdit: widget.onEmpleadoEdited,
+                                                  onDelete: widget.onEmpleadoDeleted,
+                                                  onViewDetails: widget.onEmpleadoDetails,
+                                                  onEditCuenta: widget.onEditCuenta,
+                                                  mostrarBordeInferior:
+                                                      empleado !=
+                                                          empleadosInactivos
+                                                              .last,
+                                                ),
+                                              ))
+                                          .toList(),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                ),
+              ],
             ),
+      ),
     );
   }
 }

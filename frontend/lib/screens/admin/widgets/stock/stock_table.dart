@@ -189,12 +189,19 @@ class _TableProductsState extends State<TableProducts> {
       );
     }
 
-    // 3. Si no hay sucursal seleccionada
+    // 3. Si no hay sucursal seleccionada (Se muestra el spinner de carga al inicio)
     if (widget.selectedSucursalId.isEmpty) {
       return const Center(
-        child: Text(
-          'Seleccione una sucursal para ver su inventario',
-          style: TextStyle(color: Colors.white, fontSize: 16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            CircularProgressIndicator(color: AppTheme.primaryColor),
+            SizedBox(height: 16),
+            Text(
+              'Cargando inventario...',
+              style: TextStyle(color: Colors.white54),
+            ),
+          ],
         ),
       );
     }

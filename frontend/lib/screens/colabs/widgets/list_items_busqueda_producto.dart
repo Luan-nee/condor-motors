@@ -49,28 +49,32 @@ class ListItemBusquedaProducto extends StatelessWidget {
     final bool tieneStock = producto.stock > 0;
     final bool tienePromocion = producto.tienePromocion;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      clipBehavior: Clip.antiAlias,
-      elevation: 0,
-      color: darkSurface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: Colors.white10, width: 0.5),
+        ),
       ),
-      child: InkWell(
-        onTap: () => onProductoSeleccionado(producto),
-        child: Padding(
-          padding: EdgeInsets.all(isMobile ? 12.0 : 16.0),
-          child: Row(
-            children: <Widget>[
-              _buildProductIcon(context, tienePromocion, tieneStock,
-                  tienePromocionGratis, tieneDescuentoPorcentual, producto),
-              SizedBox(width: isMobile ? 12 : 16),
-              Expanded(
-                child: _buildProductInfo(tienePromocion, enLiquidacion,
-                    tienePromocionGratis, tieneDescuentoPorcentual),
-              ),
-            ],
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => onProductoSeleccionado(producto),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 8.0 : 12.0,
+              vertical: isMobile ? 10.0 : 12.0,
+            ),
+            child: Row(
+              children: <Widget>[
+                _buildProductIcon(context, tienePromocion, tieneStock,
+                    tienePromocionGratis, tieneDescuentoPorcentual, producto),
+                SizedBox(width: isMobile ? 12 : 16),
+                Expanded(
+                  child: _buildProductInfo(tienePromocion, enLiquidacion,
+                      tienePromocionGratis, tieneDescuentoPorcentual),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -190,15 +194,6 @@ class ListItemBusquedaProducto extends StatelessWidget {
 
   Widget _buildProductHeader(bool enLiquidacion, bool tienePromocionGratis,
       bool tieneDescuentoPorcentual) {
-    Color nombreColor = Colors.white;
-    if (enLiquidacion) {
-      nombreColor = Colors.amber;
-    } else if (tienePromocionGratis) {
-      nombreColor = Colors.green;
-    } else if (tieneDescuentoPorcentual) {
-      nombreColor = Colors.purple;
-    }
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -208,7 +203,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: isMobile ? 16 : 18,
-              color: nombreColor,
+              color: Colors.white,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -302,8 +297,8 @@ class ListItemBusquedaProducto extends StatelessWidget {
                       children: <Widget>[
                         Text(
                           producto.nombre,
-                          style: TextStyle(
-                            color: colorPromocion,
+                          style: const TextStyle(
+                            color: Colors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -417,7 +412,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
                   icon: const Icon(Icons.check_circle),
                   label: const Text('Seleccionar Producto'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: colorPromocion,
+                    backgroundColor: AppTheme.primaryColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -485,11 +480,18 @@ class ListItemBusquedaProducto extends StatelessWidget {
 
   Widget _buildProductDetails() {
     final bool tieneStock = producto.stock > 0;
+    final Color stockColor = tieneStock ? Colors.green : Colors.red;
     return Row(
       children: <Widget>[
+        const FaIcon(
+          FontAwesomeIcons.barcode,
+          size: 11,
+          color: Colors.white54,
+        ),
+        const SizedBox(width: 6),
         Expanded(
           child: Text(
-            'Código: ${producto.sku}',
+            producto.sku,
             style: const TextStyle(
               fontSize: 13,
               color: Colors.white70,
@@ -498,11 +500,17 @@ class ListItemBusquedaProducto extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
+        FaIcon(
+          FontAwesomeIcons.cube,
+          size: 11,
+          color: stockColor,
+        ),
+        const SizedBox(width: 4),
         Text(
-          'Stock: ${producto.stock}',
+          '${producto.stock}',
           style: TextStyle(
             fontSize: 13,
-            color: tieneStock ? Colors.green : Colors.red,
+            color: stockColor,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -542,7 +550,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
             style: const TextStyle(
               decoration: TextDecoration.lineThrough,
               color: Colors.white54,
-              fontSize: 14,
+              fontSize: 12,
             ),
           ),
           const SizedBox(width: 6),
@@ -553,7 +561,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
                 style: TextStyle(
                   color: Colors.amber,
                   fontWeight: FontWeight.bold,
-                  fontSize: isMobile ? 18 : 20,
+                  fontSize: isMobile ? 15 : 16,
                 ),
               ),
               const SizedBox(width: 4),
@@ -567,7 +575,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
                   '-${_calcularDescuentoPorcentaje(producto.precioVenta, producto.precioOferta!)}%',
                   style: const TextStyle(
                     color: Colors.amber,
-                    fontSize: 12,
+                    fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -579,7 +587,7 @@ class ListItemBusquedaProducto extends StatelessWidget {
             'S/ ${producto.precioVenta.toStringAsFixed(2)}',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              fontSize: isMobile ? 18 : 20,
+              fontSize: isMobile ? 15 : 16,
               color: Colors.white,
             ),
           ),

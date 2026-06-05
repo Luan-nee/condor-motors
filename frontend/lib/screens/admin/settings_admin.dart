@@ -206,7 +206,6 @@ class _SettingsAdminScreenState extends ConsumerState<SettingsAdminScreen> {
       
                     // Fila de acción para guardar alineada a la derecha
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         ElevatedButton.icon(
                           icon: const FaIcon(FontAwesomeIcons.floppyDisk,

@@ -59,12 +59,13 @@ class TransferenciasAdminState {
     int? userPreferredPageSize,
     Paginacion? paginacion,
     TransferenciaInventario? detalleTransferenciaActual,
+    bool clearError = false,
   }) {
     return TransferenciasAdminState(
       transferencias: transferencias ?? this.transferencias,
       sucursales: sucursales ?? this.sucursales,
       isLoading: isLoading ?? this.isLoading,
-      errorMessage: errorMessage ?? this.errorMessage,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       selectedFilter: selectedFilter ?? this.selectedFilter,
       searchQuery: searchQuery ?? this.searchQuery,
       fechaInicio: fechaInicio ?? this.fechaInicio,
@@ -359,6 +360,6 @@ class TransferenciasAdmin extends _$TransferenciasAdmin {
   }
 
   void limpiarErrores() {
-    state = state.copyWith();
+    state = state.copyWith(clearError: true);
   }
 }

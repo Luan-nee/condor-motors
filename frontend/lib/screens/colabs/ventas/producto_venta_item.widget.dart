@@ -1,10 +1,11 @@
+import 'dart:async';
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/repositories/producto.repository.dart';
 import 'package:condorsmotors/theme/apptheme.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-class ProductoVentaItemWidget extends StatelessWidget {
+class ProductoVentaItemWidget extends StatefulWidget {
   final Producto producto;
   final int cantidad;
   final VoidCallback onEliminar;
@@ -19,7 +20,97 @@ class ProductoVentaItemWidget extends StatelessWidget {
   });
 
   @override
+  State<ProductoVentaItemWidget> createState() => _ProductoVentaItemWidgetState();
+}
+
+class _ProductoVentaItemWidgetState extends State<ProductoVentaItemWidget> {
+  int _clickCount = 0;
+  DateTime? _lastClickTime;
+  bool _mostrarAtajos = false;
+  Timer? _inactivityTimer;
+
+  void _detectSpam() {
+    final now = DateTime.now();
+    if (_lastClickTime == null) {
+      _clickCount = 1;
+    } else {
+      final difference = now.difference(_lastClickTime!);
+      if (difference.inMilliseconds < 600) {
+        _clickCount++;
+      } else {
+        _clickCount = 1;
+      }
+    }
+    _lastClickTime = now;
+
+    if (_clickCount >= 5) {
+      setState(() {
+        _mostrarAtajos = true;
+      });
+      _resetSpamTimer();
+    }
+  }
+
+  void _resetSpamTimer() {
+    _inactivityTimer?.cancel();
+    _inactivityTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted) {
+        setState(() {
+          _mostrarAtajos = false;
+          _clickCount = 0;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _inactivityTimer?.cancel();
+    super.dispose();
+  }
+
+  Widget _buildShortcutButton(String text, int amount, int stockDisponible, bool stockLimitado) {
+    final int nuevaCantidad = widget.cantidad + amount;
+    final bool canAdd = nuevaCantidad <= stockDisponible;
+    return GestureDetector(
+      onTap: canAdd
+          ? () {
+              widget.onCambiarCantidad(nuevaCantidad);
+              _resetSpamTimer();
+            }
+          : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: canAdd
+              ? AppTheme.primaryColor.withValues(alpha: 0.15)
+              : Colors.white.withValues(alpha: 0.03),
+          border: Border.all(
+            color: canAdd
+                ? AppTheme.primaryColor.withValues(alpha: 0.3)
+                : Colors.white12,
+          ),
+          borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: canAdd ? Colors.white : Colors.white30,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final producto = widget.producto;
+    final cantidad = widget.cantidad;
+    final onEliminar = widget.onEliminar;
+    final onCambiarCantidad = widget.onCambiarCantidad;
     final int stockDisponible = producto.stock;
     final bool stockLimitado = cantidad >= stockDisponible;
     final bool promocionActivada = producto.tienePromocion && cantidad > 0;
@@ -38,31 +129,24 @@ class ProductoVentaItemWidget extends StatelessWidget {
 
     // Calcular el subtotal
     final double subtotal = precio * cantidad;
+    final bool promocionCumplida = cantidadMinima != null && cantidad >= cantidadMinima;
 
     // Determinar el color del borde según el tipo de promoción
     Color? borderColor;
     Color? backgroundColor;
-    IconData? promocionIcon;
-    String? promocionTooltip;
 
     if (promocionActivada) {
       if (tienePromocionGratis) {
         borderColor = AppTheme.successDark; // Verde oscuro
         backgroundColor = AppTheme.successDark.withValues(alpha: 0.1);
-        promocionIcon = Icons.card_giftcard;
-        promocionTooltip = 'Promoción "Lleva y Paga" activada';
       } else if (tieneDescuentoPorcentual &&
           cantidad >= (cantidadMinima ?? 0)) {
         borderColor = Colors.purple;
         backgroundColor = Colors.purple.withValues(alpha: 0.1);
-        promocionIcon = Icons.percent;
-        promocionTooltip = 'Descuento del $porcentajeDescuento% aplicado';
       }
     } else if (enLiquidacion) {
       borderColor = Colors.amber;
       backgroundColor = Colors.amber.withValues(alpha: 0.1);
-      promocionIcon = Icons.local_offer;
-      promocionTooltip = 'Producto en liquidación';
     }
 
     return Card(
@@ -108,33 +192,14 @@ class ProductoVentaItemWidget extends StatelessWidget {
                     child: const Icon(Icons.image_not_supported,
                         color: Colors.grey, size: 32),
                   ),
-                // Icono de promoción
-                if (promocionIcon != null)
-                  Tooltip(
-                    message: promocionTooltip ?? '',
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: Container(
-                        padding: const EdgeInsets.all(5),
-                        decoration: BoxDecoration(
-                          color: borderColor?.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Icon(
-                          promocionIcon,
-                          size: 14,
-                          color: borderColor,
-                        ),
-                      ),
-                    ),
-                  ),
+
                 Expanded(
                   child: Text(
                     producto.nombre,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: borderColor,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -154,7 +219,7 @@ class ProductoVentaItemWidget extends StatelessWidget {
                     Icon(
                       Icons.info_outline,
                       size: 12,
-                      color: borderColor,
+                      color: promocionCumplida ? borderColor : Colors.white38,
                     ),
                     const SizedBox(width: 4),
                     Expanded(
@@ -164,13 +229,17 @@ class ProductoVentaItemWidget extends StatelessWidget {
                                 cantidadGratis != null
                             ? 'Por cada $cantidadMinima unidades, recibirás $cantidadGratis gratis'
                             : (tieneDescuentoPorcentual &&
-                                    cantidad >= (cantidadMinima ?? 0)
-                                ? 'Descuento del $porcentajeDescuento% aplicado por comprar $cantidad o más unidades'
+                                    cantidadMinima != null
+                                ? (promocionCumplida
+                                    ? 'Descuento del $porcentajeDescuento% aplicado por comprar $cantidad o más unidades'
+                                    : 'Descuento del $porcentajeDescuento% por comprar $cantidadMinima o más unidades')
                                 : 'Promoción aplicada automáticamente por el servidor'),
                         style: TextStyle(
                           fontSize: 12,
                           fontStyle: FontStyle.italic,
-                          color: borderColor?.withValues(alpha: 0.7),
+                          color: promocionCumplida
+                              ? borderColor?.withValues(alpha: 0.8)
+                              : Colors.white38,
                         ),
                       ),
                     ),
@@ -218,20 +287,26 @@ class ProductoVentaItemWidget extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 2),
-                        Text(
-                          'S/ ${precio.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: borderColor,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              'S/ ${precio.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _buildStockBadge(stockDisponible, stockLimitado),
+                          ],
                         ),
                         const SizedBox(height: 2),
                         Text(
                           'Subtotal: S/ ${subtotal.toStringAsFixed(2)}',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 12,
-                            color: borderColor?.withValues(alpha: 0.8),
+                            color: Colors.white70,
                           ),
                         ),
                       ],
@@ -242,130 +317,157 @@ class ProductoVentaItemWidget extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'S/ ${precio.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight:
-                                promocionActivada ? FontWeight.bold : null,
-                            color: borderColor,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              'S/ ${precio.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight:
+                                    promocionActivada ? FontWeight.bold : null,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _buildStockBadge(stockDisponible, stockLimitado),
+                          ],
                         ),
                         const SizedBox(height: 2),
                         Text(
                           'Subtotal: S/ ${subtotal.toStringAsFixed(2)}',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 12,
-                            color: borderColor?.withValues(alpha: 0.8),
+                            color: Colors.white70,
                           ),
                         ),
-                        if (tienePromocionGratis && productosGratis > 0) ...[
-                          const SizedBox(height: 2),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 4, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppTheme.successDark
-                                  .withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(
-                                color: AppTheme.successDark
-                                    .withValues(alpha: 0.3),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.card_giftcard,
-                                  size: 12,
-                                  color: AppTheme.successDark,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Recibirás $productosGratis unidades gratis',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.successDark,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+
                       ],
                     ),
                   ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 3),
-                  decoration: BoxDecoration(
-                    color: stockLimitado
-                        ? Colors.orange.withValues(alpha: 0.2)
-                        : (borderColor?.withValues(alpha: 0.1) ??
-                            Colors.blue.withValues(alpha: 0.1)),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Row(
-                    children: <Widget>[
-                      IconButton(
-                        icon: const Icon(Icons.remove, size: 16),
-                        onPressed: () => onCambiarCantidad(cantidad - 1),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Text(
-                          '$cantidad',
-                          style: TextStyle(
-                            color: stockLimitado ? Colors.orange : borderColor,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          Icons.add,
-                          size: 16,
-                          color: stockLimitado
-                              ? Colors.orange.withValues(alpha: 0.5)
-                              : null,
-                        ),
-                        onPressed: stockLimitado
-                            ? null
-                            : () => onCambiarCantidad(cantidad + 1),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    if (_mostrarAtajos) ...[
+                      _buildShortcutButton('+5', 5, stockDisponible, stockLimitado),
+                      const SizedBox(width: 6),
+                      _buildShortcutButton('+10', 10, stockDisponible, stockLimitado),
+                      const SizedBox(width: 8),
                     ],
-                  ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: stockLimitado
+                            ? Colors.orange.withValues(alpha: 0.2)
+                            : Colors.white.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+                      ),
+                      child: Row(
+                        children: <Widget>[
+                          IconButton(
+                            icon: const Icon(Icons.remove, size: 18, color: Colors.white70),
+                            onPressed: () => onCambiarCantidad(cantidad - 1),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            child: Text(
+                              '$cantidad',
+                              style: TextStyle(
+                                color: stockLimitado ? Colors.orange : Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              Icons.add,
+                              size: 18,
+                              color: stockLimitado
+                                  ? Colors.orange.withValues(alpha: 0.5)
+                                  : Colors.white70,
+                            ),
+                            onPressed: stockLimitado
+                                ? null
+                                : () {
+                                    onCambiarCantidad(cantidad + 1);
+                                    _detectSpam();
+                                  },
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Disponible: $stockDisponible',
-              style: TextStyle(
-                fontSize: 12,
-                color: stockLimitado ? Colors.orange : Colors.green,
-                fontStyle: FontStyle.italic,
+            if (tienePromocionGratis && productosGratis > 0) ...[
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppTheme.successDark.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: AppTheme.successDark.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.card_giftcard,
+                      size: 11,
+                      color: AppTheme.successDark,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$productosGratis unidades gratis',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.successDark,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),
     );
   }
 
-  @override
-  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
-    properties
-      ..add(DiagnosticsProperty<Producto>('producto', producto))
-      ..add(IntProperty('cantidad', cantidad))
-      ..add(ObjectFlagProperty<VoidCallback>.has('onEliminar', onEliminar))
-      ..add(ObjectFlagProperty<void Function(int nuevaCantidad)>.has(
-          'onCambiarCantidad', onCambiarCantidad));
+  Widget _buildStockBadge(int stock, bool stockLimitado) {
+    final Color color = stockLimitado ? Colors.orange : Colors.white70;
+    return Tooltip(
+      message: 'Disponible',
+      preferBelow: false,
+      triggerMode: TooltipTriggerMode.tap,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FaIcon(
+            FontAwesomeIcons.cube,
+            size: 11,
+            color: color,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '$stock',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

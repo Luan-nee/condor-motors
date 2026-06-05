@@ -43,44 +43,42 @@ class SucursalDetalles extends StatelessWidget {
   Widget build(BuildContext context) {
     final FaIconData icon = _getIconForSucursal(sucursal);
 
-    return SizedBox(
-      width: 180,
-      child: Card(
-        elevation: 2,
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-        color: AppTheme.darkSurface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.smallRadius),
-          side: BorderSide(
-            color: sucursal.sucursalCentral
-                ? AppTheme.primaryColor.withValues(alpha: 0.3)
-                : Colors.white.withValues(alpha: 0.1),
-          ),
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      color: AppTheme.darkSurface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+        side: BorderSide(
+          color: sucursal.sucursalCentral
+              ? AppTheme.primaryColor.withValues(alpha: 0.3)
+              : Colors.white.withValues(alpha: 0.1),
         ),
-        child: IntrinsicHeight(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Encabezado más compacto
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
-                  color: sucursal.sucursalCentral
-                      ? AppTheme.primaryColor.withValues(alpha: 0.1)
-                      : AppTheme.surfaceColor,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(8),
-                    topRight: Radius.circular(8),
-                  ),
+      ),
+      child: IntrinsicHeight(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Encabezado más compacto
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: sucursal.sucursalCentral
+                    ? AppTheme.primaryColor.withValues(alpha: 0.1)
+                    : AppTheme.surfaceColor,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(8),
+                  topRight: Radius.circular(8),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Icono y nombre
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Icono y nombre
+                  Expanded(
+                    child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(6),
@@ -99,8 +97,7 @@ class SucursalDetalles extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 10),
-                        SizedBox(
-                          width: 140,
+                        Expanded(
                           child: Text(
                             sucursal.nombre,
                             style: const TextStyle(
@@ -113,6 +110,8 @@ class SucursalDetalles extends StatelessWidget {
                         ),
                       ],
                     ),
+                  ),
+                  const SizedBox(width: 12),
                     // Badges de estado
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
@@ -240,11 +239,7 @@ class SucursalDetalles extends StatelessWidget {
                             FontAwesomeIcons.fileInvoiceDollar,
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
+                        const SizedBox(width: 10),
                         Expanded(
                           child: _buildSerieCard(
                             'Boletas',
@@ -321,8 +316,7 @@ class SucursalDetalles extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildInfoCard(

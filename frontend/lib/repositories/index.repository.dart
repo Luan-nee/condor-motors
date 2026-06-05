@@ -1,3 +1,5 @@
+import 'package:condorsmotors/api/index.api.dart' as api_index;
+
 // Exportación de los repositorios
 // Este archivo facilita la importación desde módulos externos
 
@@ -24,6 +26,17 @@ abstract class BaseRepository {
 
   /// Obtiene el ID de la sucursal del usuario actual
   Future<String?> getCurrentSucursalId();
+}
+
+/// Mixin para delegar la autenticación de forma centralizada en los repositorios.
+///
+/// Evita la duplicación estructural de getUserData y getCurrentSucursalId.
+mixin AuthDelegator {
+  Future<Map<String, dynamic>?> getUserData() =>
+      api_index.AuthManager.getUserData();
+
+  Future<String?> getCurrentSucursalId() =>
+      api_index.AuthManager.getCurrentSucursalId();
 }
 
 // export 'cliente.repository.dart';

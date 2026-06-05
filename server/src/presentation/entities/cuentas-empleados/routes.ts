@@ -22,6 +22,8 @@ export class CuentasEmpleadosRoutes {
       cuentasEmpleadosController.create
     )
 
+    router.get('/empleado/:id', cuentasEmpleadosController.getByEmpleadoId)
+
     router.get('/:id', cuentasEmpleadosController.getById)
 
     router.get('/', cuentasEmpleadosController.getAll)

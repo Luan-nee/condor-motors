@@ -45,6 +45,7 @@ class SucursalAdmin extends _$SucursalAdmin {
   @override
   SucursalAdminState build() {
     _sucursalRepository = SucursalRepository.instance;
+    Future.microtask(inicializar);
     return SucursalAdminState();
   }
 

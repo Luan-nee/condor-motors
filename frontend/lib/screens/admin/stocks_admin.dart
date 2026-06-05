@@ -1,6 +1,5 @@
 import 'package:condorsmotors/models/producto.model.dart';
 import 'package:condorsmotors/providers/admin/stocks.admin.riverpod.dart';
-import 'package:condorsmotors/screens/admin/widgets/slide_sucursal.dart';
 import 'package:condorsmotors/screens/admin/widgets/stock/stock_detalles_dialog.dart';
 import 'package:condorsmotors/screens/admin/widgets/stock/stock_list.dart';
 import 'package:condorsmotors/theme/apptheme.dart';
@@ -24,30 +23,22 @@ class _InventarioAdminScreenState extends ConsumerState<InventarioAdminScreen> {
   Widget build(BuildContext context) {
     return const Scaffold(
       backgroundColor: Color(0xFF121212),
-      body: Row(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Expanded(
-            flex: 75,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
+                _StocksAdminHeader(),
+                _StocksAdminFilters(),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      _StocksAdminHeader(),
-                      _StocksAdminFilters(),
-                      Expanded(
-                        child: RepaintBoundary(child: _StocksAdminTable()),
-                      ),
-                      _StocksAdminPagination(),
-                    ],
-                  ),
+                  child: RepaintBoundary(child: _StocksAdminTable()),
                 ),
+                _StocksAdminPagination(),
               ],
             ),
           ),
-          _StocksAdminSidebar(),
         ],
       ),
     );
@@ -86,46 +77,7 @@ class _StocksAdminPagination extends ConsumerWidget {
   }
 }
 
-class _StocksAdminSidebar extends ConsumerWidget {
-  const _StocksAdminSidebar();
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sucursales = ref.watch(
-      stocksAdminProvider.select((s) => s.sucursales),
-    );
-    final selected = ref.watch(
-      stocksAdminProvider.select((s) => s.selectedSucursal),
-    );
-    final isLoading = ref.watch(
-      stocksAdminProvider.select((s) => s.isLoadingSucursales),
-    );
-    final notifier = ref.read(stocksAdminProvider.notifier);
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      width: 350,
-      decoration: BoxDecoration(
-        color: AppTheme.darkSurface,
-        border: Border(left: BorderSide(color: Colors.white.withAlpha(25))),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(51),
-            blurRadius: 8,
-            offset: const Offset(-2, 0),
-          ),
-        ],
-      ),
-      child: SlideSucursal(
-        sucursales: sucursales,
-        sucursalSeleccionada: selected,
-        onSucursalSelected: notifier.seleccionarSucursal,
-        onRecargarSucursales: notifier.cargarSucursales,
-        isLoading: isLoading,
-      ),
-    );
-  }
-}
 
 class _StocksAdminHeader extends ConsumerWidget {
   const _StocksAdminHeader();

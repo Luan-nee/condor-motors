@@ -6,7 +6,7 @@ part of 'ventas.computer.riverpod.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$ventasComputerHash() => r'58f457f493b8d7a36a16f311a65bc8722c849022';
+String _$ventasComputerHash() => r'c3a4bfcf9c59f5185ab272f8d435a875298578d8';
 
 /// See also [VentasComputer].
 @ProviderFor(VentasComputer)

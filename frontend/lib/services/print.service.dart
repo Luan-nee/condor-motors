@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -24,34 +23,38 @@ class PrintService {
     }
   }
 
-  /// Descarga e imprime un PDF desde una URL
+  /// Descarga un archivo PDF de una URL y devuelve sus bytes de manera segura
+  Future<Uint8List> downloadPdf(String url) async {
+    final HttpClient httpClient = HttpClient()
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
+
+    final HttpClientRequest request = await httpClient.getUrl(Uri.parse(url));
+    final HttpClientResponse response = await request.close();
+
+    if (response.statusCode != 200) {
+      httpClient.close();
+      throw Exception('Error al descargar el PDF: Código HTTP ${response.statusCode}');
+    }
+
+    final List<int> bytesBuilder = <int>[];
+    await for (final List<int> data in response) {
+      bytesBuilder.addAll(data);
+    }
+    final Uint8List bytes = Uint8List.fromList(bytesBuilder);
+    httpClient.close();
+    return bytes;
+  }
+
+  /// Descarga e imprime un PDF desde una URL delegando la descarga
   Future<bool> printPdfFromUrl(String url,
       {String jobName = 'Documento'}) async {
     try {
-      // Crear un cliente HTTP que acepte todos los certificados
-      final HttpClient httpClient = HttpClient()
-        ..badCertificateCallback =
-            (X509Certificate cert, String host, int port) => true;
-
-      final HttpClientRequest request = await httpClient.getUrl(Uri.parse(url));
-      final HttpClientResponse response = await request.close();
-
-      if (response.statusCode != 200) {
-        throw Exception('HTTP ${response.statusCode}');
-      }
-
-      final List<int> bytesBuilder = <int>[];
-      await for (final List<int> data in response) {
-        bytesBuilder.addAll(data);
-      }
-      final Uint8List bytes = Uint8List.fromList(bytesBuilder);
-      httpClient.close();
-
+      final Uint8List bytes = await downloadPdf(url);
       final bool result = await Printing.layoutPdf(
         onLayout: (_) => bytes,
         name: jobName,
       );
-
       return result;
     } catch (e) {
       debugPrint('PrintService.printPdfFromUrl error: $e');

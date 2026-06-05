@@ -1,4 +1,4 @@
-﻿import 'package:condorsmotors/models/paginacion.model.dart';
+import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -98,41 +98,18 @@ class Paginador extends StatelessWidget {
     for (int i = startPage; i <= endPage; i++) {
       final bool isCurrentPage = i == currentPage;
       pageNumbers.add(
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 2),
-          child: InkWell(
-            onTap: () {
-              if (!isCurrentPage) {
-                onPageChanged?.call(i);
-                onPageChange?.call();
-              }
-            },
-            borderRadius: BorderRadius.circular(4),
-            child: Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: isCurrentPage ? accent : Colors.transparent,
-                borderRadius: BorderRadius.circular(4),
-                border: isCurrentPage
-                    ? null
-                    : Border.all(
-                        color: Colors.white.withValues(alpha: 0.2),
-                      ),
-              ),
-              child: Center(
-                child: Text(
-                  '$i',
-                  style: TextStyle(
-                    color: isCurrentPage ? Colors.white : txtColor,
-                    fontWeight:
-                        isCurrentPage ? FontWeight.bold : FontWeight.normal,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
-          ),
+        _PaginadorNumeroCard(
+          key: ValueKey<int>(i),
+          page: i,
+          isSelected: isCurrentPage,
+          txtColor: txtColor,
+          accentColor: accent,
+          onTap: () {
+            if (!isCurrentPage) {
+              onPageChanged?.call(i);
+              onPageChange?.call();
+            }
+          },
         ),
       );
     }
@@ -456,6 +433,129 @@ class Paginador extends StatelessWidget {
                 if (mostrarOrdenacion && camposParaOrdenar != null)
                   ..._buildOrdenacionControls(txtColor, accent),
               ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PaginadorNumeroCard extends StatefulWidget {
+  final int page;
+  final bool isSelected;
+  final Color txtColor;
+  final Color accentColor;
+  final VoidCallback onTap;
+
+  const _PaginadorNumeroCard({
+    super.key,
+    required this.page,
+    required this.isSelected,
+    required this.txtColor,
+    required this.accentColor,
+    required this.onTap,
+  });
+
+  @override
+  State<_PaginadorNumeroCard> createState() => _PaginadorNumeroCardState();
+}
+
+class _PaginadorNumeroCardState extends State<_PaginadorNumeroCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fillAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+    );
+
+    // Animación de llenado de gota (0.0 a 1.4 de radio de gradiente)
+    _fillAnimation = Tween<double>(begin: 0.0, end: 1.4).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 1.0, curve: Curves.easeInOutCubic),
+      ),
+    );
+
+    if (widget.isSelected) {
+      _controller.value = 1.0;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _PaginadorNumeroCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isSelected != oldWidget.isSelected) {
+      if (widget.isSelected) {
+        _controller.forward(from: 0.0);
+      } else {
+        _controller.reverse();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final double fillValue = _fillAnimation.value;
+
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 2),
+          child: InkWell(
+            onTap: widget.onTap,
+            borderRadius: BorderRadius.circular(4),
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                  color: widget.isSelected
+                      ? Colors.transparent
+                      : Colors.white.withValues(alpha: 0.08),
+                ),
+                  gradient: widget.isSelected || _controller.value > 0.0
+                      ? RadialGradient(
+                          radius: fillValue,
+                        colors: [
+                          widget.accentColor,
+                          widget.accentColor.withValues(alpha: 0.85),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.85, 1.0],
+                      )
+                    : null,
+              ),
+              child: Center(
+                child: Text(
+                  '${widget.page}',
+                  style: TextStyle(
+                    color: widget.isSelected
+                        ? Colors.white
+                        : widget.txtColor.withValues(
+                            alpha: 1.0 - (0.4 * _controller.value),
+                          ),
+                    fontWeight: widget.isSelected || _controller.value > 0.5
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                    fontSize: 14,
+                    fontFamily: kFontFamily,
+                  ),
+                ),
+              ),
             ),
           ),
         );

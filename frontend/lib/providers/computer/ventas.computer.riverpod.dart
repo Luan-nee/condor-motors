@@ -1,3 +1,4 @@
+import 'package:condorsmotors/main.dart' show scaffoldMessengerKey;
 import 'package:condorsmotors/models/paginacion.model.dart';
 import 'package:condorsmotors/models/sucursal.model.dart';
 import 'package:condorsmotors/models/ventas.model.dart';
@@ -98,7 +99,6 @@ class VentasComputerState {
 class VentasComputer extends _$VentasComputer {
   final VentaRepository _ventaRepository = VentaRepository.instance;
   final SucursalRepository _sucursalRepository = SucursalRepository.instance;
-  GlobalKey<ScaffoldMessengerState>? messengerKey;
 
   // Getters para comodidad
   String get errorMessage => state.errorMessage;
@@ -124,13 +124,9 @@ class VentasComputer extends _$VentasComputer {
     return const VentasComputerState();
   }
 
-  Future<void> inicializar({GlobalKey<ScaffoldMessengerState>? key}) async {
+  Future<void> inicializar() async {
     try {
       debugPrint('Inicializando VentasComputer Riverpod...');
-
-      if (key != null) {
-        messengerKey = key;
-      }
 
       final userData = await _ventaRepository.getUserData();
       if (userData == null) {
@@ -264,7 +260,7 @@ class VentasComputer extends _$VentasComputer {
     state = state.copyWith(paginacion: paginacion);
   }
 
-  Future<void> cargarVentas({int? sucursalId}) async {
+  Future<void> cargarVentas({String? sucursalId}) async {
     if (state.sucursalSeleccionada == null) {
       state = state.copyWith(
           ventasErrorMessage: 'Debe seleccionar una sucursal', ventas: []);
@@ -513,7 +509,7 @@ class VentasComputer extends _$VentasComputer {
 
       final response = await _ventaRepository.createVenta(ventaData,
           sucursalId: sucursalIdStr);
-      await cargarVentas(sucursalId: int.tryParse(sucursalIdStr));
+      await cargarVentas(sucursalId: sucursalIdStr);
       return response;
     } catch (e) {
       return {'status': 'error', 'message': 'Error al crear la venta: $e'};
@@ -550,7 +546,7 @@ class VentasComputer extends _$VentasComputer {
     Color backgroundColor = Colors.black,
     Duration duration = const Duration(seconds: 3),
   }) {
-    final messenger = messengerKey?.currentState;
+    final messenger = scaffoldMessengerKey.currentState;
     if (messenger != null) {
       messenger.showSnackBar(
         SnackBar(

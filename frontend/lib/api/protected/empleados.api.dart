@@ -542,9 +542,10 @@ class EmpleadosApi {
     required String cuentaId,
     String? usuario,
     String? clave,
+    int? rolCuentaEmpleadoId,
   }) async {
     // Validar que al menos un campo sea proporcionado
-    if (usuario == null && clave == null) {
+    if (usuario == null && clave == null && rolCuentaEmpleadoId == null) {
       throw ApiException(
         statusCode: 400,
         message: 'Debe proporcionar al menos un campo para actualizar',
@@ -558,6 +559,9 @@ class EmpleadosApi {
     }
     if (clave != null) {
       data['clave'] = clave;
+    }
+    if (rolCuentaEmpleadoId != null) {
+      data['rolCuentaEmpleadoId'] = rolCuentaEmpleadoId;
     }
 
     final Map<String, dynamic> response = await _api.authenticatedRequest(

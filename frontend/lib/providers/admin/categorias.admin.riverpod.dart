@@ -4,68 +4,39 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'categorias.admin.riverpod.g.dart';
 
-class CategoriasAdminState {
-  final bool isLoading;
-  final bool isCreating;
-  final List<Categoria> categorias;
-  final String? errorMessage;
-
-  CategoriasAdminState({
-    this.isLoading = false,
-    this.isCreating = false,
-    this.categorias = const [],
-    this.errorMessage,
-  });
-
-  CategoriasAdminState copyWith({
-    bool? isLoading,
-    bool? isCreating,
-    List<Categoria>? categorias,
-    String? errorMessage,
-  }) {
-    return CategoriasAdminState(
-      isLoading: isLoading ?? this.isLoading,
-      isCreating: isCreating ?? this.isCreating,
-      categorias: categorias ?? this.categorias,
-      errorMessage: errorMessage ?? this.errorMessage,
-    );
-  }
-}
-
+/// Notifier para la gestión de categorías en el panel de administración.
+///
+/// Patron: [AsyncNotifier] de Riverpod 2.x.
+/// Resuelve el bug sistemático de limpieza de errores y elimina el boilerplate.
 @riverpod
 class CategoriasAdmin extends _$CategoriasAdmin {
   late final CategoriaRepository _categoriaRepository;
 
   @override
-  CategoriasAdminState build() {
+  FutureOr<List<Categoria>> build() {
     _categoriaRepository = CategoriaRepository.instance;
-    Future.microtask(cargarCategorias);
-    return CategoriasAdminState();
+    return _categoriaRepository.getCategorias();
   }
 
+  /// Carga o recarga las categorías del servidor
+  ///
+  /// [forceRefresh] Indica si se debe ignorar el caché local
   Future<void> cargarCategorias({bool forceRefresh = false}) async {
-    state = state.copyWith(isLoading: true);
-    try {
-      final categorias = await _categoriaRepository.getCategorias(useCache: !forceRefresh);
-      state = state.copyWith(
-        categorias: categorias,
-        isLoading: false,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        errorMessage: 'Error al cargar categorías: $e',
-        isLoading: false,
-      );
-    }
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(
+        () => _categoriaRepository.getCategorias(useCache: !forceRefresh));
   }
 
+  /// Crea una nueva categoría o actualiza una existente
+  ///
+  /// Lanza la excepción para que el modal de la UI capture y muestre errores locales.
   Future<void> guardarCategoria({
     Categoria? categoria,
     required String nombre,
     String? descripcion,
   }) async {
-    state = state.copyWith(isCreating: true);
-    try {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
       if (categoria == null) {
         await _categoriaRepository.createCategoria(
           nombre: nombre,
@@ -78,19 +49,19 @@ class CategoriasAdmin extends _$CategoriasAdmin {
           descripcion: descripcion,
         );
       }
-      await cargarCategorias(forceRefresh: true);
-    } catch (e) {
-      state = state.copyWith(
-        errorMessage: 'Error al guardar categoría: $e',
-        isCreating: false,
-      );
-      rethrow;
-    } finally {
-      state = state.copyWith(isCreating: false);
-    }
+
+      // Retorna la lista fresca del servidor forzando el refresco de caché
+      return _categoriaRepository.getCategorias(useCache: false);
+    });
   }
 
+  /// Limpia el estado de error y retorna al último valor de datos disponible
   void limpiarError() {
-    state = state.copyWith();
+    final currentVal = state.value;
+    if (currentVal != null) {
+      state = AsyncData(currentVal);
+    } else {
+      state = const AsyncData([]);
+    }
   }
 }

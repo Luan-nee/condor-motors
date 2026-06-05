@@ -1,53 +1,22 @@
 import 'package:condorsmotors/api/index.api.dart' as api_index;
 import 'package:condorsmotors/models/estadisticas.model.dart';
 import 'package:condorsmotors/repositories/index.repository.dart';
-import 'package:flutter/foundation.dart';
 
-/// Repositorio para gestionar estadísticas
+/// Repositorio para gestionar estadísticas e informes del sistema.
 ///
-/// Esta clase encapsula la lógica de negocio relacionada con estadísticas,
-/// actuando como una capa intermedia entre la UI y la API
-class EstadisticaRepository implements BaseRepository {
-  /// Instancia singleton del repositorio
-  static final EstadisticaRepository _instance =
-      EstadisticaRepository._internal();
-
-  /// Getter para la instancia singleton
+/// Encapsula la lógica de negocio y consumo de APIs estadísticas,
+/// delegando la autenticación mediante el mixin [AuthDelegator].
+class EstadisticaRepository with AuthDelegator implements BaseRepository {
+  static final EstadisticaRepository _instance = EstadisticaRepository._internal();
   static EstadisticaRepository get instance => _instance;
 
-  /// API de estadísticas
   late final dynamic _estadisticasApi;
 
-  /// Constructor privado para el patrón singleton
   EstadisticaRepository._internal() {
-    try {
-      // Utilizamos la API global inicializada en index.api.dart
-      _estadisticasApi = api_index.api.estadisticas;
-    } catch (e) {
-      debugPrint('Error al obtener EstadisticasApi: $e');
-      // Si hay un error al acceder a la API global, lanzamos una excepción
-      throw Exception('No se pudo inicializar EstadisticaRepository: $e');
-    }
+    _estadisticasApi = api_index.api.estadisticas;
   }
 
-  /// Obtiene datos del usuario desde la API centralizada
-  ///
-  /// Ayuda a los providers a acceder a la información del usuario autenticado
-  @override
-  Future<Map<String, dynamic>?> getUserData() =>
-      api_index.AuthManager.getUserData();
-
-  /// Obtiene el ID de la sucursal del usuario actual
-  ///
-  /// Útil para operaciones que requieren el ID de sucursal automáticamente
-  @override
-  Future<String?> getCurrentSucursalId() =>
-      api_index.AuthManager.getCurrentSucursalId();
-
-  /// Obtiene un resumen general de estadísticas
-  ///
-  /// [useCache] Indica si se debe usar la caché
-  /// [forceRefresh] Indica si se debe forzar la recarga desde el servidor
+  /// Obtiene un resumen general de estadísticas crudas.
   Future<Map<String, dynamic>> getResumenEstadisticas({
     bool useCache = false,
     bool forceRefresh = true,
@@ -58,15 +27,11 @@ class EstadisticaRepository implements BaseRepository {
         forceRefresh: forceRefresh,
       );
     } catch (e) {
-      debugPrint('Error en EstadisticaRepository.getResumenEstadisticas: $e');
       return {'status': 'error', 'message': e.toString()};
     }
   }
 
-  /// Obtiene un resumen general de estadísticas como objeto tipado
-  ///
-  /// [useCache] Indica si se debe usar la caché
-  /// [forceRefresh] Indica si se debe forzar la recarga desde el servidor
+  /// Obtiene un resumen general de estadísticas como objeto fuertemente tipado.
   Future<ResumenEstadisticas> getResumenEstadisticasTyped({
     bool useCache = false,
     bool forceRefresh = true,
@@ -80,43 +45,23 @@ class EstadisticaRepository implements BaseRepository {
       if (response['status'] == 'success' && response['data'] != null) {
         return ResumenEstadisticas.fromJson(response['data']);
       }
+    } catch (_) {}
 
-      // Respuesta por defecto si no hay datos
-      return const ResumenEstadisticas(
-        productos: EstadisticasProductos(
-          stockBajo: 0,
-          liquidacion: 0,
-          sucursales: [],
-        ),
-        ventas: EstadisticasVentas(
-          ventas: {'hoy': 0, 'esteMes': 0},
-          totalVentas: {'hoy': 0, 'esteMes': 0},
-          sucursales: [],
-        ),
-      );
-    } catch (e) {
-      debugPrint(
-          'Error en EstadisticaRepository.getResumenEstadisticasTyped: $e');
-      // Respuesta por defecto en caso de error
-      return const ResumenEstadisticas(
-        productos: EstadisticasProductos(
-          stockBajo: 0,
-          liquidacion: 0,
-          sucursales: [],
-        ),
-        ventas: EstadisticasVentas(
-          ventas: {'hoy': 0, 'esteMes': 0},
-          totalVentas: {'hoy': 0, 'esteMes': 0},
-          sucursales: [],
-        ),
-      );
-    }
+    return const ResumenEstadisticas(
+      productos: EstadisticasProductos(
+        stockBajo: 0,
+        liquidacion: 0,
+        sucursales: [],
+      ),
+      ventas: EstadisticasVentas(
+        ventas: {'hoy': 0, 'esteMes': 0},
+        totalVentas: {'hoy': 0, 'esteMes': 0},
+        sucursales: [],
+      ),
+    );
   }
 
-  /// Obtiene estadísticas por sucursal
-  ///
-  /// [sucursalId] ID de la sucursal para la que se quieren obtener estadísticas
-  /// [useCache] Indica si se debe usar la caché
+  /// Obtiene estadísticas para una sucursal específica.
   Future<Map<String, dynamic>> getEstadisticasPorSucursal(
     String sucursalId, {
     bool useCache = false,
@@ -127,17 +72,11 @@ class EstadisticaRepository implements BaseRepository {
         useCache: useCache,
       );
     } catch (e) {
-      debugPrint(
-          'Error en EstadisticaRepository.getEstadisticasPorSucursal: $e');
       return {'status': 'error', 'message': e.toString()};
     }
   }
 
-  /// Obtiene estadísticas de ventas para un período específico
-  ///
-  /// [fechaInicio] Fecha de inicio del período
-  /// [fechaFin] Fecha de fin del período
-  /// [sucursalId] ID de la sucursal (opcional)
+  /// Obtiene estadísticas de ventas para un período específico.
   Future<Map<String, dynamic>> getEstadisticasVentas({
     required DateTime fechaInicio,
     required DateTime fechaFin,
@@ -150,15 +89,11 @@ class EstadisticaRepository implements BaseRepository {
         sucursalId: sucursalId,
       );
     } catch (e) {
-      debugPrint('Error en EstadisticaRepository.getEstadisticasVentas: $e');
       return {'status': 'error', 'message': e.toString()};
     }
   }
 
-  /// Obtiene estadísticas de productos
-  ///
-  /// [sucursalId] ID de la sucursal (opcional)
-  /// [categoria] Categoría de productos (opcional)
+  /// Obtiene estadísticas de productos con sucursal o categoría opcionales.
   Future<Map<String, dynamic>> getEstadisticasProductos({
     String? sucursalId,
     String? categoria,
@@ -169,17 +104,11 @@ class EstadisticaRepository implements BaseRepository {
         categoria: categoria,
       );
     } catch (e) {
-      debugPrint('Error en EstadisticaRepository.getEstadisticasProductos: $e');
       return {'status': 'error', 'message': e.toString()};
     }
   }
 
-  /// Obtiene estadísticas de productos como objeto tipado
-  ///
-  /// [sucursalId] ID de la sucursal (opcional)
-  /// [categoria] Categoría de productos (opcional)
-  /// [useCache] Indica si se debe usar la caché
-  /// [forceRefresh] Indica si se debe forzar la recarga desde el servidor
+  /// Obtiene estadísticas de productos como objeto tipado.
   Future<EstadisticasProductos> getEstadisticasProductosTyped({
     String? sucursalId,
     String? categoria,
@@ -197,29 +126,16 @@ class EstadisticaRepository implements BaseRepository {
       if (response['status'] == 'success' && response['data'] != null) {
         return EstadisticasProductos.fromJson(response['data']);
       }
+    } catch (_) {}
 
-      // Respuesta por defecto si no hay datos
-      return const EstadisticasProductos(
-        stockBajo: 0,
-        liquidacion: 0,
-        sucursales: [],
-      );
-    } catch (e) {
-      debugPrint(
-          'Error en EstadisticaRepository.getEstadisticasProductosTyped: $e');
-      // Respuesta por defecto en caso de error
-      return const EstadisticasProductos(
-        stockBajo: 0,
-        liquidacion: 0,
-        sucursales: [],
-      );
-    }
+    return const EstadisticasProductos(
+      stockBajo: 0,
+      liquidacion: 0,
+      sucursales: [],
+    );
   }
 
-  /// Obtiene estadísticas de ventas como objeto tipado
-  ///
-  /// [useCache] Indica si se debe usar la caché
-  /// [forceRefresh] Indica si se debe forzar la recarga desde el servidor
+  /// Obtiene estadísticas de ventas como objeto tipado.
   Future<EstadisticasVentas> getEstadisticasVentasTyped({
     bool useCache = false,
     bool forceRefresh = true,
@@ -233,31 +149,16 @@ class EstadisticaRepository implements BaseRepository {
       if (response['status'] == 'success' && response['data'] != null) {
         return EstadisticasVentas.fromJson(response['data']);
       }
+    } catch (_) {}
 
-      // Respuesta por defecto si no hay datos
-      return const EstadisticasVentas(
-        ventas: {'hoy': 0, 'esteMes': 0},
-        totalVentas: {'hoy': 0, 'esteMes': 0},
-        sucursales: [],
-      );
-    } catch (e) {
-      debugPrint(
-          'Error en EstadisticaRepository.getEstadisticasVentasTyped: $e');
-      // Respuesta por defecto en caso de error
-      return const EstadisticasVentas(
-        ventas: {'hoy': 0, 'esteMes': 0},
-        totalVentas: {'hoy': 0, 'esteMes': 0},
-        sucursales: [],
-      );
-    }
+    return const EstadisticasVentas(
+      ventas: {'hoy': 0, 'esteMes': 0},
+      totalVentas: {'hoy': 0, 'esteMes': 0},
+      sucursales: [],
+    );
   }
 
-  /// Obtiene datos para gráficos de ventas
-  ///
-  /// [tipo] Tipo de gráfico (diario, semanal, mensual, anual)
-  /// [sucursalId] ID de la sucursal (opcional)
-  /// [fechaInicio] Fecha de inicio (opcional)
-  /// [fechaFin] Fecha de fin (opcional)
+  /// Obtiene datos para gráficos de ventas consolidables.
   Future<Map<String, dynamic>> getGraficosVentas({
     required String tipo,
     String? sucursalId,
@@ -272,107 +173,63 @@ class EstadisticaRepository implements BaseRepository {
         fechaFin: fechaFin,
       );
     } catch (e) {
-      debugPrint('Error en EstadisticaRepository.getGraficosVentas: $e');
       return {'status': 'error', 'message': e.toString()};
     }
   }
 
-  /// Obtiene las últimas ventas registradas en el sistema
-  ///
-  /// [useCache] Indica si se debe usar la caché
-  /// [forceRefresh] Indica si se debe forzar la recarga desde el servidor
+  /// Obtiene las últimas ventas registradas en el sistema.
   Future<List<UltimaVenta>> getUltimasVentas({
     bool useCache = false,
     bool forceRefresh = true,
   }) async {
     try {
-      debugPrint("Llamando a getUltimasVentas en la API");
       final response = await _estadisticasApi.getUltimasVentas(
         useCache: useCache,
         forceRefresh: forceRefresh,
       );
 
-      debugPrint(
-          "Respuesta recibida de getUltimasVentas: ${response['status']}");
-
-      if (response['status'] == 'success' && response['data'] != null) {
-        if (response['data'] is List) {
-          debugPrint(
-              "Procesando ${(response['data'] as List).length} últimas ventas");
+      if (response['status'] == 'success' && response['data'] is List) {
+        final List<UltimaVenta> resultado = [];
+        for (final ventaJson in (response['data'] as List)) {
           try {
-            return (response['data'] as List)
-                .map((ventaJson) => UltimaVenta.fromJson(ventaJson))
-                .toList();
-          } catch (e) {
-            debugPrint("Error al parsear ventas: $e");
-            // Intentar procesar elemento por elemento para identificar errores
-            final List<UltimaVenta> resultado = [];
-            for (final ventaJson in (response['data'] as List)) {
-              try {
-                resultado.add(UltimaVenta.fromJson(ventaJson));
-              } catch (e) {
-                debugPrint("Error parseando venta individual: $e");
-                debugPrint("JSON problemático: $ventaJson");
-              }
-            }
-            return resultado;
-          }
-        } else {
-          debugPrint(
-              "El formato de data no es una lista: ${response['data'].runtimeType}");
+            resultado.add(UltimaVenta.fromJson(ventaJson));
+          } catch (_) {}
         }
-      } else {
-        debugPrint(
-            "Respuesta fallida o sin datos: ${response['message'] ?? 'No hay mensaje'}");
+        return resultado;
       }
-
-      // Si no hay datos o hay un error, devolver lista vacía
-      return [];
-    } catch (e) {
-      debugPrint('Error en EstadisticaRepository.getUltimasVentas: $e');
-      // En caso de error, devolvemos una lista vacía
-      return [];
-    }
+    } catch (_) {}
+    return [];
   }
 
-  /// Obtiene productos con stock bajo para todas las sucursales
-  ///
-  /// [useCache] Indica si se debe usar la caché
-  /// [forceRefresh] Indica si se debe forzar la recarga desde el servidor
+  /// Obtiene estadísticas de productos con stock bajo en formato crudo.
   Future<Map<String, dynamic>> getProductosStockBajo({
     bool useCache = false,
     bool forceRefresh = true,
   }) async {
     try {
-      debugPrint("Obteniendo productos con stock bajo");
       final response = await _estadisticasApi.getEstadisticasProductos(
         useCache: useCache,
         forceRefresh: forceRefresh,
       );
 
       if (response['status'] == 'success' && response['data'] != null) {
-        debugPrint("Productos con stock bajo obtenidos correctamente");
         return response;
-      } else {
-        debugPrint(
-            "Error al obtener productos con stock bajo: ${response['message'] ?? 'Sin mensaje'}");
-        return {
-          'status': 'error',
-          'message': response['message'] ??
-              'Error al obtener productos con stock bajo',
-          'data': {
-            'stockBajo': 0,
-            'liquidacion': 0,
-            'sucursales': [],
-          }
-        };
       }
+
+      return {
+        'status': 'error',
+        'message': response['message'] ?? 'Error al obtener productos con stock bajo',
+        'data': const {
+          'stockBajo': 0,
+          'liquidacion': 0,
+          'sucursales': [],
+        }
+      };
     } catch (e) {
-      debugPrint('Error en EstadisticaRepository.getProductosStockBajo: $e');
       return {
         'status': 'error',
         'message': e.toString(),
-        'data': {
+        'data': const {
           'stockBajo': 0,
           'liquidacion': 0,
           'sucursales': [],
@@ -381,78 +238,61 @@ class EstadisticaRepository implements BaseRepository {
     }
   }
 
-  /// Obtiene detalles de productos con stock bajo
-  ///
-  /// Este método obtiene información específica sobre los productos con stock bajo
-  /// de todas las sucursales
-  /// [useCache] Indica si se debe usar la caché
-  /// [forceRefresh] Indica si se debe forzar la recarga desde el servidor
+  /// Obtiene el listado de detalles específicos sobre repuestos con stock bajo.
   Future<List<Map<String, dynamic>>> getDetallesProductosStockBajo({
     bool useCache = false,
     bool forceRefresh = true,
   }) async {
     try {
-      debugPrint("Obteniendo detalles de productos con stock bajo...");
-
-      // Primero obtenemos los datos resumidos de estadísticas
       final estadisticasProductos = await getEstadisticasProductosTyped(
-          useCache: useCache, forceRefresh: forceRefresh);
+        useCache: useCache,
+        forceRefresh: forceRefresh,
+      );
 
-      // Lista para almacenar los detalles de productos
       final List<Map<String, dynamic>> productosDetalle = [];
 
-      // Para cada sucursal en las estadísticas
       for (final sucursal in estadisticasProductos.sucursales) {
         final int idSucursal = sucursal.id;
         final String nombreSucursal = sucursal.nombre;
-        final int stockBajo = sucursal.stockBajo;
 
-        // Si hay productos con stock bajo en esta sucursal
-        if (stockBajo > 0) {
-          debugPrint(
-              "Sucursal $nombreSucursal tiene $stockBajo productos con stock bajo");
-
-          // Intentamos obtener los productos específicos de stock bajo para esta sucursal
+        if (sucursal.stockBajo > 0) {
           try {
-            // Esta llamada dependerá de cómo está estructurada tu API
-            final response =
-                await _estadisticasApi.getProductosStockBajoSucursal(
+            final response = await _estadisticasApi.getProductosStockBajoSucursal(
               sucursalId: idSucursal.toString(),
               useCache: useCache,
               forceRefresh: forceRefresh,
             );
 
-            if (response['status'] == 'success' && response['data'] != null) {
-              // Si la respuesta contiene una lista de productos
-              if (response['data'] is List) {
-                for (final producto in response['data']) {
-                  productosDetalle.add({
-                    'productoId': producto['id'].toString(),
-                    'productoNombre': producto['nombre'] ?? 'Sin nombre',
-                    'stock': producto['stock'] ?? 0,
-                    'stockMinimo': producto['stockMinimo'] ?? 10,
-                    'sucursalId': idSucursal.toString(),
-                    'sucursalNombre': nombreSucursal,
-                    'categoria': producto['categoria'] is Map
-                        ? producto['categoria']['nombre']
-                        : producto['categoria'] ?? 'Sin categoría',
-                    'marca': producto['marca'] is Map
-                        ? producto['marca']['nombre']
-                        : producto['marca'] ?? 'Sin marca',
-                  });
-                }
-              } else {
-                debugPrint("La respuesta no contiene una lista de productos");
+            if (response['status'] == 'success' && response['data'] is List) {
+              for (final producto in response['data']) {
+                productosDetalle.add({
+                  'productoId': producto['id'].toString(),
+                  'productoNombre': producto['nombre'] ?? 'Sin nombre',
+                  'stock': producto['stock'] ?? 0,
+                  'stockMinimo': producto['stockMinimo'] ?? 10,
+                  'sucursalId': idSucursal.toString(),
+                  'sucursalNombre': nombreSucursal,
+                  'categoria': producto['categoria'] is Map
+                      ? producto['categoria']['nombre']
+                      : producto['categoria'] ?? 'Sin categoría',
+                  'marca': producto['marca'] is Map
+                      ? producto['marca']['nombre']
+                      : producto['marca'] ?? 'Sin marca',
+                });
               }
             } else {
-              debugPrint(
-                  "No se obtuvieron detalles de productos para sucursal $nombreSucursal");
+              productosDetalle.add({
+                'productoId': 'no-id',
+                'productoNombre': 'Producto con stock bajo',
+                'stock': 0,
+                'stockMinimo': 10,
+                'sucursalId': idSucursal.toString(),
+                'sucursalNombre': nombreSucursal,
+                'categoria': 'No disponible',
+                'marca': 'No disponible',
+              });
             }
-          } catch (e) {
-            debugPrint(
-                "Error obteniendo detalles para sucursal $idSucursal: $e");
-
-            // En caso de error, agregamos un placeholder para la sucursal
+          } catch (_) {
             productosDetalle.add({
               'productoId': 'no-id',
               'productoNombre': 'Producto con stock bajo',
@@ -467,18 +307,12 @@ class EstadisticaRepository implements BaseRepository {
         }
       }
 
-      // Si no se obtuvieron productos específicos pero sí hay productos con stock bajo
       if (productosDetalle.isEmpty && estadisticasProductos.stockBajo > 0) {
-        debugPrint(
-            "No se obtuvieron detalles específicos, agregando datos generales");
-
-        // Agregamos datos generales basados en las estadísticas
         for (final sucursal in estadisticasProductos.sucursales) {
           if (sucursal.stockBajo > 0) {
             productosDetalle.add({
               'productoId': 'global',
-              'productoNombre':
-                  '${sucursal.stockBajo} producto(s) con stock bajo',
+              'productoNombre': '${sucursal.stockBajo} producto(s) con stock bajo',
               'stock': 0,
               'stockMinimo': 10,
               'sucursalId': sucursal.id.toString(),
@@ -490,11 +324,8 @@ class EstadisticaRepository implements BaseRepository {
         }
       }
 
-      debugPrint("Total de detalles obtenidos: ${productosDetalle.length}");
       return productosDetalle;
-    } catch (e) {
-      debugPrint(
-          'Error en EstadisticaRepository.getDetallesProductosStockBajo: $e');
+    } catch (_) {
       return [];
     }
   }

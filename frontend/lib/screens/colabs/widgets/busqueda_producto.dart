@@ -20,6 +20,7 @@ class BusquedaProductoWidget extends StatefulWidget {
   final bool isLoading;
   // Mantener sucursalId solo para información/referencia
   final String? sucursalId;
+  final VoidCallback? onClose;
 
   const BusquedaProductoWidget({
     super.key,
@@ -28,6 +29,7 @@ class BusquedaProductoWidget extends StatefulWidget {
     this.categorias = const <String>['Todas'],
     this.isLoading = false,
     this.sucursalId,
+    this.onClose,
   });
 
   @override
@@ -304,13 +306,8 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: darkSurface,
-              borderRadius: BorderRadius.circular(AppTheme.mediumRadius),
-            ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
             child: isMobile ? _buildMobileFilters() : _buildDesktopFilters(),
           ),
 
@@ -372,180 +369,195 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
         // Fila de botones (siempre visible en la parte superior)
         Container(
           margin: const EdgeInsets.only(bottom: 8),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: <Widget>[
-              // Botón de categoría
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: _isCategoriaExpanded
-                      ? Colors.blue.withValues(alpha: 0.2)
-                      : darkBackground,
-                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
-                ),
-                child: IconButton(
-                  icon: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _isCategoriaExpanded
-                            ? Icons.category
-                            : Icons.category_outlined,
-                        color:
-                            _isCategoriaExpanded || _filtroCategoria != 'Todos'
-                                ? Colors.blue
-                                : Colors.white70,
-                        size: 20,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: <Widget>[
+                    // Botón de categoría
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: _isCategoriaExpanded
+                            ? Colors.blue.withValues(alpha: 0.2)
+                            : darkBackground,
+                        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                       ),
-                      if (!_isCategoriaExpanded &&
-                          _filtroCategoria != 'Todos') ...[
-                        const SizedBox(width: 4),
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Colors.blue,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  onPressed: _toggleCategoria,
-                  tooltip:
-                      _isCategoriaExpanded ? 'Cerrar categorías' : 'Categorías',
-                ),
-              ),
-
-              // Botón de promoción
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: _isPromocionExpanded
-                      ? Colors.purple.withValues(alpha: 0.2)
-                      : darkBackground,
-                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
-                ),
-                child: IconButton(
-                  icon: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _isPromocionExpanded
-                            ? Icons.local_offer
-                            : Icons.local_offer_outlined,
-                        color: _isPromocionExpanded ||
-                                _tipoDescuentoSeleccionado !=
-                                    TipoDescuento.todos
-                            ? Colors.purple
-                            : Colors.white70,
-                        size: 20,
-                      ),
-                      if (!_isPromocionExpanded &&
-                          _tipoDescuentoSeleccionado !=
-                              TipoDescuento.todos) ...[
-                        const SizedBox(width: 4),
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Colors.purple,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  onPressed: _togglePromocion,
-                  tooltip: _isPromocionExpanded
-                      ? 'Cerrar promociones'
-                      : 'Promociones',
-                ),
-              ),
-
-              // Botón de búsqueda
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: _isSearchExpanded
-                      ? Colors.orange.withValues(alpha: 0.2)
-                      : darkBackground,
-                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
-                ),
-                child: IconButton(
-                  icon: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _isSearchExpanded ? Icons.close : Icons.search,
-                        color: _isSearchExpanded ||
-                                _searchController.text.isNotEmpty
-                            ? Colors.orange
-                            : Colors.white70,
-                        size: 20,
-                      ),
-                      if (!_isSearchExpanded &&
-                          _searchController.text.isNotEmpty) ...[
-                        const SizedBox(width: 4),
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Colors.orange,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  onPressed: _toggleSearch,
-                  tooltip: _isSearchExpanded ? 'Cerrar búsqueda' : 'Buscar',
-                ),
-              ),
-
-              // Nuevo botón de limpiar filtros
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: hayFiltrosActivos
-                      ? Colors.red.withValues(alpha: 0.2)
-                      : darkBackground,
-                  borderRadius: BorderRadius.circular(AppTheme.smallRadius),
-                ),
-                child: IconButton(
-                  icon: Icon(
-                    Icons.filter_list_off,
-                    color: hayFiltrosActivos ? Colors.red : Colors.white38,
-                    size: 20,
-                  ),
-                  onPressed: hayFiltrosActivos
-                      ? () {
-                          // Cerrar cualquier dropdown expandido
-                          if (_isCategoriaExpanded) {
-                            _toggleCategoria();
-                          }
-                          if (_isPromocionExpanded) {
-                            _togglePromocion();
-                          }
-                          if (_isSearchExpanded) {
-                            _toggleSearch();
-                          }
-
-                          // Limpiar todos los filtros
-                          _restablecerTodosFiltros();
-
-                          // Mostrar feedback visual
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Filtros restablecidos'),
-                              backgroundColor: Colors.green,
-                              duration: Duration(seconds: 1),
-                              behavior: SnackBarBehavior.floating,
+                      child: IconButton(
+                        icon: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _isCategoriaExpanded
+                                  ? Icons.category
+                                  : Icons.category_outlined,
+                              color:
+                                  _isCategoriaExpanded || _filtroCategoria != 'Todos'
+                                      ? Colors.blue
+                                      : Colors.white70,
+                              size: 20,
                             ),
-                          );
-                        }
-                      : null, // Deshabilitar si no hay filtros activos
-                  tooltip: 'Limpiar filtros',
+                            if (!_isCategoriaExpanded &&
+                                _filtroCategoria != 'Todos') ...[
+                              const SizedBox(width: 4),
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: Colors.blue,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        onPressed: _toggleCategoria,
+                        tooltip:
+                            _isCategoriaExpanded ? 'Cerrar categorías' : 'Categorías',
+                      ),
+                    ),
+
+                    // Botón de promoción
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: _isPromocionExpanded
+                            ? Colors.purple.withValues(alpha: 0.2)
+                            : darkBackground,
+                        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+                      ),
+                      child: IconButton(
+                        icon: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _isPromocionExpanded
+                                  ? Icons.local_offer
+                                  : Icons.local_offer_outlined,
+                              color: _isPromocionExpanded ||
+                                      _tipoDescuentoSeleccionado !=
+                                          TipoDescuento.todos
+                                  ? Colors.purple
+                                  : Colors.white70,
+                              size: 20,
+                            ),
+                            if (!_isPromocionExpanded &&
+                                _tipoDescuentoSeleccionado !=
+                                    TipoDescuento.todos) ...[
+                              const SizedBox(width: 4),
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: Colors.purple,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        onPressed: _togglePromocion,
+                        tooltip: _isPromocionExpanded
+                            ? 'Cerrar promociones'
+                            : 'Promociones',
+                      ),
+                    ),
+
+                    // Botón de búsqueda
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: _isSearchExpanded
+                            ? Colors.orange.withValues(alpha: 0.2)
+                            : darkBackground,
+                        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+                      ),
+                      child: IconButton(
+                        icon: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _isSearchExpanded ? Icons.close : Icons.search,
+                              color: _isSearchExpanded ||
+                                      _searchController.text.isNotEmpty
+                                  ? Colors.orange
+                                  : Colors.white70,
+                              size: 20,
+                            ),
+                            if (!_isSearchExpanded &&
+                                _searchController.text.isNotEmpty) ...[
+                              const SizedBox(width: 4),
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: Colors.orange,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        onPressed: _toggleSearch,
+                        tooltip: _isSearchExpanded ? 'Cerrar búsqueda' : 'Buscar',
+                      ),
+                    ),
+
+                    // Nuevo botón de limpiar filtros
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: hayFiltrosActivos
+                            ? Colors.red.withValues(alpha: 0.2)
+                            : darkBackground,
+                        borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+                      ),
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.filter_list_off,
+                          color: hayFiltrosActivos ? Colors.red : Colors.white38,
+                          size: 20,
+                        ),
+                        onPressed: hayFiltrosActivos
+                            ? () {
+                                // Cerrar cualquier dropdown expandido
+                                if (_isCategoriaExpanded) {
+                                  _toggleCategoria();
+                                }
+                                if (_isPromocionExpanded) {
+                                  _togglePromocion();
+                                }
+                                if (_isSearchExpanded) {
+                                  _toggleSearch();
+                                }
+
+                                // Limpiar todos los filtros
+                                _restablecerTodosFiltros();
+
+                                // Mostrar feedback visual
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Filtros restablecidos'),
+                                    backgroundColor: Colors.green,
+                                    duration: Duration(seconds: 1),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            : null, // Deshabilitar si no hay filtros activos
+                        tooltip: 'Limpiar filtros',
+                      ),
+                    ),
+                  ],
                 ),
               ),
+              if (widget.onClose != null) ...[
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white60, size: 20),
+                  onPressed: widget.onClose,
+                  tooltip: 'Cerrar',
+                ),
+              ],
             ],
           ),
         ),
@@ -617,6 +629,20 @@ class _BusquedaProductoWidgetState extends State<BusquedaProductoWidget>
             ],
           ),
         ),
+        if (widget.onClose != null) ...[
+          const SizedBox(width: 12),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 16),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white60, size: 20),
+                onPressed: widget.onClose,
+                tooltip: 'Cerrar',
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }
