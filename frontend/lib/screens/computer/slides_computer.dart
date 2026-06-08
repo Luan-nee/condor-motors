@@ -316,19 +316,26 @@ class _SlidesComputerScreenState extends ConsumerState<SlidesComputerScreen> {
                     onPressed: () => _showLogoutDialog(context),
                     icon: const FaIcon(
                       FontAwesomeIcons.rightFromBracket,
-                      color: Colors.white54,
                       size: 18,
                     ),
                     label: const Text(
                       'Salir',
-                      style: TextStyle(
-                        color: Colors.white54,
-                      ),
                     ),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
+                    style: ButtonStyle(
+                      padding: WidgetStateProperty.all(
+                        const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                      ),
+                      overlayColor: WidgetStateProperty.all(Colors.transparent),
+                      foregroundColor: WidgetStateProperty.resolveWith<Color>(
+                        (Set<WidgetState> states) {
+                          if (states.contains(WidgetState.hovered)) {
+                            return Colors.white;
+                          }
+                          return Colors.white54;
+                        },
                       ),
                     ),
                   ),

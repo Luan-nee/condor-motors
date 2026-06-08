@@ -35,13 +35,11 @@ class PedidosAdminData {
 /// consistencia de estado reactivo y desacoplamiento de red.
 @riverpod
 class PedidosAdmin extends _$PedidosAdmin {
-  late final PedidoRepository _pedidoRepository;
-  late final ClienteRepository _clienteRepository;
+  final PedidoRepository _pedidoRepository = PedidoRepository.instance;
+  final ClienteRepository _clienteRepository = ClienteRepository.instance;
 
   @override
   FutureOr<PedidosAdminData> build() {
-    _pedidoRepository = PedidoRepository.instance;
-    _clienteRepository = ClienteRepository.instance;
     return _fetchDatos();
   }
 

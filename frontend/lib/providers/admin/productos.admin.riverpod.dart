@@ -102,16 +102,12 @@ class ProductosAdminState {
 
 @Riverpod(keepAlive: true)
 class ProductosAdmin extends _$ProductosAdmin {
-  late final ProductoRepository _productoRepository;
-  late final CategoriaRepository _categoriaRepository;
-  late final SucursalRepository _sucursalRepository;
+  final ProductoRepository _productoRepository = ProductoRepository.instance;
+  final CategoriaRepository _categoriaRepository = CategoriaRepository.instance;
+  final SucursalRepository _sucursalRepository = SucursalRepository.instance;
 
   @override
   ProductosAdminState build() {
-    _productoRepository = ProductoRepository.instance;
-    _categoriaRepository = CategoriaRepository.instance;
-    _sucursalRepository = SucursalRepository.instance;
-
     // Inicializar cargando sucursales y categorías
     Future.microtask(inicializar);
 

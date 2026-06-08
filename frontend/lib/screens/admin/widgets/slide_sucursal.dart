@@ -46,6 +46,9 @@ class _SlideSucursalState extends ConsumerState<SlideSucursal>
   late AnimationController _animationController;
   late Animation<double> _animation;
 
+  int? _currentSelectedIndex;
+  int? _previousSelectedIndex;
+
   @override
   void initState() {
     super.initState();
@@ -58,12 +61,89 @@ class _SlideSucursalState extends ConsumerState<SlideSucursal>
       curve: Curves.easeOutCubic,
     );
     _animationController.forward();
+
+    // Inicializar índices en base a la sucursal seleccionada en su orden visual
+    final initialIndex = _getDisplayIndex(widget.sucursalSeleccionada);
+    if (initialIndex != -1) {
+      _currentSelectedIndex = initialIndex;
+      _previousSelectedIndex = initialIndex;
+    }
+  }
+
+  @override
+  void didUpdateWidget(SlideSucursal oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.sucursalSeleccionada?.id != oldWidget.sucursalSeleccionada?.id) {
+      final oldIndex = _getDisplayIndex(oldWidget.sucursalSeleccionada);
+      final newIndex = _getDisplayIndex(widget.sucursalSeleccionada);
+
+      setState(() {
+        if (oldIndex != -1) {
+          _previousSelectedIndex = oldIndex;
+        }
+        if (newIndex != -1) {
+          _currentSelectedIndex = newIndex;
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  int _getDisplayIndex(Sucursal? sucursal) {
+    if (sucursal == null) {
+      return -1;
+    }
+    final mostrarAgrupados =
+        ref.read(settingsAdminProvider).mostrarSucursalesAgrupadas;
+    if (!mostrarAgrupados) {
+      return widget.sucursales.indexWhere((s) => s.id == sucursal.id);
+    }
+    
+    // Agrupar y ordenar según el flujo visual de la pantalla
+    final grupos = _agruparSucursales();
+    final List<Sucursal> visualOrder = [
+      ...grupos['Centrales']!,
+      ...grupos['Sucursales']!,
+    ];
+    return visualOrder.indexWhere((s) => s.id == sucursal.id);
+  }
+
+  (Alignment, double) _getAlignmentAndHeight(int itemIndex, bool isSelected) {
+    if (isSelected) {
+      if (_previousSelectedIndex != null &&
+          _currentSelectedIndex != null &&
+          _currentSelectedIndex != _previousSelectedIndex) {
+        if (_currentSelectedIndex! > _previousSelectedIndex!) {
+          // El nuevo ítem está más abajo, el líquido entra desde arriba
+          return (Alignment.topCenter, 120.0);
+        } else {
+          // El nuevo ítem está más arriba, el líquido entra desde abajo
+          return (Alignment.bottomCenter, 120.0);
+        }
+      }
+      return (Alignment.topCenter, 120.0);
+    } else {
+      // Si no está seleccionado, y fue el anteriormente seleccionado, se vacía
+      // en la dirección hacia donde se mueve el nuevo foco
+      if (_previousSelectedIndex != null &&
+          _currentSelectedIndex != null &&
+          itemIndex == _previousSelectedIndex &&
+          _currentSelectedIndex != _previousSelectedIndex) {
+        if (_currentSelectedIndex! > _previousSelectedIndex!) {
+          // El nuevo foco está más abajo, se vacía drenando hacia abajo
+          return (Alignment.bottomCenter, 0.0);
+        } else {
+          // El nuevo foco está más arriba, se vacía drenando hacia arriba
+          return (Alignment.topCenter, 0.0);
+        }
+      }
+      return (Alignment.topCenter, 0.0);
+    }
   }
 
   Map<String, List<Sucursal>> _agruparSucursales() {
@@ -267,6 +347,9 @@ class _SlideSucursalState extends ConsumerState<SlideSucursal>
     final Color iconColor = SucursalUtils.getColorForSucursal(sucursal);
     final Color iconBgColor = SucursalUtils.getIconBackgroundColor(sucursal);
 
+    final int itemIndex = _getDisplayIndex(sucursal);
+    final (Alignment alignment, double liquidHeight) = _getAlignmentAndHeight(itemIndex, isSelected);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Material(
@@ -274,84 +357,113 @@ class _SlideSucursalState extends ConsumerState<SlideSucursal>
         child: InkWell(
           onTap: () => widget.onSucursalSelected(sucursal),
           borderRadius: BorderRadius.circular(AppTheme.smallRadius),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            curve: Curves.easeOutCubic,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? AppTheme.primaryColor.withValues(alpha: 0.2)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(AppTheme.smallRadius),
-              border: Border.all(
-                color: isSelected
-                    ? AppTheme.primaryColor
-                    : Colors.white.withValues(alpha: 0.1),
-                width: isSelected ? 2 : 1,
-              ),
-            ),
-            child: Row(
+          splashColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+          highlightColor: AppTheme.primaryColor.withValues(alpha: 0.05),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+            child: Stack(
               children: <Widget>[
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  curve: Curves.easeOutCubic,
-                  transform: Matrix4.identity()
-                    ..setEntry(0, 0, isSelected ? 1.1 : 1.0)
-                    ..setEntry(1, 1, isSelected ? 1.1 : 1.0),
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: isSelected ? AppTheme.primaryColor : iconBgColor,
-                    borderRadius: BorderRadius.circular(AppTheme.smallRadius),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: isSelected ? Colors.white : iconColor,
-                    size: 16,
+                // Fondo base inactivo
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.white.withValues(alpha: 0.02),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                // Relleno líquido animado (efecto de agua con oleaje)
+                Positioned.fill(
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween<double>(begin: 0.0, end: isSelected ? 1.0 : 0.0),
+                    duration: const Duration(milliseconds: 350),
+                    curve: Curves.easeOutCubic,
+                    builder: (BuildContext context, double progress, Widget? child) {
+                      if (progress == 0.0) {
+                        return const SizedBox.shrink();
+                      }
+                      return ClipPath(
+                        clipper: WaterWaveClipper(
+                          progress: progress,
+                          fromTop: alignment == Alignment.topCenter,
+                        ),
+                        child: Container(
+                          color: AppTheme.primaryColor.withValues(alpha: 0.15),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                // Contenido de la tarjeta y bordes
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppTheme.smallRadius),
+                    border: Border.all(
+                      color: isSelected
+                          ? AppTheme.primaryColor
+                          : Colors.white.withValues(alpha: 0.08),
+                    ),
+                  ),
+                  child: Row(
                     children: <Widget>[
-                      Text(
-                        sucursal.nombre,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight:
-                              isSelected ? FontWeight.bold : FontWeight.normal,
-                          color: isSelected
-                              ? Colors.white
-                              : Colors.white.withValues(alpha: 0.8),
+                      // Icono estático (sin animación de escala)
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppTheme.primaryColor : iconBgColor,
+                          borderRadius: BorderRadius.circular(AppTheme.smallRadius),
                         ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
+                        child: Icon(
+                          icon,
+                          color: isSelected ? Colors.white : iconColor,
+                          size: 16,
+                        ),
                       ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          if (sucursal.codigoEstablecimiento != null)
-                            SucursalUtils.buildCodigoEstablecimiento(
-                              sucursal.codigoEstablecimiento,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              sucursal.nombre,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.white.withValues(alpha: 0.8),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
-                          if (sucursal.sucursalCentral) ...[
-                            const SizedBox(width: 8),
-                            SucursalUtils.buildTipoSucursalBadge(sucursal),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                if (sucursal.codigoEstablecimiento != null)
+                                  SucursalUtils.buildCodigoEstablecimiento(
+                                    sucursal.codigoEstablecimiento,
+                                  ),
+                                if (sucursal.sucursalCentral) ...[
+                                  const SizedBox(width: 8),
+                                  SucursalUtils.buildTipoSucursalBadge(sucursal),
+                                ],
+                              ],
+                            ),
+                            if (sucursal.direccion != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                sucursal.direccion!,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white.withValues(alpha: 0.5),
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 2,
+                              ),
+                            ],
                           ],
-                        ],
-                      ),
-                      if (sucursal.direccion != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          sucursal.direccion!,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white.withValues(alpha: 0.5),
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 2,
                         ),
-                      ],
+                      ),
                     ],
                   ),
                 ),
@@ -361,5 +473,68 @@ class _SlideSucursalState extends ConsumerState<SlideSucursal>
         ),
       ),
     );
+  }
+}
+
+/// Clipper personalizado para generar una curva de onda de agua/líquido fluida
+class WaterWaveClipper extends CustomClipper<Path> {
+  final double progress;
+  final bool fromTop;
+
+  WaterWaveClipper({
+    required this.progress,
+    required this.fromTop,
+  });
+
+  @override
+  Path getClip(Size size) {
+    final Path path = Path();
+    if (fromTop) {
+      // Entra y se llena de arriba hacia abajo
+      final double currentHeight = size.height * progress;
+      if (progress == 0.0) {
+        return path;
+      }
+      if (progress >= 1.0) {
+        path.addRect(Rect.fromLTWH(0, 0, size.width, size.height));
+        return path;
+      }
+
+      final double waveAmplitude = 10 * (1.0 - progress) * (progress > 0.5 ? (1.0 - progress) * 2 : progress * 2);
+      final double controlY = currentHeight + waveAmplitude;
+
+      path
+        ..moveTo(0, 0)
+        ..lineTo(size.width, 0)
+        ..lineTo(size.width, currentHeight)
+        ..quadraticBezierTo(size.width / 2, controlY, 0, currentHeight)
+        ..close();
+    } else {
+      // Entra y se llena de abajo hacia arriba
+      final double currentHeight = size.height * (1.0 - progress);
+      if (progress == 0.0) {
+        return path;
+      }
+      if (progress >= 1.0) {
+        path.addRect(Rect.fromLTWH(0, 0, size.width, size.height));
+        return path;
+      }
+
+      final double waveAmplitude = 10 * (1.0 - progress) * (progress > 0.5 ? (1.0 - progress) * 2 : progress * 2);
+      final double controlY = currentHeight - waveAmplitude;
+
+      path
+        ..moveTo(0, size.height)
+        ..lineTo(size.width, size.height)
+        ..lineTo(size.width, currentHeight)
+        ..quadraticBezierTo(size.width / 2, controlY, 0, currentHeight)
+        ..close();
+    }
+    return path;
+  }
+
+  @override
+  bool shouldReclip(WaterWaveClipper oldClipper) {
+    return oldClipper.progress != progress || oldClipper.fromTop != fromTop;
   }
 }

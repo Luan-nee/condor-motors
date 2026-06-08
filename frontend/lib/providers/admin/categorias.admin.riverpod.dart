@@ -10,11 +10,10 @@ part 'categorias.admin.riverpod.g.dart';
 /// Resuelve el bug sistemático de limpieza de errores y elimina el boilerplate.
 @riverpod
 class CategoriasAdmin extends _$CategoriasAdmin {
-  late final CategoriaRepository _categoriaRepository;
+  final CategoriaRepository _categoriaRepository = CategoriaRepository.instance;
 
   @override
   FutureOr<List<Categoria>> build() {
-    _categoriaRepository = CategoriaRepository.instance;
     return _categoriaRepository.getCategorias();
   }
 

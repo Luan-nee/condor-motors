@@ -10,11 +10,10 @@ part 'marcas.admin.riverpod.g.dart';
 /// Maneja el estado asíncrono nativamente mediante [AsyncValue].
 @riverpod
 class MarcasAdmin extends _$MarcasAdmin {
-  late final MarcaRepository _marcaRepository;
+  final MarcaRepository _marcaRepository = MarcaRepository.instance;
 
   @override
   FutureOr<List<Marca>> build() {
-    _marcaRepository = MarcaRepository.instance;
     return _marcaRepository.getMarcas();
   }
 

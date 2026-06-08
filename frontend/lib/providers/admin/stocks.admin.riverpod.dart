@@ -76,11 +76,10 @@ class StocksAdminState {
 
 @Riverpod(keepAlive: true)
 class StocksAdmin extends _$StocksAdmin {
-  late final StockRepository _stockRepository;
+  final StockRepository _stockRepository = StockRepository.instance;
 
   @override
   StocksAdminState build() {
-    _stockRepository = StockRepository.instance;
     Future.microtask(inicializar);
     return StocksAdminState();
   }

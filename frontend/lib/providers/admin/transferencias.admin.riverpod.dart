@@ -84,13 +84,11 @@ class TransferenciasAdminState {
 
 @riverpod
 class TransferenciasAdmin extends _$TransferenciasAdmin {
-  late final TransferenciaRepository _transferenciaRepository;
-  late final SucursalRepository _sucursalRepository;
+  final TransferenciaRepository _transferenciaRepository = TransferenciaRepository.instance;
+  final SucursalRepository _sucursalRepository = SucursalRepository.instance;
 
   @override
   TransferenciasAdminState build() {
-    _transferenciaRepository = TransferenciaRepository.instance;
-    _sucursalRepository = SucursalRepository.instance;
     
     // Cargar datos iniciales
     // Nota: rpod no debería llamar async en build si queremos que sea reactivo de forma simple,

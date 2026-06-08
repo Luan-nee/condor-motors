@@ -23,11 +23,10 @@ class EmpleadosAdminData {
 /// Maneja la agregación de datos de múltiples fuentes de forma reactiva e inmutable.
 @riverpod
 class EmpleadosAdmin extends _$EmpleadosAdmin {
-  late final EmpleadoRepository _empleadoRepository;
+  final EmpleadoRepository _empleadoRepository = EmpleadoRepository.instance;
 
   @override
   FutureOr<EmpleadosAdminData> build() {
-    _empleadoRepository = EmpleadoRepository.instance;
     return _fetchDatos();
   }
 

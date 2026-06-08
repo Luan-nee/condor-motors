@@ -1,7 +1,3 @@
-import 'package:condorsmotors/models/sucursal.model.dart';
-import 'package:condorsmotors/providers/admin/productos.admin.riverpod.dart';
-import 'package:condorsmotors/providers/admin/stocks.admin.riverpod.dart';
-import 'package:condorsmotors/providers/admin/ventas.admin.riverpod.dart';
 import 'package:condorsmotors/providers/auth.riverpod.dart';
 import 'package:condorsmotors/screens/admin/categorias_admin.dart';
 import 'package:condorsmotors/screens/admin/dashboard_admin.dart';
@@ -14,7 +10,7 @@ import 'package:condorsmotors/screens/admin/stocks_admin.dart';
 import 'package:condorsmotors/screens/admin/sucursal_admin.dart';
 import 'package:condorsmotors/screens/admin/transferencias_admin.dart';
 import 'package:condorsmotors/screens/admin/ventas_admin.dart';
-import 'package:condorsmotors/screens/admin/widgets/slide_sucursal.dart';
+import 'package:condorsmotors/screens/admin/slides_admin.subwidgets.dart';
 import 'package:condorsmotors/theme/apptheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -83,50 +79,50 @@ class _SlidesAdminScreenState extends ConsumerState<SlidesAdminScreen> {
     }
   }
 
+  double _getMenuHighlightTop() {
+    const double itemHeight = 48.0;
+    const double subMenuHeight = 180.0; // 5 sub-items * 36.0
+
+    // Mapear el _selectedIndex a su posición vertical correspondiente.
+    // Orden de visualización:
+    // 0. Análisis de ventas (_selectedIndex == 0)
+    // 1. Ventas y facturación (_selectedIndex == 1)
+    // 2. Inventario (_selectedIndex == 2)
+    // 3. Pedidos Exclusivos (_selectedIndex == 6)
+    // 4. Colaboradores (_selectedIndex == 3)
+    // 5. Sucursales (_selectedIndex == 4)
+    // 6. Configuración (_selectedIndex == 5)
+    switch (_selectedIndex) {
+      case 0: // Análisis de ventas
+        return 0;
+      case 1: // Ventas y facturación
+        return itemHeight;
+      case 2: // Inventario
+        return itemHeight * 2;
+      case 6: // Pedidos Exclusivos
+        return itemHeight * 3 + subMenuHeight;
+      case 3: // Colaboradores
+        return itemHeight * 4 + subMenuHeight;
+      case 4: // Sucursales
+        return itemHeight * 5 + subMenuHeight;
+      case 5: // Configuración
+        return itemHeight * 6 + subMenuHeight;
+      default:
+        return 0;
+    }
+  }
+
   Widget _buildMenuItem({
     required FaIconData icon,
     required String text,
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    return InkWell(
+    return SidebarMenuItem(
+      icon: icon,
+      text: text,
+      isSelected: isSelected,
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppTheme.primaryColor.withValues(alpha: 0.1)
-              : Colors.transparent,
-          border: Border(
-            left: BorderSide(
-              color: isSelected ? AppTheme.primaryColor : Colors.transparent,
-              width: 3,
-            ),
-          ),
-        ),
-        child: Row(
-          children: <Widget>[
-            SizedBox(
-              width: 24,
-              child: Center(
-                child: FaIcon(
-                  icon,
-                  color: isSelected ? AppTheme.primaryColor : Colors.white54,
-                  size: 18,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              text,
-              style: TextStyle(
-                color: isSelected ? AppTheme.primaryColor : Colors.white54,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -164,21 +160,10 @@ class _SlidesAdminScreenState extends ConsumerState<SlidesAdminScreen> {
     required VoidCallback onTap,
     required bool isSelected,
   }) {
-    return InkWell(
+    return SidebarSubMenuItem(
+      text: text,
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: isSelected
-                ? AppTheme.primaryColor
-                : Colors.white.withValues(alpha: 0.7),
-            fontSize: 14,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      ),
+      isSelected: isSelected,
     );
   }
 
@@ -279,114 +264,144 @@ class _SlidesAdminScreenState extends ConsumerState<SlidesAdminScreen> {
                 const SizedBox(height: 24),
 
                 // Menú de opciones
-                _buildMenuItem(
-                  icon: FontAwesomeIcons.chartLine,
-                  text: 'Análisis de ventas',
-                  isSelected: _selectedIndex == 0,
-                  onTap: () => setState(() {
-                    _selectedIndex = 0;
-                    _selectedSubIndex = 0;
-                  }),
-                ),
-                _buildMenuItem(
-                  icon: FontAwesomeIcons.fileInvoiceDollar,
-                  text: 'Ventas y facturación',
-                  isSelected: _selectedIndex == 1,
-                  onTap: () => setState(() {
-                    _selectedIndex = 1;
-                    _selectedSubIndex = 0;
-                  }),
-                ),
-                _buildExpandableMenuItem(
-                  icon: FontAwesomeIcons.boxOpen,
-                  text: 'Inventario',
-                  isSelected: _selectedIndex == 2,
-                  isExpanded: true,
-                  subItems: <Widget>[
-                    _buildSubMenuItem(
-                      'Control de stock',
-                      onTap: () => setState(() {
-                        _selectedIndex = 2;
-                        _selectedSubIndex = 1;
-                      }),
-                      isSelected: _selectedIndex == 2 && _selectedSubIndex == 1,
+                Stack(
+                  children: <Widget>[
+                    // Indicador de fondo deslizante animado
+                    AnimatedPositioned(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                      left: 0,
+                      right: 0,
+                      top: _getMenuHighlightTop(),
+                      height: 48,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                          border: const Border(
+                            left: BorderSide(
+                              color: AppTheme.primaryColor,
+                              width: 3,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                    _buildSubMenuItem(
-                      'Productos',
-                      onTap: () => setState(() {
-                        _selectedIndex = 2;
-                        _selectedSubIndex = 4;
-                      }),
-                      isSelected: _selectedIndex == 2 && _selectedSubIndex == 4,
-                    ),
-                    _buildSubMenuItem(
-                      'Movimientos',
-                      onTap: () => setState(() {
-                        _selectedIndex = 2;
-                        _selectedSubIndex = 2;
-                      }),
-                      isSelected: _selectedIndex == 2 && _selectedSubIndex == 2,
-                    ),
-                    _buildSubMenuItem(
-                      'Categorías',
-                      onTap: () => setState(() {
-                        _selectedIndex = 2;
-                        _selectedSubIndex = 0;
-                      }),
-                      isSelected: _selectedIndex == 2 && _selectedSubIndex == 0,
-                    ),
-                    _buildSubMenuItem(
-                      'Marcas',
-                      onTap: () => setState(() {
-                        _selectedIndex = 2;
-                        _selectedSubIndex = 3;
-                      }),
-                      isSelected: _selectedIndex == 2 && _selectedSubIndex == 3,
+                    // Lista de items del menú
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        _buildMenuItem(
+                          icon: FontAwesomeIcons.chartLine,
+                          text: 'Análisis de ventas',
+                          isSelected: _selectedIndex == 0,
+                          onTap: () => setState(() {
+                            _selectedIndex = 0;
+                            _selectedSubIndex = 0;
+                          }),
+                        ),
+                        _buildMenuItem(
+                          icon: FontAwesomeIcons.fileInvoiceDollar,
+                          text: 'Ventas y facturación',
+                          isSelected: _selectedIndex == 1,
+                          onTap: () => setState(() {
+                            _selectedIndex = 1;
+                            _selectedSubIndex = 0;
+                          }),
+                        ),
+                        _buildExpandableMenuItem(
+                          icon: FontAwesomeIcons.boxOpen,
+                          text: 'Inventario',
+                          isSelected: _selectedIndex == 2,
+                          isExpanded: true,
+                          subItems: <Widget>[
+                            _buildSubMenuItem(
+                              'Control de stock',
+                              onTap: () => setState(() {
+                                _selectedIndex = 2;
+                                _selectedSubIndex = 1;
+                              }),
+                              isSelected: _selectedIndex == 2 && _selectedSubIndex == 1,
+                            ),
+                            _buildSubMenuItem(
+                              'Productos',
+                              onTap: () => setState(() {
+                                _selectedIndex = 2;
+                                _selectedSubIndex = 4;
+                              }),
+                              isSelected: _selectedIndex == 2 && _selectedSubIndex == 4,
+                            ),
+                            _buildSubMenuItem(
+                              'Movimientos',
+                              onTap: () => setState(() {
+                                _selectedIndex = 2;
+                                _selectedSubIndex = 2;
+                              }),
+                              isSelected: _selectedIndex == 2 && _selectedSubIndex == 2,
+                            ),
+                            _buildSubMenuItem(
+                              'Categorías',
+                              onTap: () => setState(() {
+                                _selectedIndex = 2;
+                                _selectedSubIndex = 0;
+                              }),
+                              isSelected: _selectedIndex == 2 && _selectedSubIndex == 0,
+                            ),
+                            _buildSubMenuItem(
+                              'Marcas',
+                              onTap: () => setState(() {
+                                _selectedIndex = 2;
+                                _selectedSubIndex = 3;
+                              }),
+                              isSelected: _selectedIndex == 2 && _selectedSubIndex == 3,
+                            ),
+                          ],
+                          onTap: () => setState(() {
+                            _selectedIndex = 2;
+                            _selectedSubIndex = 1;
+                          }),
+                        ),
+                        // Pedidos Exclusivos justo después de Inventario
+                        _buildMenuItem(
+                          icon: FontAwesomeIcons.cartShopping,
+                          text: 'Pedidos Exclusivos',
+                          isSelected: _selectedIndex == 6,
+                          onTap: () => setState(() {
+                            _selectedIndex = 6;
+                            _selectedSubIndex = 0;
+                          }),
+                        ),
+                        _buildMenuItem(
+                          icon: FontAwesomeIcons.users,
+                          text: 'Colaboradores',
+                          isSelected: _selectedIndex == 3,
+                          onTap: () => setState(() {
+                            _selectedIndex = 3;
+                            _selectedSubIndex = 0;
+                          }),
+                        ),
+                        // Sección de Sucursales
+                        _buildMenuItem(
+                          icon: FontAwesomeIcons.building,
+                          text: 'Sucursales',
+                          isSelected: _selectedIndex == 4,
+                          onTap: () => setState(() {
+                            _selectedIndex = 4;
+                            _selectedSubIndex = 0;
+                          }),
+                        ),
+                        // Sección de Configuración
+                        _buildMenuItem(
+                          icon: FontAwesomeIcons.gear,
+                          text: 'Configuración',
+                          isSelected: _selectedIndex == 5,
+                          onTap: () => setState(() {
+                            _selectedIndex = 5;
+                            _selectedSubIndex = 0;
+                          }),
+                        ),
+                      ],
                     ),
                   ],
-                  onTap: () => setState(() {
-                    _selectedIndex = 2;
-                    _selectedSubIndex = 1;
-                  }),
-                ),
-                // Pedidos Exclusivos justo después de Inventario
-                _buildMenuItem(
-                  icon: FontAwesomeIcons.cartShopping,
-                  text: 'Pedidos Exclusivos',
-                  isSelected: _selectedIndex == 6,
-                  onTap: () => setState(() {
-                    _selectedIndex = 6;
-                    _selectedSubIndex = 0;
-                  }),
-                ),
-                _buildMenuItem(
-                  icon: FontAwesomeIcons.users,
-                  text: 'Colaboradores',
-                  isSelected: _selectedIndex == 3,
-                  onTap: () => setState(() {
-                    _selectedIndex = 3;
-                    _selectedSubIndex = 0;
-                  }),
-                ),
-                // Sección de Sucursales
-                _buildMenuItem(
-                  icon: FontAwesomeIcons.building,
-                  text: 'Sucursales',
-                  isSelected: _selectedIndex == 4,
-                  onTap: () => setState(() {
-                    _selectedIndex = 4;
-                    _selectedSubIndex = 0;
-                  }),
-                ),
-                // Sección de Configuración
-                _buildMenuItem(
-                  icon: FontAwesomeIcons.gear,
-                  text: 'Configuración',
-                  isSelected: _selectedIndex == 5,
-                  onTap: () => setState(() {
-                    _selectedIndex = 5;
-                    _selectedSubIndex = 0;
-                  }),
                 ),
 
                 const Spacer(),
@@ -397,17 +412,26 @@ class _SlidesAdminScreenState extends ConsumerState<SlidesAdminScreen> {
                     onPressed: () => _showLogoutDialog(context),
                     icon: const FaIcon(
                       FontAwesomeIcons.rightFromBracket,
-                      color: Colors.white54,
                       size: 18,
                     ),
                     label: const Text(
                       'Salir',
-                      style: TextStyle(color: Colors.white54),
                     ),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
+                    style: ButtonStyle(
+                      padding: WidgetStateProperty.all(
+                        const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                      ),
+                      overlayColor: WidgetStateProperty.all(Colors.transparent),
+                      foregroundColor: WidgetStateProperty.resolveWith<Color>(
+                        (Set<WidgetState> states) {
+                          if (states.contains(WidgetState.hovered)) {
+                            return Colors.white;
+                          }
+                          return Colors.white54;
+                        },
                       ),
                     ),
                   ),
@@ -420,98 +444,8 @@ class _SlidesAdminScreenState extends ConsumerState<SlidesAdminScreen> {
           Expanded(child: _buildMainContent()),
           
           if ((_selectedIndex == 2 && (_selectedSubIndex == 1 || _selectedSubIndex == 4)) || _selectedIndex == 1)
-            _SharedAdminSidebar(selectedIndex: _selectedIndex, subIndex: _selectedSubIndex),
+            SharedAdminSidebar(selectedIndex: _selectedIndex, subIndex: _selectedSubIndex),
         ],
-      ),
-    );
-  }
-}
-
-class _SharedAdminSidebar extends ConsumerWidget {
-  final int selectedIndex;
-  final int subIndex;
-  
-  const _SharedAdminSidebar({
-    required this.selectedIndex,
-    required this.subIndex,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (selectedIndex == 1) {
-      // Ventas y facturación -> Escucha ventasAdminProvider
-      final sucursales = ref.watch(ventasAdminProvider.select((s) => s.sucursales));
-      final selected = ref.watch(ventasAdminProvider.select((s) => s.selectedSucursal));
-      final isLoading = ref.watch(ventasAdminProvider.select((s) => s.isLoadingSucursales));
-      final notifier = ref.read(ventasAdminProvider.notifier);
-
-      return _buildSidebarContainer(
-        sucursales: sucursales,
-        selected: selected,
-        onSelected: notifier.seleccionarSucursal,
-        onRecargar: notifier.cargarSucursales,
-        isLoading: isLoading,
-      );
-    } else if (selectedIndex == 2) {
-      if (subIndex == 1) {
-        // Control de stock -> Escucha stocksAdminProvider
-        final sucursales = ref.watch(stocksAdminProvider.select((s) => s.sucursales));
-        final selected = ref.watch(stocksAdminProvider.select((s) => s.selectedSucursal));
-        final isLoading = ref.watch(stocksAdminProvider.select((s) => s.isLoadingSucursales));
-        final notifier = ref.read(stocksAdminProvider.notifier);
-
-        return _buildSidebarContainer(
-          sucursales: sucursales,
-          selected: selected,
-          onSelected: notifier.seleccionarSucursal,
-          onRecargar: notifier.cargarSucursales,
-          isLoading: isLoading,
-        );
-      } else {
-        // Productos -> Escucha productosAdminProvider
-        final sucursales = ref.watch(productosAdminProvider.select((s) => s.sucursales));
-        final selected = ref.watch(productosAdminProvider.select((s) => s.selectedSucursal));
-        final isLoading = ref.watch(productosAdminProvider.select((s) => s.isLoadingSucursales));
-        final notifier = ref.read(productosAdminProvider.notifier);
-
-        return _buildSidebarContainer(
-          sucursales: sucursales,
-          selected: selected,
-          onSelected: notifier.seleccionarSucursal,
-          onRecargar: notifier.cargarSucursales,
-          isLoading: isLoading,
-        );
-      }
-    }
-    return const SizedBox.shrink();
-  }
-
-  Widget _buildSidebarContainer({
-    required List<Sucursal> sucursales,
-    required Sucursal? selected,
-    required Function(Sucursal) onSelected,
-    required Function() onRecargar,
-    required bool isLoading,
-  }) {
-    return Container(
-      width: 350,
-      decoration: BoxDecoration(
-        color: AppTheme.darkSurface,
-        border: Border(left: BorderSide(color: Colors.white.withAlpha(25))),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(51),
-            blurRadius: 8,
-            offset: const Offset(-2, 0),
-          ),
-        ],
-      ),
-      child: SlideSucursal(
-        sucursales: sucursales,
-        sucursalSeleccionada: selected,
-        onSucursalSelected: onSelected,
-        onRecargarSucursales: onRecargar,
-        isLoading: isLoading,
       ),
     );
   }

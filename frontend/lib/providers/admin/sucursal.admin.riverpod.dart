@@ -40,11 +40,10 @@ class SucursalAdminState {
 
 @riverpod
 class SucursalAdmin extends _$SucursalAdmin {
-  late final SucursalRepository _sucursalRepository;
+  final SucursalRepository _sucursalRepository = SucursalRepository.instance;
 
   @override
   SucursalAdminState build() {
-    _sucursalRepository = SucursalRepository.instance;
     Future.microtask(inicializar);
     return SucursalAdminState();
   }

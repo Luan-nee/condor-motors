@@ -114,18 +114,13 @@ class DashboardAdminState {
 
 @riverpod
 class DashboardAdmin extends _$DashboardAdmin {
-  late final ProductoRepository _productoRepository;
-  late final SucursalRepository _sucursalRepository;
-  late final EmpleadoRepository _empleadoRepository;
-  late final EstadisticaRepository _estadisticaRepository;
+  final ProductoRepository _productoRepository = ProductoRepository.instance;
+  final SucursalRepository _sucursalRepository = SucursalRepository.instance;
+  final EmpleadoRepository _empleadoRepository = EmpleadoRepository.instance;
+  final EstadisticaRepository _estadisticaRepository = EstadisticaRepository.instance;
 
   @override
   DashboardAdminState build() {
-    _productoRepository = ProductoRepository.instance;
-    _sucursalRepository = SucursalRepository.instance;
-    _empleadoRepository = EmpleadoRepository.instance;
-    _estadisticaRepository = EstadisticaRepository.instance;
-
     Future.microtask(inicializar);
 
     return DashboardAdminState();

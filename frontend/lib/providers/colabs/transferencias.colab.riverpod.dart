@@ -116,16 +116,13 @@ class TransferenciasColabState {
 
 @riverpod
 class TransferenciasColab extends _$TransferenciasColab {
-  late final TransferenciaRepository _transferenciaRepository;
-  late final ProductoRepository _productoRepository;
+  final TransferenciaRepository _transferenciaRepository = TransferenciaRepository.instance;
+  final ProductoRepository _productoRepository = ProductoRepository.instance;
   Timer? _pollingTimer;
   int? _ultimoIdTransferenciaRecibida;
 
   @override
   TransferenciasColabState build() {
-    _transferenciaRepository = TransferenciaRepository.instance;
-    _productoRepository = ProductoRepository.instance;
-
     ref.onDispose(() {
       _pollingTimer?.cancel();
     });

@@ -78,14 +78,11 @@ class VentasAdminState {
 
 @Riverpod(keepAlive: true)
 class VentasAdmin extends _$VentasAdmin {
-  late final VentaRepository _ventaRepository;
-  late final SucursalRepository _sucursalRepository;
+  final VentaRepository _ventaRepository = VentaRepository.instance;
+  final SucursalRepository _sucursalRepository = SucursalRepository.instance;
 
   @override
   VentasAdminState build() {
-    _ventaRepository = VentaRepository.instance;
-    _sucursalRepository = SucursalRepository.instance;
-
     // Inicializar cargando sucursales
     Future.microtask(inicializar);
 
